@@ -1,4 +1,4 @@
-Net::Jabber v1.0008
+Net::Jabber v1.0011
 
 The Jabber Instant Messaging project is an Open Source project seeking
 to provide a complete cross protocol messaging solution.  The problem
@@ -46,4 +46,4 @@ and read the CHANGES file to find out what has changed.
 
 
 Please send any bug reports to reatmon@ti.com.
-2000/07/01
+2000/07/06

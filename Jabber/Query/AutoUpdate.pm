@@ -120,7 +120,7 @@ use strict;
 use POSIX;
 use vars qw($VERSION);
 
-$VERSION = "1.0009";
+$VERSION = "1.0011";
 
 use Net::Jabber::Query::AutoUpdate::Release;
 ($Net::Jabber::Query::AutoUpdate::Release::VERSION < $VERSION) &&

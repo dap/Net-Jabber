@@ -274,7 +274,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0009";
+$VERSION = "1.0011";
 
 sub new {
   my $proto = shift;
@@ -861,6 +861,7 @@ sub Reply {
   $reply->SetThread($self->GetThread()) if ($self->GetThread() ne "");
   $reply->SetID($self->GetID()) if ($self->GetID() ne "");
   $reply->SetType($self->GetType()) if ($self->GetType() ne "");
+  $reply->SetType($args{type}) if exists($args{type});
 
 
   if (exists($args{template})) {

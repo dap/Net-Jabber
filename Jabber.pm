@@ -136,7 +136,7 @@ if ($] >= 5.006) {
 }
 
 
-$VERSION = "1.0009";
+$VERSION = "1.0011";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -337,7 +337,7 @@ sub GetXMLData {
         # Filter out tags that do not contain the attribute and value.
         #---------------------------------------------------------------------
 	next if (($value ne "") && ($attrib ne "") && exists($$XMLTree[1]->[$child+1]->[0]->{$attrib}) && ($$XMLTree[1]->[$child+1]->[0]->{$attrib} ne $value));
-	next if (($attrib ne "") && !exists($$XMLTree[1]->[$child+1]->[0]->{$attrib}));
+	next if (($attrib ne "") && ((ref($$XMLTree[1]->[$child+1]) ne "ARRAY") || !exists($$XMLTree[1]->[$child+1]->[0]->{$attrib})));
 
         #---------------------------------------------------------------------
 	# Check for existence

@@ -108,6 +108,9 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
     $Con->PresenceDBParse(Net::Jabber::Presence);
 
+    $Con->PresenceDBDelete(Net::Jabber::"bob\@jabber.org");
+    $Con->PresenceDBDelete(Net::Jabber::JID);
+
     $presence  = $Con->PresenceDBQuery("bob\@jabber.org");
     $presence  = $Con->PresenceDBQuery(Net::Jabber::JID);
 
@@ -310,6 +313,9 @@ Net::Jabber::Protocol - Jabber Protocol Library
                                              object to the DB so that 
                                              it can track the resources 
                                              and priorities for you.
+
+    PresenceDBDelete(string|Net::Jabber::JID) - delete thes JID entry
+                                                from the DB.
 
     PresenceDBQuery(string|Net::Jabber::JID) - returns the NJ::Presence
                                                that was last received for
@@ -521,7 +527,7 @@ it under the same terms as Perl itself.
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "1.0009";
+$VERSION = "1.0011";
 
 sub new {
   my $proto = shift;
@@ -914,12 +920,16 @@ sub PresenceDBParse {
   my $self = shift;
   my ($presence) = @_;
 
+  my $type = $presence->GetType();
+  return unless (($type eq "") || 
+		 ($type eq "available") || 
+		 ($type eq "unavailable"));
+
   my $fromJID = $presence->GetFrom("jid");
   my $fromID = $fromJID->GetJID();
   my $resource = $fromJID->GetResource();
   $resource = " " unless ($resource ne "");
   my $priority = $presence->GetPriority();
-  my $type = $presence->GetType();
 
   $self->{DEBUG}->Log1("PresenceDBParse: fromJID(",$fromJID->GetJID("full"),") resource($resource) priority($priority) type($type)"); 
   $self->{DEBUG}->Log2("PresenceDBParse: xml(",$presence->GetXML(),")");
@@ -968,7 +978,35 @@ sub PresenceDBParse {
 
 ###########################################################################
 #
-# PresenceDQuery - retrieve the last Net::Jabber::Presence received with
+# PresenceDBDelete - delete the JID from the DB completely.
+#
+###########################################################################
+sub PresenceDBDelete {
+  shift;
+  my $self = shift;
+  my ($jid) = @_;
+
+  print "Pre Delete:\n";
+  &Net::Jabber::printData("\$self->{PRESENCEDB}",$self->{PRESENCEDB});
+
+  if (ref($jid) eq "Net::Jabber::JID") {
+    print "JID: (",$jid->GetJID("full"),") => (",$jid->GetJID(),")\n";
+    return if !exists($self->{PRESENCEDB}->{$jid->GetJID()});
+    delete($self->{PRESENCEDB}->{$jid->GetJID()});
+  } else {
+    print "STRING: (",$jid,")\n";
+    return if !exists($self->{PRESENCEDB}->{$jid});
+    delete($self->{PRESENCEDB}->{$jid});
+  }
+
+  print "Post Delete:\n";
+  &Net::Jabber::printData("\$self->{PRESENCEDB}",$self->{PRESENCEDB});
+}
+
+
+###########################################################################
+#
+# PresenceDBQuery - retrieve the last Net::Jabber::Presence received with
 #                  the highest priority.
 #
 ###########################################################################
@@ -1171,7 +1209,7 @@ sub AuthSend {
   # From the reply IQ determine if we were successful or not.  If yes then 
   # return "".  If no then return error string from the reply.
   #------------------------------------------------------------------------
-  return ( ($IQLogin->GetErrorType() ne "" ? $IQLogin->GetErrorType() : $IQLogin->GetErrorCode()) , $IQLogin->GetError() )
+  return ( $IQLogin->GetErrorCode() , $IQLogin->GetError() )
     if ($IQLogin->GetType() eq "error");
   return ("ok","");
 }
@@ -1255,7 +1293,7 @@ sub RegisterSend {
   # From the reply IQ determine if we were successful or not.  If yes then 
   # return "".  If no then return error string from the reply.
   #------------------------------------------------------------------------
-  return ( $IQ->GetErrorType() , $IQ->GetError() )
+  return ( $IQ->GetErrorCode() , $IQ->GetError() )
     if ($IQ->GetType() eq "error");
   return ("ok","");
 }
