@@ -1,0 +1,15 @@
+MANIFEST
+MANIFEST.SKIP
+Makefile.PL
+example.pl
+Jabber.pm
+Jabber/Client.pm
+Jabber/Message.pm
+Jabber/Presence.pm
+Jabber/IQ.pm
+Jabber/IQ/Auth.pm
+Jabber/IQ/Info.pm
+Jabber/IQ/Register.pm
+Jabber/IQ/Resource.pm
+Jabber/IQ/Roster.pm
+Jabber/IQ/Roster/Item.pm

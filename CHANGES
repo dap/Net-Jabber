@@ -1,0 +1,39 @@
+0.8.1a
+======
+  - Supports Jabber v0.8.1.
+  - Fixed support for IQ tags.  Changed to distributed modules for each
+    namespace.
+  - Created IQ/Auth.pm to give authentication support.
+  - Created IQ/Roster.pm and IQ/Roster/Item.pm to provide Roster support.
+  - Created IQ/Reegister.pm to give registration support.  (Still experimental)
+  - Created Presence.pm to provide support for presence tags.
+  - Changed internal data structure to XML::Parser::Tree.  This made
+    integration with XML::Stream a snap.
+  - Created helper functions to access an XML::Parser::Tree easily.
+  - Changed Client.pm to use XML::Stream instead of doing it manually.
+
+0.7.1
+=====
+  - Added support for the new IQ, and Presence tags from Jabber-0.7.
+  - Removed support for Status and Roster since those were removed from
+    Jabber-0.7 in favor of IQ, and Presence.
+
+0.6.2
+=====
+  - Added Set* functions to Message.pm, Status.pm, and Roster.pm.
+  - Moved Simply, BuildXML, and EscapeXML into Jabber.pm to avoid redundant
+    functions.
+  - Redesigned internal data structures to better handle <ext> structures
+    and multiple copies of the same tag.
+  - Added better documentation in the perldocs for each.
+  - Changed the perldocs in each file from use Net::Jabber::xxxxx to just
+    use Net::Jabber.
+  - Removed <ext> support from Status since it isn't designed to handle it.
+  - Changed the names of the Roster Set* functions.  Get()->SetGet(),
+    Add()->SetAdd(), and Delete()->SetDelete().
+  - Added support to Message.pm to send to multiple people using the SetTo
+    command.
+
+0.6.1
+=====
+  - First version.
