@@ -119,7 +119,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 sub new {
   my $proto = shift;
@@ -218,6 +218,7 @@ sub GetResource {
 sub GetJID {
   my $self = shift;
   my ($type) = @_;
+  $type = "" unless defined($type);
   return $self->{JID} if ($type eq "full");
   return $self->{USERID}."\@".$self->{SERVER};
 }

@@ -126,9 +126,17 @@ require 5.003;
 use strict;
 use Time::Local;
 use Carp;
-use vars qw($VERSION %DELEGATES);
+use vars qw($VERSION %DELEGATES $UNICODE);
 
-$VERSION = "1.0005";
+if ($] >= 5.006) {
+  $UNICODE = 1;
+} else {
+  require Unicode::String;
+  $UNICODE = 0;
+}
+
+
+$VERSION = "1.0008";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -180,6 +188,8 @@ $DELEGATES{'jabber:iq:auth'}->{parent} = "Net::Jabber::Query";
 $DELEGATES{'jabber:iq:auth'}->{delegate} = "Net::Jabber::Query::Auth";
 $DELEGATES{'jabber:iq:autoupdate'}->{parent} = "Net::Jabber::Query";
 $DELEGATES{'jabber:iq:autoupdate'}->{delegate} = "Net::Jabber::Query::AutoUpdate";
+$DELEGATES{'jabber:iq:filter'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:filter'}->{delegate} = "Net::Jabber::Query::Filter";
 $DELEGATES{'jabber:iq:fneg'}->{parent} = "Net::Jabber::Query";
 $DELEGATES{'jabber:iq:fneg'}->{delegate} = "Net::Jabber::Query::Fneg";
 $DELEGATES{'jabber:iq:oob'}->{parent} = "Net::Jabber::Query";
@@ -450,13 +460,23 @@ sub GetXMLData {
 #
 ##############################################################################
 sub EscapeXML {
-  my $Data = shift;
-  $Data =~ s/&/&amp;/g;
-  $Data =~ s/</&lt;/g;
-  $Data =~ s/>/&gt;/g;
-  $Data =~ s/\"/&quot;/g;
-  $Data =~ s/\'/&apos;/g;
-  return $Data;
+  my $data = shift;
+
+  $data =~ s/&/&amp;/g;
+  $data =~ s/</&lt;/g;
+  $data =~ s/>/&gt;/g;
+  $data =~ s/\"/&quot;/g;
+  $data =~ s/\'/&apos;/g;
+
+  if ($UNICODE == 1) {
+    eval("{  no warnings;  \$data =~ tr/\0-\xff//CU;  };")
+  } else {
+    my $unicode = new Unicode::String();
+    $unicode->latin1($data);
+    $data = $unicode->utf8;
+  }
+
+  return $data;
 }
 
 
@@ -467,13 +487,23 @@ sub EscapeXML {
 #
 ##############################################################################
 sub UnescapeXML {
-  my $Data = shift;
-  $Data =~ s/&apos;/\'/g;
-  $Data =~ s/&quot;/\"/g;
-  $Data =~ s/&gt;/>/g;
-  $Data =~ s/&lt;/</g;
-  $Data =~ s/&amp;/&/g;
-  return $Data;
+  my $data = shift;
+
+  $data =~ s/&apos;/\'/g;
+  $data =~ s/&quot;/\"/g;
+  $data =~ s/&gt;/>/g;
+  $data =~ s/&lt;/</g;
+  $data =~ s/&amp;/&/g;
+  
+  if ($UNICODE == 1) {
+    eval("{  no warnings;  \$data =~ tr/\0-\x{ff}//UC;  };")
+  } else {
+    my $unicode = new Unicode::String();
+    $unicode->utf8($data);
+    $data = $unicode->latin1;
+  }
+
+  return $data;
 }
 
 
@@ -571,9 +601,11 @@ sub printData {
 #
 ##############################################################################
 sub GetTimeStamp {
-  my($type,$time) = @_;
+  my($type,$time,$length) = @_;
 
   return "" if (($type ne "local") && ($type ne "utc") && !($type =~ /^(local|utc)delay(local|utc)$/));
+
+  $length = "long" unless defined($length);
 
   my ($sec,$min,$hour,$mday,$mon,$year,$wday);
   if ($type =~ /utcdelay/) {
@@ -593,7 +625,9 @@ sub GetTimeStamp {
   ($sec,$min,$hour,$mday,$mon,$year,$wday) = gmtime(((defined($time) && ($time ne "")) ? $time : time)) if ($type eq "utc");
   $wday = ('Sun','Mon','Tue','Wed','Thu','Fri','Sat')[$wday];
   $mon = ('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')[$mon];
-  return sprintf("%3s %3s %02d, %d %02d:%02d:%02d",$wday,$mon,$mday,($year + 1900),$hour,$min,$sec);
+  return sprintf("%3s %3s %02d, %d %02d:%02d:%02d",$wday,$mon,$mday,($year + 1900),$hour,$min,$sec) if ($length eq "long");
+  return sprintf("%02d:%02d:%02d",$hour,$min,$sec) if ($length eq "short");
+  return sprintf("%02d:%02d",$hour,$min) if ($length eq "shortest");
 }
 
 

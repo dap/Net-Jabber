@@ -1,3 +1,19 @@
+1.0008
+======
+  - Fixed a bug in the AutoUpdate/Release.pm code.
+
+1.0007
+======
+  - Added Query/Filter to support the mod_filter in the server.
+  - Added PresenceDB functions to make managing the multiple resource and 
+    priority thing much easier for a client/transport.
+  - Initialized some variables to get rid of warnings under perl -w.
+  - Fixed outgoing XML to be UTF-8 encoded.
+
+1.0006
+======
+  - Added support for <truncated/> in iq:search.
+
 1.0005
 ======
   - Changed AutoUpdate namespaces to show <ver/> becoming <version/>.

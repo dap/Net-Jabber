@@ -214,7 +214,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 sub new {
   my $proto = shift;
@@ -228,6 +228,8 @@ sub new {
   $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
 					  header=>"NJ::IQ");
   
+  $self->{QUERY} = "";
+
   if ("@_" ne ("")) {
     my @temp = @_;
     $self->{IQ} = \@temp;
@@ -617,7 +619,7 @@ sub MergeQuery {
 
   my $replaced = 0;
 
-  return if (!exists($self->{QUERY}) || !defined($self->{QUERY}));
+  return if ($self->{QUERY} eq "");
 
   $self->{DEBUG}->Log2("MergeQuery: selfQuery($self->{QUERY})");
 

@@ -21,6 +21,7 @@ Net::Jabber::Query - Jabber Query Library
     Net::Jabber::Query::Agents     - Supported Agents list from server
     Net::Jabber::Query::Auth       - Simple Client Authentication
     Net::Jabber::Query::AutoUpdate - Auto-Update for clients
+    Net::Jabber::Query::Filter     - Messaging Filter
     Net::Jabber::Query::Fneg       - Feature Negotiation
     Net::Jabber::Query::Oob        - Out of Bandwidth File Transfers
     Net::Jabber::Query::Register   - Registration requests
@@ -166,7 +167,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 use Net::Jabber::Query::Agent;
 ($Net::Jabber::Query::Agent::VERSION < $VERSION) &&
@@ -183,6 +184,10 @@ use Net::Jabber::Query::Auth;
 use Net::Jabber::Query::AutoUpdate;
 ($Net::Jabber::Query::AutoUpdate::VERSION < $VERSION) &&
   die("Net::Jabber::Query::AutoUpdate $VERSION required--this is only version $Net::Jabber::Query::AutoUpdate::VERSION");
+
+use Net::Jabber::Query::Filter;
+($Net::Jabber::Query::Filter::VERSION < $VERSION) &&
+  die("Net::Jabber::Query::Filter $VERSION required--this is only version $Net::Jabber::Query::Filter::VERSION");
 
 use Net::Jabber::Query::Fneg;
 ($Net::Jabber::Query::Fneg::VERSION < $VERSION) &&
@@ -285,6 +290,7 @@ sub GetXML {
   $self->MergeItems() if (exists($self->{ITEMS}));
   $self->MergeAgents() if (exists($self->{AGENTS}));
   $self->MergeReleases() if (exists($self->{RELEASES}));
+  $self->MergeRules() if (exists($self->{RULES}));
   return &Net::Jabber::BuildXML(@{$self->{QUERY}});
 }
 
@@ -300,6 +306,7 @@ sub GetTree {
   $self->MergeItems() if (exists($self->{ITEMS}));
   $self->MergeAgents() if (exists($self->{AGENTS}));
   $self->MergeReleases() if (exists($self->{RELEASES}));
+  $self->MergeRules() if (exists($self->{RULES}));
   return @{$self->{QUERY}};
 }
 
@@ -329,6 +336,7 @@ sub debug {
   $self->MergeItems() if (exists($self->{ITEMS}));
   $self->MergeAgents() if (exists($self->{AGENTS}));
   $self->MergeReleases() if (exists($self->{RELEASES}));
+  $self->MergeRules() if (exists($self->{RULES}));
   &Net::Jabber::printData("debug: \$self->{QUERY}->",$self->{QUERY});
 }
 

@@ -65,6 +65,8 @@ Net::Jabber::Query::Search - Jabber IQ Search Module
     @itemTrees    = $search->GetItemTrees();
     %results      = $search->GetResults();
 
+    $truncated    = $search->GetTruncated();
+
 =head2 Creation functions
 
     $search->SetSearch(key=>"somekey",
@@ -92,6 +94,8 @@ Net::Jabber::Query::Search - Jabber IQ Search Module
     $search->SetNick("");
     $search->SetEmail("");
 
+    $search->SetTruncated();
+
     $item   = $search->AddItem();
     $item   = $search->AddItem(jid=>"bob\@jabber.org",
                                name=>"Bob Smith",
@@ -110,6 +114,8 @@ Net::Jabber::Query::Search - Jabber IQ Search Module
     $test = $search->DefinedEmail();
     $test = $search->DefinedKey();
     $test = $search->DefinedInstructions();
+
+    $test = $search->DefinedTruncated();
 
 =head1 METHODS
 
@@ -162,9 +168,12 @@ Net::Jabber::Query::Search - Jabber IQ Search Module
                                    {field2} = "value2";
                                    {field3} = "value3";
 
+  GetTruncated() - returns a string that contains the value of truncated in 
+                   the search query.
+
 =head2 Creation functions
 
-  SetSearch(instructions=>string, - set multiple fields in the <item/>
+  SetSearch(instructions=>string, - set multiple fields in the <query/>
             key=>string,            at one time.  This is a cumulative
             name=>string,           and overwriting action.  If you
             first=>string,          set the "name" twice, the second
@@ -200,6 +209,9 @@ Net::Jabber::Query::Search - Jabber IQ Search Module
   SetEmail(string) - sets the value of email in the <query/>.  If "" then
                      it creates an empty tag.
 
+  SetTruncated() - adds a <truncated/> tag to the <query/> to indicate that
+                   the search results were truncated.
+
   AddItem(hash) - creates and returns a new Net::Jabbber::Query::Search::Item
                   object.  The argument hash is passed to the SetItem 
                   function.  Check the Net::Jabber::Query::Search::Item
@@ -226,6 +238,9 @@ Net::Jabber::Query::Search - Jabber IQ Search Module
 
   DefinedEmail() - returns 1 if there is a <email/> in the query, 0 if not.
 
+  DefinedTruncated() - returns 1 if there is a <truncated/> in the query, 
+                       0 if not.
+
 =head1 AUTHOR
 
 By Ryan Eatmon in May of 2000 for http://jabber.org..
@@ -242,7 +257,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 use Net::Jabber::Query::Search::Item;
 ($Net::Jabber::Query::Search::Item::VERSION < $VERSION) &&
@@ -263,7 +278,7 @@ sub new {
 
 ##############################################################################
 #
-# GetInstructions - returns the instructions of the <item/>
+# GetInstructions - returns the instructions of the <query/>
 #
 ##############################################################################
 sub GetInstructions {
@@ -275,7 +290,7 @@ sub GetInstructions {
 
 ##############################################################################
 #
-# GetKey - returns the key of the <item/>
+# GetKey - returns the key of the <query/>
 #
 ##############################################################################
 sub GetKey {
@@ -287,7 +302,7 @@ sub GetKey {
 
 ##############################################################################
 #
-# GetName - returns the name of the <item/>
+# GetName - returns the name of the <query/>
 #
 ##############################################################################
 sub GetName {
@@ -299,7 +314,7 @@ sub GetName {
 
 ##############################################################################
 #
-# GetFirst - returns the first of the <item/>
+# GetFirst - returns the first of the <query/>
 #
 ##############################################################################
 sub GetFirst {
@@ -311,7 +326,7 @@ sub GetFirst {
 
 ##############################################################################
 #
-# GetGiven - returns the given of the <item/>
+# GetGiven - returns the given of the <query/>
 #
 ##############################################################################
 sub GetGiven {
@@ -323,7 +338,7 @@ sub GetGiven {
 
 ##############################################################################
 #
-# GetLast - returns the last of the <item/>
+# GetLast - returns the last of the <query/>
 #
 ##############################################################################
 sub GetLast {
@@ -335,7 +350,7 @@ sub GetLast {
 
 ##############################################################################
 #
-# GetFamily - returns the family of the <item/>
+# GetFamily - returns the family of the <query/>
 #
 ##############################################################################
 sub GetFamily {
@@ -347,7 +362,7 @@ sub GetFamily {
 
 ##############################################################################
 #
-# GetNick - returns the nick of the <item/>
+# GetNick - returns the nick of the <query/>
 #
 ##############################################################################
 sub GetNick {
@@ -359,7 +374,7 @@ sub GetNick {
 
 ##############################################################################
 #
-# GetEmail - returns the email of the <item/>
+# GetEmail - returns the email of the <query/>
 #
 ##############################################################################
 sub GetEmail {
@@ -449,6 +464,18 @@ sub GetResults {
 
 ##############################################################################
 #
+# GetTruncated - returns the truncated of the <query/>
+#
+##############################################################################
+sub GetTruncated {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"truncated","");
+}
+
+
+##############################################################################
+#
 # SetSearch - takes a hash of all of the things you can set on a search query
 #             and sets each one.
 #
@@ -456,24 +483,25 @@ sub GetResults {
 sub SetSearch {
   shift;
   my $self = shift;
-  my %item;
-  while($#_ >= 0) { $item{ lc pop(@_) } = pop(@_); }
+  my %search;
+  while($#_ >= 0) { $search{ lc pop(@_) } = pop(@_); }
   
-  $self->SetInstructions($item{instructions}) if exists($item{instructions});
-  $self->SetKey($item{key}) if exists($item{key});
-  $self->SetName($item{name}) if exists($item{name});
-  $self->SetFirst($item{first}) if exists($item{first});
-  $self->SetGiven($item{given}) if exists($item{given});
-  $self->SetLast($item{last}) if exists($item{last});
-  $self->SetFamily($item{family}) if exists($item{family});
-  $self->SetNick($item{nick}) if exists($item{nick});
-  $self->SetEmail($item{email}) if exists($item{email});
+  $self->SetInstructions($search{instructions}) if exists($search{instructions});
+  $self->SetKey($search{key}) if exists($search{key});
+  $self->SetName($search{name}) if exists($search{name});
+  $self->SetFirst($search{first}) if exists($search{first});
+  $self->SetGiven($search{given}) if exists($search{given});
+  $self->SetLast($search{last}) if exists($search{last});
+  $self->SetFamily($search{family}) if exists($search{family});
+  $self->SetNick($search{nick}) if exists($search{nick});
+  $self->SetEmail($search{email}) if exists($search{email});
+  $self->SetTruncated($search{truncated}) if exists($search{truncated});
 }
 
 
 ##############################################################################
 #
-# SetInstructions - sets the instructions of the <item/>
+# SetInstructions - sets the instructions of the <query/>
 #
 ##############################################################################
 sub SetInstructions {
@@ -486,7 +514,7 @@ sub SetInstructions {
 
 ##############################################################################
 #
-# SetKey - sets the key of the <item/>
+# SetKey - sets the key of the <query/>
 #
 ##############################################################################
 sub SetKey {
@@ -499,7 +527,7 @@ sub SetKey {
 
 ##############################################################################
 #
-# SetName - sets the name of the <item/>
+# SetName - sets the name of the <query/>
 #
 ##############################################################################
 sub SetName {
@@ -512,7 +540,7 @@ sub SetName {
 
 ##############################################################################
 #
-# SetFirst - sets the first of the <item/>
+# SetFirst - sets the first of the <query/>
 #
 ##############################################################################
 sub SetFirst {
@@ -525,7 +553,7 @@ sub SetFirst {
 
 ##############################################################################
 #
-# SetGiven - sets the given of the <item/>
+# SetGiven - sets the given of the <query/>
 #
 ##############################################################################
 sub SetGiven {
@@ -538,7 +566,7 @@ sub SetGiven {
 
 ##############################################################################
 #
-# SetLast - sets the last of the <item/>
+# SetLast - sets the last of the <query/>
 #
 ##############################################################################
 sub SetLast {
@@ -551,7 +579,7 @@ sub SetLast {
 
 ##############################################################################
 #
-# SetFamily - sets the family of the <item/>
+# SetFamily - sets the family of the <query/>
 #
 ##############################################################################
 sub SetFamily {
@@ -564,7 +592,7 @@ sub SetFamily {
 
 ##############################################################################
 #
-# SetNick - sets the nick of the <item/>
+# SetNick - sets the nick of the <query/>
 #
 ##############################################################################
 sub SetNick {
@@ -577,7 +605,7 @@ sub SetNick {
 
 ##############################################################################
 #
-# SetEmail - sets the email of the <item/>
+# SetEmail - sets the email of the <query/>
 #
 ##############################################################################
 sub SetEmail {
@@ -585,6 +613,21 @@ sub SetEmail {
   my $self = shift;
   my ($email) = @_;
   &Net::Jabber::SetXMLData("single",$self->{QUERY},"email","$email",{});
+}
+
+
+##############################################################################
+#
+# SetTruncated - sets the truncated of the <query/>
+#
+##############################################################################
+sub SetTruncated {
+  print "SetTruncated:  \n";
+
+  shift;
+  my $self = shift;
+  my ($truncated) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"truncated","$truncated",{});
 }
 
 
@@ -622,6 +665,10 @@ sub MergeItems {
   my $count = 1;
   my ($item);
   foreach $item (@{$self->{ITEMS}}) {
+    while (($self->{QUERY}->[1]->[($count+1)] ne "item") &&
+	   ($self->{QUERY}->[1]->[($count+1)] ne "")) {
+      $count += 2;
+    }
     @tree = $item->GetTree();
     $self->{QUERY}->[1]->[$count++] = "item";
     $self->{QUERY}->[1]->[$count++] = ($item->GetTree())[1];
@@ -734,6 +781,18 @@ sub DefinedEmail {
   shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"email");
+}
+
+
+##############################################################################
+#
+# DefinedTruncated - returns the truncated in the <query/>.
+#
+##############################################################################
+sub DefinedTruncated {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"truncated");
 }
 
 

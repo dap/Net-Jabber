@@ -1,18 +1,18 @@
-package Net::Jabber::Query::Roster;
+package Net::Jabber::Query::Filter;
 
 =head1 NAME
 
-Net::Jabber::Query::Roster - Jabber IQ Roster Module
+Net::Jabber::Query::Filter - Jabber IQ Filter Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::Query::Roster is a companion to the Net::Jabber::Query module.
+  Net::Jabber::Query::Filter is a companion to the Net::Jabber::Query module.
   It provides the user a simple interface to set and retrieve all parts 
-  of a Jabber IQ Roster query.
+  of a Jabber IQ Filter query.
 
 =head1 DESCRIPTION
 
-  To initialize the IQ with a Jabber <iq/> and then access the roster
+  To initialize the IQ with a Jabber <iq/> and then access the filter
   query you must pass it the XML::Parser Tree array from the 
   Net::Jabber::Client module.  In the callback function for the iq:
 
@@ -20,7 +20,7 @@ Net::Jabber::Query::Roster - Jabber IQ Roster Module
 
     sub iq {
       my $iq = new Net::Jabber::IQ(@_);
-      my $roster = $iq->GetQuery();
+      my $filter = $iq->GetQuery();
       .
       .
       .
@@ -28,7 +28,7 @@ Net::Jabber::Query::Roster - Jabber IQ Roster Module
 
   You now have access to all of the retrieval functions available.
 
-  To create a new IQ roster to send to the server:
+  To create a new IQ filter to send to the server:
 
     use Net::Jabber;
 
@@ -36,12 +36,12 @@ Net::Jabber::Query::Roster - Jabber IQ Roster Module
     ...
 
     $iq = new Net::Jabber::IQ();
-    $roster = $iq->NewQuery("jabber:iq:roster");
+    $filter = $iq->NewQuery("jabber:iq:filter");
     ...
 
     $client->Send($iq);
 
-  Using $roster you can call the creation functions below to populate the 
+  Using $filter you can call the creation functions below to populate the 
   tag before sending it.
 
   For more information about the array format being passed to the CallBack
@@ -49,13 +49,13 @@ Net::Jabber::Query::Roster - Jabber IQ Roster Module
 
 =head2 Retrieval functions
 
-    @items     = $roster->GetItems();
-    @itemTrees = $roster->GetItemTrees();
+    @rules     = $filter->GetRules();
+    @ruleTrees = $filter->GetRuleTrees();
 
 =head2 Creation functions
 
-    $item   = $roster->AddItem();
-    $item   = $roster->AddItem(jid=>"bob\@jabber.org",
+    $rule   = $filter->AddRule();
+    $rule   = $filter->AddRule(jid=>"bob\@jabber.org",
                                name=>"Bob",
                                groups=>["school","friends"]);
 
@@ -63,23 +63,23 @@ Net::Jabber::Query::Roster - Jabber IQ Roster Module
 
 =head2 Retrieval functions
 
-  GetItems() - returns an array of Net::Jabber::Query::Roster::Item objects.
+  GetRules() - returns an array of Net::Jabber::Query::Filter::Rule objects.
                These can be modified or accessed with the functions
                available to them.
 
-  GetItemTrees() - returns an array of XML::Parser objects that contain
-                   the data for each item.
+  GetRuleTrees() - returns an array of XML::Parser objects that contain
+                   the data for each rule.
 
 =head2 Creation functions
 
-  AddItem(hash) - creates and returns a new Net::Jabbber::Query::Roster::Item
-                  object.  The argument hash is passed to the SetItem 
-                  function.  Check the Net::Jabber::Query::Roster::Item
+  AddRule(hash) - creates and returns a new Net::Jabbber::Query::Filter::Rule
+                  object.  The argument hash is passed to the SetRule 
+                  function.  Check the Net::Jabber::Query::Filter::Rule
                   for valid values.
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in June of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -95,9 +95,9 @@ use vars qw($VERSION);
 
 $VERSION = "1.0008";
 
-use Net::Jabber::Query::Roster::Item;
-($Net::Jabber::Query::Roster::Item::VERSION < $VERSION) &&
-  die("Net::Jabber::Query::Roster::Item $VERSION required--this is only version $Net::Jabber::Query::Roster::Item::VERSION");
+use Net::Jabber::Query::Filter::Rule;
+($Net::Jabber::Query::Filter::Rule::VERSION < $VERSION) &&
+  die("Net::Jabber::Query::Filter::Rule $VERSION required--this is only version $Net::Jabber::Query::Filter::Rule::VERSION");
 
 sub new {
   my $proto = shift;
@@ -114,74 +114,77 @@ sub new {
 
 ##############################################################################
 #
-# GetItems - returns an array of Net::Jabber::Query::Roster::Item objects.
+# GetRules - returns an array of Net::Jabber::Query::Filter::Rule objects.
 #
 ##############################################################################
-sub GetItems {
+sub GetRules {
   shift;
   my $self = shift;
 
-  if (!(exists($self->{ITEMS}))) {
-    my $itemTree;
-    foreach $itemTree ($self->GetItemTrees()) {
-      my $item = new Net::Jabber::Query::Roster::Item(@{$itemTree});
-      push(@{$self->{ITEMS}},$item);
+  if (!(exists($self->{RULES}))) {
+    my $ruleTree;
+    foreach $ruleTree ($self->GetRuleTrees()) {
+      my $rule = new Net::Jabber::Query::Filter::Rule(@{$ruleTree});
+      push(@{$self->{RULES}},$rule);
     }
   }
 
-  return (exists($self->{ITEMS}) ? @{$self->{ITEMS}} : ());
+  return (exists($self->{RULES}) ? @{$self->{RULES}} : ());
 }
 
 
 ##############################################################################
 #
-# GetItemTrees - returns an array of XML::Parser trees of <item/>s.
+# GetRuleTrees - returns an array of XML::Parser trees of <rule/>s.
 #
 ##############################################################################
-sub GetItemTrees {
+sub GetRuleTrees {
   shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("tree array",$self->{QUERY},"item");
+  return &Net::Jabber::GetXMLData("tree array",$self->{QUERY},"rule");
 }
 
 
 ##############################################################################
 #
-# AddItem - creates a new Net::Jabber::Query::Roster::Item object from the tree
+# AddRule - creates a new Net::Jabber::Query::Filter::Rule object from the tree
 #           passed to the function if any.  Then it returns a pointer to that
 #           object so you can modify it.
 #
 ##############################################################################
-sub AddItem {
+sub AddRule {
   shift;
   my $self = shift;
   
-  my $item = new Net::Jabber::Query::Roster::Item("item",[{}]);
-  $item->SetItem(@_);
-  push(@{$self->{ITEMS}},$item);
-  return $item;
+  my $rule = new Net::Jabber::Query::Filter::Rule();
+  $rule->SetRule(@_);
+
+  print $rule->GetXML(),"\n";
+
+  push(@{$self->{RULES}},$rule);
+  return $rule;
 }
 
 
 ##############################################################################
 #
-# MergeItems - takes the <item/>s in the Net::Jabber::Query::Roster::Item
+# MergeRules - takes the <rule/>s in the Net::Jabber::Query::Filter::Rule
 #              objects and pulls the data out and merges it into the <query/>.
 #              This is a private helper function.  It should be used any time
-#              you need to access the full <query/> so that the <item/>s are
+#              you need to access the full <query/> so that the <rule/>s are
 #              included.  (ie. GetXML, GetTree, debug, etc...)
 #
 ##############################################################################
-sub MergeItems {
+sub MergeRules {
   shift;
   my $self = shift;
   my (@tree);
   my $count = 1;
-  my ($item);
-  foreach $item (@{$self->{ITEMS}}) {
-    @tree = $item->GetTree();
-    $self->{QUERY}->[1]->[$count++] = "item";
-    $self->{QUERY}->[1]->[$count++] = ($item->GetTree())[1];
+  my $rule;
+  foreach $rule (@{$self->{RULES}}) {
+    @tree = $rule->GetTree();
+    $self->{QUERY}->[1]->[$count++] = "rule";
+    $self->{QUERY}->[1]->[$count++] = ($rule->GetTree())[1];
   }
 }
 

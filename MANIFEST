@@ -22,6 +22,8 @@ Jabber/Query/Agents.pm
 Jabber/Query/Auth.pm
 Jabber/Query/AutoUpdate.pm
 Jabber/Query/AutoUpdate/Release.pm
+Jabber/Query/Filter.pm
+Jabber/Query/Filter/Rule.pm
 Jabber/Query/Fneg.pm
 Jabber/Query/Oob.pm
 Jabber/Query/Register.pm

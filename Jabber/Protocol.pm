@@ -104,6 +104,16 @@ Net::Jabber::Protocol - Jabber Protocol Library
     $Con->Subscription(type=>"unsubscribed",
 		       to=>"bob@jabber.org");
 
+=head2 PresenceDB Functions
+
+    $Con->PresenceDBParse(Net::Jabber::Presence);
+
+    $presence  = $Con->PresenceDBQuery("bob\@jabber.org");
+    $presence  = $Con->PresenceDBQuery(Net::Jabber::JID);
+
+    @resources = $Con->PresenceDBResources("bob\@jabber.org");
+    @resources = $Con->PresenceDBResources(Net::Jabber::JID);
+
 =head2 IQ  Functions
 
 =head2 IQ::Agents Functions
@@ -292,6 +302,25 @@ Net::Jabber::Protocol - Jabber Protocol Library
                            unsubscribe  - unsubscribe from JID's presence
                            subscribed   - response to a subscribe
                            unsubscribed - response to an unsubscribe
+
+=head2 PresenceDB Functions
+
+    PresenceDBParse(Net::Jabber::Presence) - for every presence that you 
+                                             receive pass the Presence 
+                                             object to the DB so that 
+                                             it can track the resources 
+                                             and priorities for you.
+
+    PresenceDBQuery(string|Net::Jabber::JID) - returns the NJ::Presence
+                                               that was last received for
+                                               the highest priority of this
+                                               JID.  You can pass it a
+                                               string or a NJ::JID object.
+
+    PresenceDBResources(string|Net::Jabber::JID) - returns an array of 
+                                                   resources in order
+                                                   from highest priority 
+                                                   to lowest.
 
 =head2 IQ Functions
 
@@ -492,7 +521,7 @@ it under the same terms as Perl itself.
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 sub new {
   my $proto = shift;
@@ -514,7 +543,10 @@ sub new {
 sub GetErrorCode {
   shift;
   my $self = shift;
-  return ($self->{ERRORCODE} ne "") ? $self->{ERRORCODE} : $!;
+  return ((exists($self->{ERRORCODE}) && ($self->{ERRORCODE} ne "")) ? 
+	  $self->{ERRORCODE} : 
+	  $!
+	 );
 }
 
 
@@ -552,7 +584,7 @@ sub CallBack {
   $self->{DEBUG}->Log1("CallBack: received(",&Net::Jabber::BuildXML(@object),")");
 
   my $tag = $object[0];
-  my $id;
+  my $id = "";
   $id = $object[1]->[0]->{id} if (exists($object[1]->[0]->{id}));
 
   $self->{DEBUG}->Log1("CallBack: tag($tag)");
@@ -801,7 +833,7 @@ sub CheckID {
   shift;
   my $self = shift;
   my ($tag,$id) = @_;
-  
+  $id = "" unless defined($id);
   return 0 if ($id eq "");
   return exists($self->{IDRegistry}->{$tag}->{$id});
 }
@@ -867,6 +899,139 @@ sub MessageSend {
   my $mess = new Net::Jabber::Message();
   $mess->SetMessage(@_);
   $self->Send($mess);
+}
+
+
+###########################################################################
+#
+# PresenceDBParse - adds the presence information to the Presence DB so
+#                   you can keep track of the current state of the JID and
+#                   all of it's resources.
+#
+###########################################################################
+sub PresenceDBParse {
+  shift;
+  my $self = shift;
+  my ($presence) = @_;
+
+  my $fromJID = $presence->GetFrom("jid");
+  my $fromID = $fromJID->GetJID();
+  my $resource = $fromJID->GetResource();
+  $resource = " " unless ($resource ne "");
+  my $priority = $presence->GetPriority();
+  my $type = $presence->GetType();
+
+  $self->{DEBUG}->Log1("PresenceDBParse: fromJID(",$fromJID->GetJID("full"),") resource($resource) priority($priority) type($type)"); 
+  $self->{DEBUG}->Log2("PresenceDBParse: xml(",$presence->GetXML(),")");
+
+  if (exists($self->{PRESENCEDB}->{$fromID})) {
+
+    my $oldPriority = $self->{PRESENCEDB}->{$fromID}->{resources}->{$resource};
+
+
+    my $loc;
+    my $index;
+    foreach $index (0..$#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}}) {
+      $loc = $index
+	if ($self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}->[$index]->{resource} eq $resource);
+    }
+    splice(@{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}},$loc,1);
+    delete($self->{PRESENCEDB}->{$fromID}->{resources}->{$resource});
+    delete($self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority})
+      if ($#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}} == -1);
+    delete($self->{PRESENCEDB}->{$fromID})
+      if (scalar(keys(%{$self->{PRESENCEDB}->{$fromID}})) == 0);
+
+    $self->{DEBUG}->Log1("PresenceDBParse: remove ",$fromJID->GetJID("full")," from the DB"); 
+  }
+
+
+  if (($type eq "") || ($type eq "available")) {
+    my $loc = -1;
+    my $index;
+    foreach $index (0..$#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$priority}}) {
+      $loc = $index
+	if ($self->{PRESENCEDB}->{$fromID}->{priorities}->{$priority}->[$index]->{resource} eq $resource);
+    }
+    $loc = $#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$priority}}+1
+      if ($loc == -1);
+    $self->{PRESENCEDB}->{$fromID}->{resources}->{$resource} = $priority;
+    $self->{PRESENCEDB}->{$fromID}->{priorities}->{$priority}->[$loc]->{presence} = 
+      $presence;
+    $self->{PRESENCEDB}->{$fromID}->{priorities}->{$priority}->[$loc]->{resource} = 
+      $resource;
+
+    $self->{DEBUG}->Log1("PresenceDBParse: add ",$fromJID->GetJID("full")," to the DB"); 
+  }
+}
+
+
+###########################################################################
+#
+# PresenceDQuery - retrieve the last Net::Jabber::Presence received with
+#                  the highest priority.
+#
+###########################################################################
+sub PresenceDBQuery {
+  shift;
+  my $self = shift;
+  my ($jid) = @_;
+
+  if (ref($jid) eq "Net::Jabber::JID") {
+    return if !exists($self->{PRESENCEDB}->{$jid->GetJID()});
+
+    my $highPriority = 
+      (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}}))[0];
+    
+    return $self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$highPriority}->[0]->{presence};
+  } else {
+    return if !exists($self->{PRESENCEDB}->{$jid});
+
+    my $highPriority = 
+      (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid}->{priorities}}))[0];
+    
+    return $self->{PRESENCEDB}->{$jid}->{priorities}->{$highPriority}->[0]->{presence};
+  }
+}
+
+
+###########################################################################
+#
+# PresenceDBResources - returns a list of the resources from highest
+#                       priority to lowest.
+#
+###########################################################################
+sub PresenceDBResources {
+  shift;
+  my $self = shift;
+  my ($jid) = @_;
+
+  my @resources;
+
+  if (ref($jid) eq "Net::Jabber::JID") {
+    return if !exists($self->{PRESENCEDB}->{$jid->GetJID()});
+
+    my $priority;
+    foreach $priority (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}})) {
+      my $index;
+      foreach $index (0..$#{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}}) {
+	next if ($self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}->[$index]->{resource} eq " ");
+	push(@resources,$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}->[$index]->{resource});
+      }	
+    }
+  } else {
+    return if !exists($self->{PRESENCEDB}->{$jid});
+
+    my $priority;
+    foreach $priority (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid}->{priorities}})) {
+      my $index;
+      foreach $index (0..$#{$self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}}) {
+	next if ($self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}->[$index]->{resource} eq " ");
+	push(@resources,$self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}->[$index]->{resource});
+      }	
+    }
+  }
+  return @resources;
 }
 
 

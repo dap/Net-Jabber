@@ -113,13 +113,12 @@ Net::Jabber::Presence - Jabber Presence Module
 
   GetType() - returns a string with the type <presence/> this is.
 
-  GetStatus() - returns a string with the current status of the sender's
-                resource.
+  GetStatus() - returns a string with the current status of the resource.
 
-  GetPriority() - returns an integer with the priority of the sender's 
-                  resource.
+  GetPriority() - returns an integer with the priority of the resource
+                  The default is 0 if there is no priority in this presence.
 
-  GetMeta() - returns a string with the meta data of the sender's client.
+  GetMeta() - returns a string with the meta data of the client of the sender.
 
   GetIcon() - returns a string with the icon the client should display.
 
@@ -245,14 +244,13 @@ This module is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
-#'
 
 require 5.003;
 use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 sub new {
   my $proto = shift;
@@ -315,6 +313,7 @@ sub GetID {
 sub GetTo {
   my $self = shift;
   my ($type) = @_;
+  $type = "" unless defined($type);
   my $to = &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","to");
   if ($type eq "jid") {
     return new Net::Jabber::JID($to);
@@ -333,6 +332,7 @@ sub GetTo {
 sub GetFrom {
   my $self = shift;
   my ($type) = @_;
+  $type = "" unless defined($type);
   my $from = &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","from");
   if ($type eq "jid") {
     return new Net::Jabber::JID($from);
@@ -395,7 +395,9 @@ sub GetStatus {
 ##############################################################################
 sub GetPriority {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"priority");
+  my $priority = &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"priority");
+  $priority = 0 if ($priority eq "");
+  return $priority;
 }
 
 
@@ -629,6 +631,7 @@ sub SetStatus {
 sub SetPriority {
   my $self = shift;
   my ($priority) = @_;
+  $priority = 0 if ($priority eq "");
   &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"priority",$priority,{});
 }
 

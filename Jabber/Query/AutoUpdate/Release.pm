@@ -131,7 +131,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 sub new {
   my $proto = shift;
@@ -143,7 +143,7 @@ sub new {
   bless($self, $proto);
 
   if ("@_" ne ("")) {
-    if (ref(@_) eq "ARRAY") {
+    if ($#_ == 1) {
       my @temp = @_;
       $self->{RELEASE} = \@temp;
     } else {

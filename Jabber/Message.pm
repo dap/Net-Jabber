@@ -274,7 +274,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 sub new {
   my $proto = shift;
@@ -338,6 +338,7 @@ sub GetID {
 sub GetTo {
   my $self = shift;
   my ($type) = @_;
+  $type = "" unless defined($type);
   my $to = &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","to");
   if ($type eq "jid") {
     return new Net::Jabber::JID($to);
@@ -356,6 +357,7 @@ sub GetTo {
 sub GetFrom {
   my $self = shift;
   my ($type) = @_;
+  $type = "" unless defined($type);
   my $from = &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","from");
   if ($type eq "jid") {
     return new Net::Jabber::JID($from);
@@ -433,6 +435,7 @@ sub GetSubject {
 sub GetBody {
   my $self = shift;
   my ($level) = @_;
+  $level = "" if !defined($level);
   return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"body")
     if (($level eq "none") || ($level eq ""));
   return &Net::Jabber::GetXMLData("tree",$self->{MESSAGE},"body")

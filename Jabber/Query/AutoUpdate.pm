@@ -120,7 +120,7 @@ use strict;
 use POSIX;
 use vars qw($VERSION);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 use Net::Jabber::Query::AutoUpdate::Release;
 ($Net::Jabber::Query::AutoUpdate::Release::VERSION < $VERSION) &&
@@ -141,10 +141,11 @@ sub new {
 
 ##############################################################################
 #
-# GetRelease - returns a Net::Jabber::Query::AutoUpdate::Release object
+# GetReleases - returns an array of Net::Jabber::Query::AutoUpdate::Release 
+#               objects
 #
 ##############################################################################
-sub GetRelease {
+sub GetReleases {
   shift;
   my $self = shift;
   my ($type) = @_;
@@ -152,24 +153,27 @@ sub GetRelease {
 			(($type ne "dev") && ($type ne "beta")));
   
   if (!(exists($self->{uc($type)}))) {
-    my @releaseTree = $self->GetReleaseTree($type);
-    if ("@releaseTree" ne "") {
-      my $release = new Net::Jabber::Query::AutoUpdate::Release(@releaseTree);
-      $self->{uc($type)} = $release;
-      $self->{RELEASES} = 1;
+    my @releaseTrees = $self->GetReleaseTrees($type);
+    if ("@releaseTrees" ne "") {
+      my $releaseTree;
+      foreach $releaseTree (@releaseTrees) {
+	my $release = new Net::Jabber::Query::AutoUpdate::Release(@{$releaseTree});
+	splice(@{$self->{uc($type)}},$#{$self->{uc($type)}}+1,0,$release);
+	$self->{RELEASES} = 1;
+      }
     }
   }
-  
-  return (exists($self->{uc($type)}) ? $self->{uc($type)} : ());
+
+  return (exists($self->{uc($type)}) ? @{$self->{uc($type)}} : ());
 }
 
 
 ##############################################################################
 #
-# GetReleaseTree - returns an XML::Parser tree for the specified release
+# GetReleaseTrees - returns an XML::Parser tree for the specified release
 #
 ##############################################################################
-sub GetReleaseTree {
+sub GetReleaseTrees {
   shift;
   my $self = shift;
   my ($type) = @_;
@@ -198,7 +202,8 @@ sub AddRelease {
 
   my $release = new Net::Jabber::Query::AutoUpdate::Release($type);
   $release->SetRelease(%args);
-  $self->{uc($type)} = $release;
+
+  splice(@{$self->{uc($type)}},$#{$self->{uc($type)}}+1,0,$release);
   $self->{RELEASES} = 1;
 
   return $release;
@@ -219,23 +224,29 @@ sub MergeReleases {
   my $self = shift;
   my $count = 1;
 
-  my $release = $self->GetRelease("release");
-  if (ref($release) eq "Net::Jabber::Query::AutoUpdate::Release") {
-    $self->{QUERY}->[1]->[$count++] = "release";
-    $self->{QUERY}->[1]->[$count++] = ($release->GetTree())[1];
-  }	    
+  my $release;
+  foreach $release ($self->GetReleases("release")) {
+    if (ref($release) eq "Net::Jabber::Query::AutoUpdate::Release") {
+      $self->{QUERY}->[1]->[$count++] = "release";
+      $self->{QUERY}->[1]->[$count++] = ($release->GetTree())[1];
+    }
+  }    
 
-  my $beta = $self->GetRelease("beta");
-  if (ref($beta) eq "Net::Jabber::Query::AutoUpdate::Release") {
-    $self->{QUERY}->[1]->[$count++] = "beta";
-    $self->{QUERY}->[1]->[$count++] = ($beta->GetTree())[1];
-  }	    
+  my $beta;
+  foreach $beta ($self->GetReleases("beta")) {
+    if (ref($beta) eq "Net::Jabber::Query::AutoUpdate::Release") {
+      $self->{QUERY}->[1]->[$count++] = "beta";
+      $self->{QUERY}->[1]->[$count++] = ($beta->GetTree())[1];
+    }	    
+  }
 
-  my $dev = $self->GetRelease("dev");
-  if (ref($dev) eq "Net::Jabber::Query::AutoUpdate::Release") {
-    $self->{QUERY}->[1]->[$count++] = "dev";
-    $self->{QUERY}->[1]->[$count++] = ($dev->GetTree())[1];
-  }	    
+  my $dev;
+  foreach $dev ($self->GetReleases("dev")) {
+    if (ref($dev) eq "Net::Jabber::Query::AutoUpdate::Release") {
+      $self->{QUERY}->[1]->[$count++] = "dev";
+      $self->{QUERY}->[1]->[$count++] = ($dev->GetTree())[1];
+    }	    
+  }
 }
 
 

@@ -82,11 +82,11 @@ it under the same terms as Perl itself.
 
 require 5.003;
 use strict;
-use XML::Stream;
+use XML::Stream 1.05;
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&

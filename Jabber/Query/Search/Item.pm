@@ -195,7 +195,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 sub new {
   my $proto = shift;
@@ -225,6 +225,7 @@ sub new {
 sub GetJID {
   my $self = shift;
   my ($type) = @_;
+  $type = "" unless defined($type);
   my $jid = &Net::Jabber::GetXMLData("value",$self->{ITEM},"","jid");
   if ($type eq "jid") {
     return new Net::Jabber::JID($jid);

@@ -99,7 +99,7 @@ use strict;
 use FileHandle;
 use vars qw($VERSION %HANDLES $DEFAULT $DEFAULTLEVEL);
 
-$VERSION = "1.0005";
+$VERSION = "1.0008";
 
 sub new {
   my $proto = shift;
@@ -128,8 +128,11 @@ sub Init {
 
   delete($args{file}) if (lc($args{file}) eq "stdout");
 
+  $args{setdefault} = 0 if !exists($args{setdefault});
+  $args{usedefault} = 0 if !exists($args{usedefault});
+  
   if (($args{usedefault} == 1) && ($Net::Jabber::Debug::DEFAULT ne "")) {
-    delete($args{setdefault});
+    $args{setdefault} = 0;
 
     $self->{LEVEL} = $Net::Jabber::Debug::DEFAULTLEVEL;
     $self->{HANDLE} = $Net::Jabber::Debug::DEFAULT;
