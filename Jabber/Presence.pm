@@ -232,7 +232,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0023";
+$VERSION = "1.0024";
 
 sub new {
   my $proto = shift;

@@ -1,3 +1,17 @@
+1.0024
+======
+  - Fixed a bug where no flag children were being put into the
+    XML string.  (ie. <remove/> for iq:register).  Ooops.
+  - Ok... found a really stupid module scoping problem.  If
+    Protocol.pm is used before say Dialback.pm, then Protocol
+    cannot call new from Dialback to make a packet.  Moved
+    use Protocol; to the last thing in import().
+  - Callback now checks if you have a callback defined for a
+    packet, or if you were waiting for a packet via
+    SendAndReceiveWithID.  Might make some things faster.
+  - Fixed mistake in DefineNamespace where it copied too many
+    things into the hash.
+
 1.0023
 ======
   - Fixed bugin accept for Components.

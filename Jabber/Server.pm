@@ -98,7 +98,7 @@ use strict;
 use XML::Stream 1.12 qw(Hash);
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0023";
+$VERSION = "1.0024";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&

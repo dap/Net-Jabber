@@ -217,7 +217,7 @@ if (eval "require Time::Timezone") {
   $TIMEZONE = 0;
 }
 
-$VERSION = "1.0023";
+$VERSION = "1.0024";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -247,10 +247,6 @@ use Net::Jabber::Presence;
 ($Net::Jabber::Presence::VERSION < $VERSION) &&
   croak("Net::Jabber::Presence $VERSION required--this is only version $Net::Jabber::Presence::VERSION");
 
-use Net::Jabber::Protocol;
-($Net::Jabber::Protocol::VERSION < $VERSION) &&
-  croak("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
-
 $DEBUG = new Net::Jabber::Debug(usedefault=>1,
 				header=>"NJ::Main");
 
@@ -270,6 +266,15 @@ sub import {
     $pass = 1;
   }
   croak("Failed to load any schema for Net::Jabber from the use line.\n  ie. \"use Net::Jabber qw( Client );\"\n") if ($pass == 0);
+
+  #---------------------------------------------------------------------------
+  # Stupid "feature"... this has to be loaded last... or it can't see the
+  # other modules that were loaded.  So let's load it at the end of the
+  # import block.
+  #---------------------------------------------------------------------------
+  eval "use Net::Jabber::Protocol;";
+  ($Net::Jabber::Protocol::VERSION < $VERSION) &&
+    croak("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
 }
 
 
@@ -717,6 +722,8 @@ sub GetXML {
     }	
   }
 
+  #&DEBUG($self,"\n",&Net::Jabber::sprintData("  \$funcs",\%funcs)) if &DEBUG($self,"GetXML: funcs");
+
   my $string = "<".$self->{TAG};
 
   if (exists($funcs{att})) {
@@ -734,6 +741,7 @@ sub GetXML {
 
   if (exists($funcs{'data'}) ||
       exists($funcs{'child-data'}) ||
+      exists($funcs{'child-flag'}) ||
       exists($self->{CHILDREN}->{query}) ||
       exists($self->{CHILDREN}->{data}) ||
       exists($self->{CHILDREN}->{x}) ||
@@ -747,8 +755,8 @@ sub GetXML {
       }
     }
 
-    if (exists($funcs{'child-data'})) {
-      foreach my $func (split(",",$funcs{'child-data'})) {
+    if (exists($funcs{'child-data'}) || exists($funcs{'child-flag'})) {
+      foreach my $func (split(",",$funcs{'child-data'}),split(",",$funcs{'child-flag'})) {
 	my $lcfunc = $self->Get($func);
 	my $addit = eval "\$self->Defined$func();";
 	$addit = 0 unless defined($addit);
@@ -847,7 +855,7 @@ sub AutoLoad {
   return if ($AutoLoad =~ /::DESTROY$/);
   my ($package) = ($AutoLoad =~ /^(.*)::/);
   $AutoLoad =~ s/^.*:://;
-#  &DEBUG($self,"AutoLoad: tag($self->{TAG}) package($package) function($AutoLoad) args(",join(",",@_),")");
+  #&DEBUG($self,"AutoLoad: tag($self->{TAG}) package($package) function($AutoLoad) args(",join(",",@_),")");
   my ($type,$value) = ($AutoLoad =~ /^(Add|Get|Set|Defined|ValType)(.*)$/);
   $type = "" unless defined($type);
   $value = "" unless defined($value);
@@ -915,7 +923,7 @@ sub AutoLoad {
     foreach my $func (@funcs) {
       my $lcfunc = lc($func);
       if (exists($args{$lcfunc})) {
-	#&DEBUG($self,"MasterSet: call(\$self->Set${func}(\$_[1]);)");
+	#&DEBUG($self,"MasterSet: call(\$self->Set${func}(\$args{\$lcfunc});)");
 	eval "\$self->Set${func}(\$args{\$lcfunc});";
       }
     }

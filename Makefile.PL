@@ -28,9 +28,9 @@ WriteMakefile(
 			      'Jabber/X.pm' => '$(INST_LIBDIR)/Jabber/X.pm',
 			     },
 	      'PREREQ_PM' => {
-			      'XML::Stream' => 1.13,
+			      'XML::Stream' => 1.14,
 			      'Digest::SHA1' => 1.02
 			     },
-	      'VERSION' => '1.0023',
+	      'VERSION' => '1.0024',
 	      'dist' => { 'COMPRESS' => 'gzip --best' }
 	     );

@@ -697,7 +697,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0023";
+$VERSION = "1.0024";
 
 sub new {
   my $proto = shift;
@@ -757,7 +757,6 @@ sub CallBack {
   my $self = shift;
   my $sid = shift;
   my ($object) = @_;
-  my %object;
 
   my $xml = &XML::Stream::BuildXML($object);
   $self->{DEBUG}->Log1("CallBack: sid($sid) received($xml)");
@@ -771,7 +770,53 @@ sub CallBack {
   $self->{DEBUG}->Log1("CallBack: tag($tag)");
   $self->{DEBUG}->Log1("CallBack: id($id)") if ($id ne "");
 
-  my $NJObject;
+  my $pass = 1;
+  $pass = 0 if (!exists($self->{CB}->{$tag}) && !$self->CheckID($tag,$id));
+
+  if ($pass) {
+    $self->{DEBUG}->Log1("CallBack: we either want it or were waiting for it.");
+
+    my $NJObject = $self->BuildObject($tag,$object);
+
+    if ($NJObject == -1) {
+      $self->{DEBUG}->Log1("CallBack: DANGER!! DANGER!! We didn't build a packet!  We're all gonna die!!");
+    } else {
+      if ($self->CheckID($tag,$id)) {
+	$self->{DEBUG}->Log1("CallBack: found registry entry: tag($tag) id($id)");
+	$self->DeregisterID($tag,$id);
+	if ($self->TimedOutID($id)) {
+	  $self->{DEBUG}->Log1("CallBack: dropping packet due to timeout");
+	} else {
+	  $self->{DEBUG}->Log1("CallBack: they still want it... we still got it...");
+	  $self->GotID($id,$NJObject);
+	}
+      } else {
+	$self->{DEBUG}->Log1("CallBack: no registry entry");
+	if (exists($self->{CB}->{$tag})) {
+	  $self->{DEBUG}->Log1("CallBack: goto user function($self->{CB}->{$tag})");
+	  &{$self->{CB}->{$tag}}($sid,$NJObject);
+	} else {
+	  $self->{DEBUG}->Log1("CallBack: no defined function.  Dropping packet.");
+	}
+      }
+    }
+  } else {
+    $self->{DEBUG}->Log1("CallBack: a packet that no one wants... how sad. =(");
+  }
+}
+
+
+###########################################################################
+#
+# BuildObject - turn the packet into an object.
+#
+###########################################################################
+sub BuildObject {
+  shift;
+  my $self = shift;
+  my ($tag,$object) = @_;
+
+  my $NJObject = -1;
   if ($tag eq "iq") {
     $NJObject = new Net::Jabber::IQ($object);
   } elsif ($tag eq "presence") {
@@ -786,25 +831,9 @@ sub CallBack {
     $NJObject = new Net::Jabber::Dialback::Verify($object);
   }
 
-  if ($self->CheckID($tag,$id)) {
-    $self->{DEBUG}->Log1("CallBack: found registry entry: tag($tag) id($id)");
-    $self->DeregisterID($tag,$id);
-    if ($self->TimedOutID($id)) {
-      $self->{DEBUG}->Log1("CallBack: dropping packet due to timeout");
-    } else {
-      $self->{DEBUG}->Log1("CallBack: they still want it... we still got it...");
-      $self->GotID($id,$NJObject);
-    }
-  } else {
-    $self->{DEBUG}->Log1("CallBack: no registry entry");
-    if (exists($self->{CB}->{$tag})) {
-      $self->{DEBUG}->Log1("CallBack: goto user function($self->{CB}->{$tag})");
-      &{$self->{CB}->{$tag}}($sid,$NJObject);
-    } else {
-      $self->{DEBUG}->Log1("CallBack: no defined function.  Dropping packet.");
-    }
-  }
+  return $NJObject;
 }
+
 
 
 ###########################################################################
@@ -1153,9 +1182,10 @@ sub DefineNamespace {
     if !exists($args{functions});
 
   foreach my $function (@{$args{functions}}) {
-    my %funcHash = %{$function};
-    foreach my $func (keys(%funcHash)) {
-      $funcHash{ucfirst(lc($func))} = $funcHash{$func};
+    my %tempHash = %{$function};
+    my %funcHash;
+    foreach my $func (keys(%tempHash)) {
+      $funcHash{ucfirst(lc($func))} = $tempHash{$func};
     }
 
     croak("You must specify name=>'' for each function in call to DefineNamespace")
