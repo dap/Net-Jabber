@@ -86,9 +86,9 @@ Net::Jabber::Client - Jabber Client Library
 
     Connect(hostname=>string,      - opens a connection to the server
             port=>integer,           listed in the hostname (default
-            connectiontype=>string,  localhost), on the port (default
-            ssl=>0|1)                5222) listed, using the
-                                     connectiontype listed (default
+            timeout=>int             localhost), on the port (default
+            connectiontype=>string,  5222) listed, using the
+            ssl=>0|1)                connectiontype listed (default
                                      tcpip).  The two connection types
                                      available are:
                                        tcpip  standard TCP socket
@@ -106,10 +106,10 @@ Net::Jabber::Client - Jabber Client Library
             resource=>string,         called at various places:
             register=>0|1,              onconnect - when the client has
             connectiontype=>string,                 made a connection.
-            connectattempts=>int,       onauth - when the connection is
-            connectsleep=>int,                   made and user has been
-            processtimeout=>int)                 authed.  Essentially,
-                                                 this is when you can
+            connecttimeout=>string,     onauth - when the connection is
+            connectattempts=>int,                made and user has been
+            connectsleep=>int,                   authed.  Essentially,
+            processtimeout=>int)                 this is when you can
                                                  start doing things
                                                  as a Client.  Like
                                                  send presence, get your
@@ -183,7 +183,7 @@ use Carp;
 use base qw( Net::Jabber::Protocol );
 use vars qw( $VERSION ); 
 
-$VERSION = "1.29";
+$VERSION = "1.30";
 
 sub new
 {
@@ -210,6 +210,7 @@ sub new
                       };
 
     $self->{CONNECTED} = 0;
+    $self->{DISCONNECTED} = 0;
 
     $self->{STREAM} = new XML::Stream(style=>"node",
                                       debugfh=>$self->{DEBUG}->GetHandle(),
@@ -244,6 +245,8 @@ sub Connect
 
     $self->{DEBUG}->Log1("Connect: hostname($self->{SERVER}->{hostname})");
 
+    $self->{SERVER}->{timeout} = 10 unless exists($self->{SERVER}->{timeout});
+
     delete($self->{SESSION});
     $self->{SESSION} =
         $self->{STREAM}->
@@ -252,7 +255,7 @@ sub Connect
                     namespace=>"jabber:client",
                     connectiontype=>$self->{SERVER}->{connectiontype},
                     ssl=>$self->{SERVER}->{ssl},
-                    timeout=>10
+                    timeout=>$self->{SERVER}->{timeout},
                    );
 
     if ($self->{SESSION}) {
@@ -260,6 +263,21 @@ sub Connect
 
         $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
         $self->{CONNECTED} = 1;
+
+        if (exists($self->{SESSION}->{version}) &&
+            ($self->{SESSION}->{version} ne ""))
+        {
+            my $tls = $self->{STREAM}->GetStreamFeature($self->{SESSION}->{id},"xmpp-tls");
+            if ($tls && $self->{SERVER}->{ssl})
+            {
+                $self->{SESSION} =
+                    $self->{STREAM}->StartTLS(
+                        $self->{SESSION}->{id},
+                        $self->{SERVER}->{timeout}
+                    );
+            }
+        }
+        
         return 1;
     } else {
         $self->SetErrorCode($self->{STREAM}->GetErrorCode());
@@ -339,6 +357,7 @@ sub Disconnect
     $self->{STREAM}->Disconnect($self->{SESSION}->{id})
         if ($self->{CONNECTED} == 1);
     $self->{CONNECTED} = 0;
+    $self->{DISCONNECTED} = 1;
     $self->{DEBUG}->Log1("Disconnect: bye bye");
 }
 
@@ -378,9 +397,12 @@ sub Execute
 
     my %connect;
     $connect{hostname} = $args{hostname};
-    $connect{port} = $args{port} if exists($args{port});
+    $connect{port} = $args{port}
+        if exists($args{port});
     $connect{connectiontype} = $args{connectiontype}
         if exists($args{connectiontype});
+    $connect{timeout} = $args{connecttimeout}
+        if exists($args{connecttimeout});
     $connect{ssl} = $args{ssl} if exists($args{ssl});
     
     $self->{DEBUG}->Log1("Execute: begin");
@@ -483,6 +505,8 @@ sub Execute
                 next;
             }
         }
+
+        last if $self->{DISCONNECTED};
     }
 
     $self->{DEBUG}->Log1("Execute: end");

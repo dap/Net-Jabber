@@ -1,5 +1,5 @@
 use lib "t/lib";
-use Test::More tests=>56;
+use Test::More tests=>46;
 
 BEGIN{ use_ok( "Net::Jabber","Client" ); }
 
@@ -70,27 +70,15 @@ testPostScalar($item2,"Payload","<test2/>");
 
 is( $query7->GetXML(), "<pubsub xmlns='http://www.jabber.org/protocol/pubsub#event'><items node='node1'><item id='id1'><test/></item><item id='id2'><test2/></item></items></pubsub>", "GetXML()" );
 
-my $retract1 = $items1->AddRetract();
-
-testScalar($retract1,"ID","id3");
-
-is( $query7->GetXML(), "<pubsub xmlns='http://www.jabber.org/protocol/pubsub#event'><items node='node1'><item id='id1'><test/></item><item id='id2'><test2/></item><retract id='id3'/></items></pubsub>", "GetXML()" );
-
-my $retract2 = $items1->AddRetract(id=>"id4");
-
-testPostScalar($retract2,"ID","id4");
-
-is( $query7->GetXML(), "<pubsub xmlns='http://www.jabber.org/protocol/pubsub#event'><items node='node1'><item id='id1'><test/></item><item id='id2'><test2/></item><retract id='id3'/><retract id='id4'/></items></pubsub>", "GetXML()" );
-
 $query7->AddItems();
 
-is( $query7->GetXML(), "<pubsub xmlns='http://www.jabber.org/protocol/pubsub#event'><items node='node1'><item id='id1'><test/></item><item id='id2'><test2/></item><retract id='id3'/><retract id='id4'/></items><items/></pubsub>", "GetXML()" );
+is( $query7->GetXML(), "<pubsub xmlns='http://www.jabber.org/protocol/pubsub#event'><items node='node1'><item id='id1'><test/></item><item id='id2'><test2/></item></items><items/></pubsub>", "GetXML()" );
 
 my @items = $query7->GetItems();
 
 is( $#items, 1, "two items");
 
-is( $items[0]->GetXML(), "<items node='node1'><item id='id1'><test/></item><item id='id2'><test2/></item><retract id='id3'/><retract id='id4'/></items>","items[0]");
+is( $items[0]->GetXML(), "<items node='node1'><item id='id1'><test/></item><item id='id2'><test2/></item></items>","items[0]");
 
 is( $items[1]->GetXML(), "<items/>","items[1]");
 
@@ -100,12 +88,4 @@ is( $#item, 1, "two item");
 
 is( $item[0]->GetXML(), "<item id='id1'><test/></item>","item[0]");
 is( $item[1]->GetXML(), "<item id='id2'><test2/></item>","item[1]");
-
-my @retract = $items[0]->GetRetract();
-
-is( $#retract, 1, "two retract");
-
-is( $retract[0]->GetXML(), "<retract id='id3'/>","retract[0]");
-is( $retract[1]->GetXML(), "<retract id='id4'/>","retract[1]");
-
 

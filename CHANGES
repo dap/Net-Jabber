@@ -1,3 +1,23 @@
+
+1.30
+====
+  - Added initial support for XMPP 1.0 via XML::Stream 1.18.
+  - Locked version of XML::Stream to 1.18.
+  - Changed connectiontimeout to just timeout in the Connect
+    function.
+  - Hey, here's a good idea.  Instead of copying the function
+    hash out of each namespace why not just use a refrence...
+    duh...  This might make things a little faster and use a
+    smidge less memory.  Just a little thought.
+  - Fixed a taint problem with an eval and the xmlns read from
+    the socket.
+  - Fixed some -w warnings.
+  - Updated client test to user newer methods and create the
+    test account.
+  - Added password to MUCJoin.
+  - Fixed typo in DefineNamespace.
+  - Added Tree Transfer (JEP-105)
+
 1.29
 ====
   - Added PubSub (JEP-60)

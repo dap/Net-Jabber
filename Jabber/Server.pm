@@ -120,7 +120,7 @@ use Carp;
 use base qw( Net::Jabber::Protocol );
 use vars qw( $VERSION );
 
-$VERSION = "1.29";
+$VERSION = "1.30";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&

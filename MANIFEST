@@ -88,3 +88,4 @@ t/x_oob.t
 t/x_roster.t
 t/x_signed.t
 
+META.yml                                 Module meta-data (added by MakeMaker)

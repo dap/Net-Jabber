@@ -1,4 +1,12 @@
-Net::Jabber v1.29
+*****************************************************
+
+  THIS RELEASE MAY NOT BE 100% STABLE.  I AM MAKING
+  IT SO THAT OTHERS CAN TEST.  IF THERE IS NO NEED
+  FOR YOU TO UPGRADE, THEN I SUGGEST YOU DO NOT.
+
+*****************************************************
+
+Net::Jabber v1.30
 
 The Jabber Instant Messaging project is an Open Source project seeking
 to provide a complete cross protocol messaging solution.  The problem
@@ -36,9 +44,9 @@ INSTALLATION
 
 STATUS
 
-    More and more stability.  This version has a few big changes, so I won't
-be surprised to get bug reports about it.
-
+    Initial support for XMPP 1.0 (SASL, TLS, etc...).  This is mostly unstable
+  and should not be used except for testing.
+    
 Please send any bug reports to reatmon@jabber.org.
-2002/11/04
+2004/04/01
 

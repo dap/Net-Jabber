@@ -528,6 +528,11 @@ Net::Jabber::Protocol - Jabber Protocol Library
                   server=>"conference.jabber.org",
                   nick=>"nick");
 
+    $Con->MUCJoin(room=>"jabber",
+                  server=>"conference.jabber.org",
+                  nick=>"nick",
+                  password=>"secret");
+
 =head1 METHODS
 
 =head2 Basic Functions
@@ -1364,9 +1369,10 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 Multi-User Chat Functions
 
-    MUCJoin(room=>string,   - Sends the appropriate MUC protocol to join
-            server=>string,   the specified room with the specified nick.
-            nick=>string)
+    MUCJoin(room=>string,    - Sends the appropriate MUC protocol to join
+            server=>string,    the specified room with the specified nick.
+            nick=>string,
+            password=>string)
 
 =head1 AUTHOR
 
@@ -1383,7 +1389,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $SOCKS);
 
-$VERSION = "1.29";
+$VERSION = "1.30";
 
 sub new
 {
@@ -2159,8 +2165,8 @@ sub DefineNamespace
         if (($funcHash{Hash} eq "child-add") && exists($funcHash{Add}))
         {
             eval("\$Net::Jabber::$args{type}::NAMESPACES{'$args{xmlns}'}->{'$name'}->{XPath}->{Type}  = 'node';");
-            eval("\$Net::Jabber::$args{type}::NAMESPACES{'$args{xmlns}'}->{'$name'}->{XPath}->{Path}  = '\$funcHash{Add}->[3]';");
-            eval("\$Net::Jabber::$args{type}::NAMESPACES{'$args{xmlns}'}->{'$name'}->{XPath}->{Child} = ['\$funcHash{Add}->[0]','\$funcHash{Add}->[1]'];");
+            eval("\$Net::Jabber::$args{type}::NAMESPACES{'$args{xmlns}'}->{'$name'}->{XPath}->{Path}  = \$funcHash{Add}->[3];");
+            eval("\$Net::Jabber::$args{type}::NAMESPACES{'$args{xmlns}'}->{'$name'}->{XPath}->{Child} = [\$funcHash{Add}->[0],\$funcHash{Add}->[1]];");
             eval("\$Net::Jabber::$args{type}::NAMESPACES{'$args{xmlns}'}->{'$name'}->{XPath}->{Calls} = ['Add'];");
             next;
         }
@@ -2473,9 +2479,16 @@ sub AuthSend
         unless exists($args{username});
     carp("AuthSend requires a password arguement")
         unless exists($args{password});
+
+    if (exists($self->{SESSION}->{version}) &&
+        ($self->{SESSION}->{version} ne ""))
+    {
+        return $self->AuthSASL(%args);
+    }
+
     carp("AuthSend requires a resource arguement")
         unless exists($args{resource});
-
+    
     my $authType = "digest";
     my $token;
     my $sequence;
@@ -2569,6 +2582,122 @@ sub AuthSend
     return ( $iqLogin->GetErrorCode() , $iqLogin->GetError() )
         if ($iqLogin->GetType() eq "error");
     return ("ok","");
+}
+
+
+###############################################################################
+#
+# AuthSASL - This is a helper function to perform all of the required steps for
+#            doing SASL with the server.
+#
+###############################################################################
+sub AuthSASL
+{
+    my $self = shift;
+    my (%args) = @_;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+    carp("AuthSASL requires a username arguement")
+        unless exists($args{username});
+    carp("AuthSASL requires a password arguement")
+        unless exists($args{password});
+
+    $args{resource} = "" unless exists($args{resource});
+
+    my $sid = $self->{SESSION}->{id};
+    my $status =
+        $self->{STREAM}->SASLClient($sid,
+                                    $args{username},
+                                    $args{password}
+                                   );
+
+    $args{timeout} = "120" unless exists($args{timeout});
+
+    my $endTime = time + $args{timeout};
+    while(!$self->{STREAM}->SASLClientDone($sid) && ($endTime >= time))
+    {
+        $self->{DEBUG}->Log1("AuthSASL: haven't authed yet... let's wait.");
+        return unless (defined($self->Process(1)));
+        &{$self->{CB}->{update}}() if exists($self->{CB}->{update});
+    }
+    if (!$self->{STREAM}->SASLClientDone($sid))
+    {
+        $self->{DEBUG}->Log1("AuthSASL: timed out...");
+        return( "system","SASL timed out authenticating");
+    }
+    if (!$self->{STREAM}->SASLClientAuthed($sid))
+    {
+        $self->{DEBUG}->Log1("AuthSASL: Authentication failed.");
+        return ( "error", $self->{STREAM}->SASLClientError($sid));
+    }
+    
+    $self->{DEBUG}->Log1("AuthSASL: We authed!");
+
+    $self->{SESSION} = $self->{STREAM}->OpenStream($sid);
+    $sid = $self->{SESSION}->{id};
+
+    $self->{DEBUG}->Log1("AuthSASL: We got a new session. sid($sid)");
+
+    my $bind = $self->{STREAM}->GetStreamFeature($sid,"xmpp-bind");
+    if ($bind)
+    {
+        $self->{DEBUG}->Log1("AuthSASL: Binding to resource");
+        $self->BindResource($args{resource});
+    }
+
+    my $session = $self->{STREAM}->GetStreamFeature($sid,"xmpp-session");
+    if ($session)
+    {
+        $self->{DEBUG}->Log1("AuthSASL: Starting session");
+        $self->StartSession();
+    }
+
+    return ("ok","");
+}
+
+
+##############################################################################
+#
+# BindResource - bind to a resource
+#
+##############################################################################
+sub BindResource
+{
+    my $self = shift;
+    my $resource = shift;
+
+    $self->{DEBUG}->Log2("BindResource: Binding to resource");
+    my $iq = new Net::Jabber::IQ();
+
+    $iq->SetIQ(type=>"set");
+    my $bind = $iq->NewQuery(&XML::Stream::ConstXMLNS("xmpp-bind"));
+    
+    if (defined($resource) && ($resource ne ""))
+    {
+        $self->{DEBUG}->Log2("BindResource: resource($resource)");
+        $bind->SetBind(resource=>$resource);
+    }
+
+    my $result = $self->SendAndReceiveWithID($iq);
+}
+
+
+
+##############################################################################
+#
+# StartSession - Initialize a session
+#
+##############################################################################
+sub StartSession
+{
+    my $self = shift;
+
+    my $iq = new Net::Jabber::IQ();
+
+    $iq->SetIQ(type=>"set");
+    my $session = $iq->NewQuery(&XML::Stream::ConstXMLNS("xmpp-session"));
+    
+    my $result = $self->SendAndReceiveWithID($iq);
 }
 
 
@@ -3263,15 +3392,18 @@ sub FileTransferOffer
                       profile=>"http://jabber.org/protocol/si/profile/file-transfer"
                      );
 
-    if ($#{$args{methods}} == -1)
+    if (!exists($args{skip_methods}))
     {
-        print STDERR "You did not provide any valid methods for file transfer.\n";
-        return;
+        if ($#{$args{methods}} == -1)
+        {
+            print STDERR "You did not provide any valid methods for file transfer.\n";
+            return;
+        }
+
+        my $fneg = $self->FeatureNegQuery({'stream-method'=>$args{methods}});
+
+        $query->AddQuery($fneg);
     }
-
-    my $fneg = $self->FeatureNegQuery({'stream-method'=>$args{methods}});
-
-    $query->AddQuery($fneg);
 
     #--------------------------------------------------------------------------
     # Send the IQ with the next available ID and wait for a reply with that
@@ -3313,6 +3445,147 @@ sub FileTransferOffer
     {
         return;
     }
+}
+
+
+###############################################################################
+#
+# TreeTransferOffer - offer a file transfer JEP-95
+#
+###############################################################################
+sub TreeTransferOffer
+{
+    my $self = shift;
+    my %args;
+    $args{mode} = "block";
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+    my $timeout = exists($args{timeout}) ? delete($args{timeout}) : undef;
+
+    my $iq = new Net::Jabber::IQ();
+    $iq->SetIQ(to=>$args{jid},
+               type=>"set");
+    my $query = $iq->NewQuery("http://jabber.org/protocol/si");
+    my $profile = $query->NewQuery("http://jabber.org/protocol/si/profile/tree-transfer");
+
+    my ($root) = ($args{directory} =~ /\/?([^\/]+)$/);
+
+    my $rootDir = $profile->AddDirectory(name=>$root);
+
+    my %tree;
+    $tree{counter} = 0;
+    $self->TreeTransferDescend($args{sidbase},
+                               $args{directory},
+                               $rootDir,
+                               \%tree
+                              );
+
+    $profile->SetTree(numfiles=>$tree{counter},
+                      size=>$tree{size}
+                     );
+
+    $query->SetStream(id=>$args{sidbase},
+                      profile=>"http://jabber.org/protocol/si/profile/tree-transfer"
+                     );
+
+    if ($#{$args{methods}} == -1)
+    {
+        print STDERR "You did not provide any valid methods for the tree transfer.\n";
+        return;
+    }
+
+    my $fneg = $self->FeatureNegQuery({'stream-method'=>$args{methods}});
+
+    $query->AddQuery($fneg);
+
+    #--------------------------------------------------------------------------
+    # Send the IQ with the next available ID and wait for a reply with that
+    # id to be received.  Then grab the IQ reply.
+    #--------------------------------------------------------------------------
+    if ($args{mode} eq "passthru")
+    {
+        my $id = $self->UniqueID();
+        $iq->SetIQ(id=>$id);
+        $self->Send($iq);
+        $tree{id} = $id;
+        return %tree;
+    }
+    
+    return $self->SendWithID($iq) if ($args{mode} eq "nonblock");
+
+    $iq = $self->SendAndReceiveWithID($iq,$timeout);
+
+    #--------------------------------------------------------------------------
+    # Check if there was an error.
+    #--------------------------------------------------------------------------
+    return unless defined($iq);
+    if ($iq->GetType() eq "error")
+    {
+        $self->SetErrorCode($iq->GetErrorCode().": ".$iq->GetError());
+        return;
+    }
+
+    $query = $iq->GetQuery();
+
+    if (defined($query))
+    {
+        my @fneg = $query->GetQuery("http://jabber.org/protocol/feature-neg");
+        my @xdata = $fneg[0]->GetX("jabber:x:data");
+        my @fields = $xdata[0]->GetFields();
+        return $fields[0]->GetValue();
+        # XXX need better error handling
+    }
+    else
+    {
+        return;
+    }
+}
+
+
+###############################################################################
+#
+# TreeTransferDescend - descend a directory structure and build the packet.
+#
+###############################################################################
+sub TreeTransferDescend
+{
+    my $self = shift;
+    my $sidbase = shift;
+    my $path = shift;
+    my $parent = shift;
+    my $tree = shift;
+
+    $tree->{size} += (-s $path);
+            
+    opendir(DIR, $path);
+    foreach my $file ( sort {$a cmp $b} readdir(DIR) )
+    {
+        next if ($file =~ /^\.\.?$/);
+
+        if (-d "$path/$file")
+        {
+            my $tempParent = $parent->AddDirectory(name=>$file);
+            $self->TreeTransferDescend($sidbase,
+                                       "$path/$file",
+                                       $tempParent,
+                                       $tree
+                                      );
+        }
+        else
+        {
+            $tree->{size} += (-s "$path/$file");
+            
+            $tree->{tree}->{"$path/$file"}->{order} = $tree->{counter};
+            $tree->{tree}->{"$path/$file"}->{sid} =
+                $sidbase."-".$tree->{counter};
+            $tree->{tree}->{"$path/$file"}->{name} = $file;
+
+            $parent->AddFile(name=>$tree->{tree}->{"$path/$file"}->{name},
+                             sid=>$tree->{tree}->{"$path/$file"}->{sid});
+            $tree->{counter}++;
+        }
+    }
+    closedir(DIR);
 }
 
 
@@ -4372,8 +4645,13 @@ sub MUCJoin
 
     my $presence = new Net::Jabber::Presence();
     $presence->SetTo($args{room}.'@'.$args{server}.'/'.$args{nick});
-    $presence->NewX("http://jabber.org/protocol/muc");
+    my $x = $presence->NewX("http://jabber.org/protocol/muc");
 
+    if (exists($args{password}) && ($args{password} ne ""))
+    {
+        $x->SetMUC(password=>$args{password});
+    }
+    
     return $presence->GetXML() if exists($args{'__netjabber__:test'});
     $self->Send($presence);
 }

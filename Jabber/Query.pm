@@ -66,6 +66,7 @@ Net::Jabber::Query - Jabber Query Library
     http://jabber.org/protocol/pubsub#owner
     http://jabber.org/protocol/si
     http://jabber.org/protocol/si/profile/file-transfer
+    http://jabber.org/protocol/si/profile/tree-transfer
     http://www.jabber.org/protocol/soap # Experimental
     
   For more information on what these namespaces are for, visit 
@@ -751,7 +752,6 @@ types I will use:
   =======  ================  ================  ==================
   objects  GetItem()         AddItem()
   string   GetNode()         SetNode()         DefinedNode()
-  objects  GetRetract()      AddRetract()
   master   GetItems()        SetItems()
 
 =head1 http://www.jabber.org/protocol/pubsub#event item objects
@@ -761,13 +761,6 @@ types I will use:
   string   GetID()           SetID()           DefinedID()
   raw      GetPayload()      SetPayload()      DefinedPayload()
   master   GetItem()         SetItem()
-
-=head1 http://www.jabber.org/protocol/pubsub#event retract objects
-
-  Type     Get               Set               Defined
-  =======  ================  ================  ==================
-  string   GetID()           SetID()           DefinedID()
-  master   GetRetract()      SetRetract()
 
 =head1 http://www.jabber.org/protocol/pubsub#owner
 
@@ -836,7 +829,7 @@ use strict;
 use Carp;
 use vars qw($VERSION %FUNCTIONS %NAMESPACES %TAGS $AUTOLOAD);
 
-$VERSION = "1.29";
+$VERSION = "1.30";
 
 sub new
 {
@@ -2072,11 +2065,6 @@ $NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add','Get'];
 
 $NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
 
-$NAMESPACES{$ns}->{Retract}->{XPath}->{Type} = 'children';
-$NAMESPACES{$ns}->{Retract}->{XPath}->{Path} = 'retract';
-$NAMESPACES{$ns}->{Retract}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:event:retract'];
-$NAMESPACES{$ns}->{Retract}->{XPath}->{Calls} = ['Add','Get'];
-
 $NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
@@ -2089,15 +2077,6 @@ $NAMESPACES{$ns}->{ID}->{XPath}->{Path} = '@id';
 $NAMESPACES{$ns}->{Payload}->{XPath}->{Type} = 'raw';
 
 $NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'master';
-
-#-----------------------------------------------------------------------------
-# __netjabber__:iq:pubsub:event:retract
-#-----------------------------------------------------------------------------
-$ns = '__netjabber__:iq:pubsub:event:retract';
-
-$NAMESPACES{$ns}->{ID}->{XPath}->{Path} = '@id';
-
-$NAMESPACES{$ns}->{Publish}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # http://www.jabber.org/protocol/pubsub#owner
@@ -2166,6 +2145,54 @@ $NAMESPACES{$ns}->{Size}->{XPath}->{Path} = '@size';
 $NAMESPACES{$ns}->{File}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
+# http://jabber.org/protocol/si/profile/tree-transfer
+#-----------------------------------------------------------------------------
+$ns = 'http://jabber.org/protocol/si/profile/tree-transfer';
+
+$TAGS{$ns} = "tree";
+
+$NAMESPACES{$ns}->{Directory}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Directory}->{XPath}->{Path} = 'directory';
+$NAMESPACES{$ns}->{Directory}->{XPath}->{Child} = ['Query','__netjabber__:iq:si:profile:tree:directory'];
+$NAMESPACES{$ns}->{Directory}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Numfiles}->{XPath}->{Path} = '@numfiles';
+
+$NAMESPACES{$ns}->{Size}->{XPath}->{Path} = '@size';
+
+$NAMESPACES{$ns}->{Tree}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:si:profile:tree:directory
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:si:profile:tree:directory';
+
+$NAMESPACES{$ns}->{Directory}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Directory}->{XPath}->{Path} = 'directory';
+$NAMESPACES{$ns}->{Directory}->{XPath}->{Child} = ['Query','__netjabber__:iq:si:profile:tree:directory'];
+$NAMESPACES{$ns}->{Directory}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{File}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{File}->{XPath}->{Path} = 'file';
+$NAMESPACES{$ns}->{File}->{XPath}->{Child} = ['Query','__netjabber__:iq:si:profile:tree:file'];
+$NAMESPACES{$ns}->{File}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = '@name';
+
+$NAMESPACES{$ns}->{Dir}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:si:profile:tree:file
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:si:profile:tree:file';
+
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = '@name';
+
+$NAMESPACES{$ns}->{SID}->{XPath}->{Path} = '@sid';
+
+$NAMESPACES{$ns}->{File}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
 # http://www.jabber.org/protocol/soap
 #-----------------------------------------------------------------------------
 $ns = 'http://www.jabber.org/protocol/soap';
@@ -2175,6 +2202,26 @@ $TAGS{$ns} = "soap";
 $NAMESPACES{$ns}->{Payload}->{XPath}->{Type} = 'raw';
 
 $NAMESPACES{$ns}->{Soap}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# XMPP-Bind
+#-----------------------------------------------------------------------------
+$ns = &XML::Stream::ConstXMLNS("xmpp-bind");
+
+$TAGS{$ns} = "bind";
+
+$NAMESPACES{$ns}->{Resource}->{XPath}->{Path} = 'resource/text()';
+
+$NAMESPACES{$ns}->{Bind}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# XMPP-Session
+#-----------------------------------------------------------------------------
+$ns = &XML::Stream::ConstXMLNS("xmpp-session");
+
+$TAGS{$ns} = "session";
+
+$NAMESPACES{$ns}->{Session}->{XPath}->{Type} = 'master';
 
 
 

@@ -178,7 +178,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.29";
+$VERSION = "1.30";
 
 sub new
 {

@@ -184,7 +184,7 @@ use Carp;
 use base qw( Net::Jabber::Protocol );
 use vars qw( $VERSION );
 
-$VERSION = "1.29";
+$VERSION = "1.30";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&
@@ -326,22 +326,31 @@ sub Connect
 
     $self->{DEBUG}->Log1("Connect: connection made");
 
+    my $handshake;
     if (($args{connectiontype} eq "accept") ||
         ($args{connectiontype} eq "tcpip"))
     {
         $self->Send("<handshake>".Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$args{secret})."</handshake>");
-        my $handshake = $self->Process();
+        $handshake = $self->Process();
 
         if (!defined($handshake) ||
-            ($$handshake[0] eq "") ||
-            (&XML::Stream::GetXMLData("value",$$handshake[0],"","") ne ""))
+            ($#{$handshake} == -1) ||
+            (ref($handshake->[0]) ne "XML::Stream::Node") ||
+            ($handshake->[0]->get_tag() ne "handshake"))
         {
             $self->SetErrorCode("Bad handshake.");
             return;
         }
+        shift(@{$handshake});
+    }
+
+    foreach my $node (@{$handshake})
+    {
+        $self->CallBack($self->{SESSION}->{id},$node);
     }
 
     $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
+
     $self->{CONNECTED} = 1;
     return 1;
 }

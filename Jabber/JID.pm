@@ -144,7 +144,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.29";
+$VERSION = "1.30";
 
 sub new
 {
@@ -187,11 +187,11 @@ sub ParseJID
     my $resource;
 
     ($userid,$server,$resource) =
-        ($self->{JID} =~ /^([^\@\/'"&:<>]*)\@([A-Za-z0-9\.-]+)\/?(.*?)$/);
+        ($self->{JID} =~ /^([^\@\/'"&:<>]*)\@([A-Za-z0-9\.\-\_]+)\/?(.*?)$/);
     if (!defined($server))
     {
         ($server,$resource) =
-            ($self->{JID} =~ /^([A-Za-z0-9\.-]+)\/?(.*?)$/);
+            ($self->{JID} =~ /^([A-Za-z0-9\.\-\_]+)\/?(.*?)$/);
     }
 
     $userid = "" unless defined($userid);

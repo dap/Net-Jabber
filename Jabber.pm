@@ -234,7 +234,7 @@ it under the same terms as Perl itself.
 
 require 5.005;
 use strict;
-use XML::Stream 1.16 qw( Node );
+use XML::Stream 1.18 qw( Node );
 use Time::Local;
 use Carp;
 use Digest::SHA1;
@@ -305,7 +305,7 @@ else
     $TIMEZONE = 0;
 }
 
-$VERSION = "1.29";
+$VERSION = "1.30";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -1174,13 +1174,13 @@ sub XPathAutoLoad
                 
                     my $addXMLNS = $XPathChildType->[1];
                 
-                    my %ADDFUNCS;
-                    eval "\%ADDFUNCS = \%{\$".$package."::NAMESPACES{\'".$addXMLNS."\'}}";
+                    my $ADDFUNCS;
+                    eval "\$ADDFUNCS = \$".$package."::NAMESPACES{\'".$addXMLNS."\'}";
                     my @calls =
                     grep{
-                        exists($ADDFUNCS{$_}->{XPath}->{Type}) &&
-                            ($ADDFUNCS{$_}->{XPath}->{Type} eq "master")
-                    } keys(%ADDFUNCS);
+                        exists($ADDFUNCS->{$_}->{XPath}->{Type}) &&
+                            ($ADDFUNCS->{$_}->{XPath}->{Type} eq "master")
+                    } keys(%{$ADDFUNCS});
                     if ($#calls > 0)
                     {
                         print STDERR "Warning: I cannot serve two masters.\n";
@@ -1232,11 +1232,11 @@ sub AutoLoad
     #-------------------------------------------------------------------------
     # Pick off calls for top level tags <message/>, <presence/>, and <iq/>
     #-------------------------------------------------------------------------
-    my %FUNCTIONS;
-    eval "\%FUNCTIONS = \%".$package."::FUNCTIONS";
+    my $FUNCTIONS;
+    eval "\$FUNCTIONS = \\%".$package."::FUNCTIONS";
 
-    my @setFuncs = grep { exists($FUNCTIONS{$_}->{XPath}) && ($_ ne $value) } keys(%FUNCTIONS);
-    my ($XPathCall,@XPathArgs) = &XPathAutoLoad($self,$package,$value,$type,\@setFuncs,\%FUNCTIONS);
+    my @setFuncs = grep { exists($FUNCTIONS->{$_}->{XPath}) && ($_ ne $value) } keys(%{$FUNCTIONS});
+    my ($XPathCall,@XPathArgs) = &XPathAutoLoad($self,$package,$value,$type,\@setFuncs,$FUNCTIONS);
     return &{$CALLBACKS{"XPath".$type}}($self,@XPathArgs,@_) if ($XPathCall == 1);
         
     #-------------------------------------------------------------------------
@@ -1244,18 +1244,26 @@ sub AutoLoad
     #-------------------------------------------------------------------------
     if (($package eq "Net::Jabber::X") ||
         ($package eq "Net::Jabber::Query") ||
-        ($package eq "Net::Jabber::Data")) {
+        ($package eq "Net::Jabber::Data"))
+    {
         my @xmlns = $self->{TREE}->XPath('@xmlns');
         my $xmlns = $xmlns[0];
         #&DEBUG($self,"xmlns(",$xmlns,")");
-        #&DEBUG($self,"\%FUNCTIONS = \%{\$".$package."::NAMESPACES{\'".$xmlns."\'}}");
-        if (defined($xmlns)) {
-            eval "\%FUNCTIONS = \%{\$".$package."::NAMESPACES{\'".$xmlns."\'}}";
+        #&DEBUG($self,"\$FUNCTIONS = \$".$package."::NAMESPACES{\'".$xmlns."\'}");
+        if (defined($xmlns))
+        {
+            my $taintTest;
+            eval "\$taintTest = \\%".$package."::NAMESPACES;\n";
+            if (exists($taintTest->{$xmlns}))
+            {
+                ($xmlns) = ($xmlns =~ /^(.+)$/);
+                eval "\$FUNCTIONS = \$".$package."::NAMESPACES{\'".$xmlns."\'}";
 
-            @setFuncs = grep { exists($FUNCTIONS{$_}->{XPath}) && ($_ ne $value) } keys(%FUNCTIONS);
+                @setFuncs = grep { exists($FUNCTIONS->{$_}->{XPath}) && ($_ ne $value) } keys(%{$FUNCTIONS});
 
-            ($XPathCall,@XPathArgs) = &XPathAutoLoad($self,$package,$value,$type,\@setFuncs,\%FUNCTIONS);
-            return &{$CALLBACKS{"XPath".$type}}($self,@XPathArgs,@_) if ($XPathCall == 1);
+                ($XPathCall,@XPathArgs) = &XPathAutoLoad($self,$package,$value,$type,\@setFuncs,$FUNCTIONS);
+                return &{$CALLBACKS{"XPath".$type}}($self,@XPathArgs,@_) if ($XPathCall == 1);
+            }
         }
     }
 
