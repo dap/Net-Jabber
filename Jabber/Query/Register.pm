@@ -51,24 +51,25 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
 
     $instructions = $register->GetInstructions();
 
-    $username = $register->GetUsername();
-    $password = $register->GetPassword();
-    $name     = $register->GetName();
-    $first    = $register->GetFirst();
-    $last     = $register->GetLast();
-    $nick     = $register->GetNick();
-    $email    = $register->GetEmail();
-    $address  = $register->GetAddress();
-    $city     = $register->GetCity();
-    $state    = $register->GetState();
-    $zip      = $register->GetZip();
-    $phone    = $register->GetPhone();
-    $url      = $register->GetURL();
-    $date     = $register->GetDate();
-    $misc     = $register->GetMisc();
-    $text     = $register->GetText();
-    $key      = $register->GetKey();
-    $remove   = $register->GetRemove();
+    $username   = $register->GetUsername();
+    $password   = $register->GetPassword();
+    $name       = $register->GetName();
+    $first      = $register->GetFirst();
+    $last       = $register->GetLast();
+    $nick       = $register->GetNick();
+    $email      = $register->GetEmail();
+    $address    = $register->GetAddress();
+    $city       = $register->GetCity();
+    $state      = $register->GetState();
+    $zip        = $register->GetZip();
+    $phone      = $register->GetPhone();
+    $url        = $register->GetURL();
+    $date       = $register->GetDate();
+    $misc       = $register->GetMisc();
+    $text       = $register->GetText();
+    $key        = $register->GetKey();
+    $remove     = $register->GetRemove();
+    $registered = $register->GetRegistered();
 
     %fields = $register->GetFields();
 
@@ -125,6 +126,7 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $register->SetText();
     $register->SetKey();
     $register->SetRemove();
+    $register->SetRegistered();
 
 =head2 Test functions
 
@@ -146,6 +148,7 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $test = $register->DefinedText();
     $test = $register->DefinedKey();
     $test = $register->DefinedRemove();
+    $test = $register->DefinedRegistered();
 
 =head1 METHODS
 
@@ -189,6 +192,8 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
 
   GetRemove() -  returns a string with the remove in the <query/>.
 
+  GetRegistered() -  returns a string with the registered in the <query/>.
+
   GetFields() -  returns a hash with the keys being the fields
                  contained in the <query/> and the values the
                  contents of the tags.
@@ -213,7 +218,8 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
               misc=>string,
               text=>string,
               key=>string,
-              remove=>string)
+              remove=>string,
+	      registered=>string)
  
   SetUsername(string) - sets the username for the account you are
                         trying to create.  Set string to "" to send
@@ -282,9 +288,13 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
   SetKey(string) - sets the key for the server/transport you are trying 
                    to regsiter to.
 
-  SetRemove() - sets the remove for the account you are
-                trying to create so that the account will
-                be removed from the server/transport.
+  SetRemove() - sets the remove for the account you are trying to 
+                delete so that the account will be removed from the 
+                server/transport.
+
+  SetRegistered() - sets the registered for the account you are trying to 
+                    create so that the account will know that it is 
+                    already registered.
 
 =head2 Test functions
 
@@ -342,6 +352,9 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
   DefinedRemove() - returns 1 if there is a <remove/> in the query,
                     0 if not.
 
+  DefinedRegistered() - returns 1 if there is a <registered/> in the query,
+                        0 if not.
+
 =head1 AUTHOR
 
 By Ryan Eatmon in May of 2000 for http://jabber.org..
@@ -358,7 +371,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0011";
+$VERSION = "1.0013";
 
 sub new {
   my $proto = shift;
@@ -603,6 +616,18 @@ sub GetRemove {
 
 ##############################################################################
 #
+# GetRegistered - returns the registered in the <query/>.
+#
+##############################################################################
+sub GetRegistered {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"registered");
+}
+
+
+##############################################################################
+#
 # GetFields - returns a hash that contains the fields and values that in the
 #             <query/>.
 #
@@ -630,7 +655,6 @@ sub GetFields {
   $fields{misc} = $self->GetMisc() if ($self->DefinedMisc() == 1);
   $fields{text} = $self->GetText() if ($self->DefinedText() == 1);
   $fields{key} = $self->GetKey() if ($self->DefinedKey() == 1);
-  $fields{remove} = $self->GetRemove() if ($self->DefinedRemove() == 1);
 
   return \%fields;
 }
@@ -667,7 +691,8 @@ sub SetRegister {
   $self->SetMisc($register{misc}) if exists($register{misc});
   $self->SetText($register{text}) if exists($register{text});
   $self->SetKey($register{key}) if exists($register{key});
-  $self->SetRemove($register{remove}) if exists($register{remove});
+  $self->SetRemove() if exists($register{remove});
+  $self->SetRegistered() if exists($register{registered});
 }
 
 
@@ -913,8 +938,19 @@ sub SetKey {
 sub SetRemove {
   shift;
   my $self = shift;
-  my ($remove) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"remove",$remove,{});
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"remove","",{});
+}
+
+
+##############################################################################
+#
+# SetRegistered - sets the registered of the account you want to connect with.
+#
+##############################################################################
+sub SetRegistered {
+  shift;
+  my $self = shift;
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"registered","",{});
 }
 
 
@@ -1143,6 +1179,18 @@ sub DefinedRemove {
   shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"remove");
+}
+
+
+##############################################################################
+#
+# DefinedRegistered - returns the registered in the <query/>.
+#
+##############################################################################
+sub DefinedRegistered {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"registered");
 }
 
 

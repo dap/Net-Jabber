@@ -86,7 +86,7 @@ use XML::Stream 1.05;
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0011";
+$VERSION = "1.0013";
 
 use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&

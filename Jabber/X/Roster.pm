@@ -94,7 +94,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0011";
+$VERSION = "1.0013";
 
 use Net::Jabber::X::Roster::Item;
 ($Net::Jabber::X::Roster::Item::VERSION < $VERSION) &&

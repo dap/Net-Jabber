@@ -274,7 +274,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0011";
+$VERSION = "1.0013";
 
 sub new {
   my $proto = shift;
@@ -855,9 +855,11 @@ sub Reply {
 
   my $reply = new Net::Jabber::Message();
 
-  my $subject = $self->GetSubject();
-  $subject =~ s/re\:\s+//i;
-  $reply->SetSubject("re: $subject");
+  if (($self->GetType() eq "") || ($self->GetType() eq "normal")) {
+    my $subject = $self->GetSubject();
+    $subject =~ s/re\:\s+//i;
+    $reply->SetSubject("re: $subject");
+  }
   $reply->SetThread($self->GetThread()) if ($self->GetThread() ne "");
   $reply->SetID($self->GetID()) if ($self->GetID() ne "");
   $reply->SetType($self->GetType()) if ($self->GetType() ne "");

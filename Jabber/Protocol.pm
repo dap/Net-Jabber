@@ -527,7 +527,7 @@ it under the same terms as Perl itself.
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "1.0011";
+$VERSION = "1.0013";
 
 sub new {
   my $proto = shift;
@@ -985,22 +985,16 @@ sub PresenceDBDelete {
   shift;
   my $self = shift;
   my ($jid) = @_;
-
-  print "Pre Delete:\n";
-  &Net::Jabber::printData("\$self->{PRESENCEDB}",$self->{PRESENCEDB});
-
+  
   if (ref($jid) eq "Net::Jabber::JID") {
-    print "JID: (",$jid->GetJID("full"),") => (",$jid->GetJID(),")\n";
     return if !exists($self->{PRESENCEDB}->{$jid->GetJID()});
     delete($self->{PRESENCEDB}->{$jid->GetJID()});
+    $self->{DEBUG}->Log1("PresenceDBDelete: delete ",$jid->GetJID()," from the DB"); 
   } else {
-    print "STRING: (",$jid,")\n";
     return if !exists($self->{PRESENCEDB}->{$jid});
     delete($self->{PRESENCEDB}->{$jid});
+    $self->{DEBUG}->Log1("PresenceDBDelete: delete ",$jid," from the DB"); 
   }
-
-  print "Post Delete:\n";
-  &Net::Jabber::printData("\$self->{PRESENCEDB}",$self->{PRESENCEDB});
 }
 
 

@@ -1,3 +1,14 @@
+1.0013
+======
+  - Removed some leftover print statements that would cause confusing output
+    to STDOUT.
+
+1.0012
+======
+  - In the Message module Reply function, it only does "re: " for normal
+    messages now.
+  - Added <registered/> to the iq:register namespace.
+
 1.0011
 ======
   - Added PresenceDBDelete to allow for deleting JIDs from the the DB.

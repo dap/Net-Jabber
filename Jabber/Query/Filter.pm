@@ -93,7 +93,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0011";
+$VERSION = "1.0013";
 
 use Net::Jabber::Query::Filter::Rule;
 ($Net::Jabber::Query::Filter::Rule::VERSION < $VERSION) &&
