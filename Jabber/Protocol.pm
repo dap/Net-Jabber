@@ -89,10 +89,16 @@ Net::Jabber::Protocol - Jabber Protocol Library
     $id         = $Con->SendWithID($sendObj);
     $id         = $Con->SendWithID("<tag>XML</tag>");
     $receiveObj = $Con->SendAndReceiveWithID($sendObj);
+    $receiveObj = $Con->SendAndReceiveWithID($sendObj,
+                                             10);
     $receiveObj = $Con->SendAndReceiveWithID("<tag>XML</tag>");
+    $receiveObj = $Con->SendAndReceiveWithID("<tag>XML</tag>",
+                                             5);
     $yesno      = $Con->ReceivedID($id);
     $receiveObj = $Con->GetID($id);
     $receiveObj = $Con->WaitForID($id);
+    $receiveObj = $Con->WaitForID($id,
+                                  20);
 
 =head2 Namespace Functions
 
@@ -138,7 +144,7 @@ Net::Jabber::Protocol - Jabber Protocol Library
     $Con->Subscription(type=>"unsubscribed",
 		       to=>"bob@jabber.org");
 
-=head2 PresenceDB Functions
+=head2 Presence DB Functions
 
     $Con->PresenceDBParse(Net::Jabber::Presence);
 
@@ -164,6 +170,33 @@ Net::Jabber::Protocol - Jabber Protocol Library
     @result = $Con->AuthSend(username=>"bob",
 			     password=>"bobrulez",
 			     resource=>"Bob");
+
+=head2 IQ::Browse Functions
+
+    %hash = $Con->BrowseRequest("jabber.org");
+
+=head2 IQ::Browse DB Functions
+
+    $Con->BrowseDBDelete("jabber.org");
+    $Con->BrowseDBDelete(Net::Jabber::JID);
+
+    $presence  = $Con->BrowseDBQuery(jid=>"bob\@jabber.org");
+    $presence  = $Con->BrowseDBQuery(jid=>Net::Jabber::JID);
+    $presence  = $Con->BrowseDBQuery(jid=>"users.jabber.org",
+                                     timeout=>10);
+    $presence  = $Con->BrowseDBQuery(jid=>"conference.jabber.org",
+				     refresh=>1);
+
+=head2 IQ::Last Functions
+
+    $Con->LastQuery();
+    $Con->LastQuery(to=>"bob@jabber.org");
+
+    %result = $Con->LastQuery(waitforid=>1);
+    %result = $Con->LastQuery(to=>"bob@jabber.org",
+			      waitforid=>1);
+
+    $Con->TimeSend(to=>"bob@jabber.org");
 
 =head2 IQ::Register Functions
 
@@ -309,13 +342,16 @@ Net::Jabber::Protocol - Jabber Protocol Library
                          available ID number and sends that packet to
                          the server.  Returns the ID number assigned.
 
-    SendAndReceiveWithID(object) - uses SendWithID and WaitForID to
-    SendAndReceiveWithID(string)   provide a complete way to send and
-                                   receive packets with IDs.  Can take
-                                   either a Net::Jabber::xxxxx object
-                                   or an XML string.  Returns the
-                                   proper Net::Jabber::xxxxx object
-                                   based on the type of packet received.
+    SendAndReceiveWithID(object,  - uses SendWithID and WaitForID to
+                         timeout)   provide a complete way to send and
+    SendAndReceiveWithID(string,    receive packets with IDs.  Can take
+                         timeout)   either a Net::Jabber::xxxxx object
+                                    or an XML string.  Returns the
+                                    proper Net::Jabber::xxxxx object
+                                    based on the type of packet
+                                    received.  The timeout is passed
+                                    on to WaitForID, see that function
+                                    for how the timeout works.
 
     ReceivedID(integer) - returns 1 if a packet has been received with
                           specified ID, 0 otherwise.
@@ -325,9 +361,11 @@ Net::Jabber::Protocol - Jabber Protocol Library
                      ID.  If the ID has been received the GetID returns
                      0.
 
-    WaitForID(integer) - blocks until a packet with the ID is received.
-                         Returns the proper Net::Jabber::xxxxx object
-                         based on the type of packet received
+    WaitForID(integer, - blocks until a packet with the ID is received.
+              timeout)   Returns the proper Net::Jabber::xxxxx object
+                         based on the type of packet received.  If the
+                         timeout limit is reached then if the packet
+                         does come in, it will be discarded.
 
 
     NOTE:  Only <iq/> officially support ids, so sending a <message/>, or
@@ -372,7 +410,7 @@ Net::Jabber::Protocol - Jabber Protocol Library
                            subscribed   - response to a subscribe
                            unsubscribed - response to an unsubscribe
 
-=head2 PresenceDB Functions
+=head2 Presence DB Functions
 
     PresenceDBParse(Net::Jabber::Presence) - for every presence that you
                                              receive pass the Presence
@@ -447,6 +485,65 @@ Net::Jabber::Protocol - Jabber Protocol Library
                                  was successful, otherwise message
                                  contains a little more detail about the
                                  error.
+
+=head2 IQ::Browse Functions
+
+    BrowseRequest(jid=>string, - sends a jabber:iq:browse request to
+                  timeout=>int)  the jid passed as an argument, and
+                                 returns a hash with the resulting
+                                 tree.  The format of the hash is:
+
+                $browse{'category'} = "conference"
+                $browse{'children'}->[0]
+                $browse{'children'}->[1]
+                $browse{'children'}->[11]
+                $browse{'jid'} = "conference.jabber.org"
+                $browse{'name'} = "Jabber.org Conferencing Center"
+                $browse{'ns'}->[0]
+                $browse{'ns'}->[1]
+                $browse{'type'} = "public"
+
+                                 The ns array is an array of the
+                                 namespaces that this jid supports.
+                                 The children array points to hashs
+                                 of this form, and represent the fact
+                                 that they can be browsed to.
+
+                                 The timeout arguement is to tell the
+                                 system how long to wait before giving
+                                 up getting a reply back.
+
+=head2 IQ::Browse DB Functions
+
+    BrowseDBDelete(string|Net::Jabber::JID) - delete thes JID browse
+                                              data from the DB.
+
+    BrowseDBQuery(jid=>string | NJ::JID, - returns the browse data
+                  timeout=>integer,        for the requested JID.  If
+                  refresh=>0|1)            the DB does not contain
+                                           the data for the JID, then
+                                           it attempts to fetch the
+                                           data via BrowseRequest().
+                                           The timeout is passed to
+                                           the BrowseRequest() call,
+                                           and refresh tells the DB
+                                           to request the data, even
+                                           if it already has some.
+
+=head2 IQ::Last Functions
+
+    LastQuery(to=>string,     - asks the jid specified for its last
+              waitforid=>0|1)   activity.  If the to is blank, then it
+    LastQuery()                 queries the server.  Returns a hash with
+                                the various items set if waitforid is set
+                                to 1:
+
+                                  $last{seconds} - Seconds since activity
+                                  $last{message} - Message for activity
+
+    LastSend(to=>string, - sends the specified last to the specified jid.
+             hash)         the hash is the seconds and message as shown
+	                   in the Net::Jabber::Query man page.
 
 =head2 IQ::Register Functions
 
@@ -600,7 +697,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0022";
+$VERSION = "1.0023";
 
 sub new {
   my $proto = shift;
@@ -692,7 +789,12 @@ sub CallBack {
   if ($self->CheckID($tag,$id)) {
     $self->{DEBUG}->Log1("CallBack: found registry entry: tag($tag) id($id)");
     $self->DeregisterID($tag,$id);
-    $self->GotID($id,$NJObject);
+    if ($self->TimedOutID($id)) {
+      $self->{DEBUG}->Log1("CallBack: dropping packet due to timeout");
+    } else {
+      $self->{DEBUG}->Log1("CallBack: they still want it... we still got it...");
+      $self->GotID($id,$NJObject);
+    }
   } else {
     $self->{DEBUG}->Log1("CallBack: no registry entry");
     if (exists($self->{CB}->{$tag})) {
@@ -856,12 +958,12 @@ sub SendWithID {
 sub SendAndReceiveWithID {
   shift;
   my $self = shift;
-  my ($object) = @_;
+  my ($object,$timeout) = @_;
   &{$self->{CB}->{startwait}}() if exists($self->{CB}->{startwait});
   $self->{DEBUG}->Log1("SendAndReceiveWithID: object($object)");
   my $id = $self->SendWithID($object);
   $self->{DEBUG}->Log1("SendAndReceiveWithID: sent with id($id)");
-  my $packet = $self->WaitForID($id);
+  my $packet = $self->WaitForID($id,$timeout);
   &{$self->{CB}->{endwait}}() if exists($self->{CB}->{endwait});
   return $packet;
 }
@@ -912,16 +1014,24 @@ sub GetID {
 sub WaitForID {
   shift;
   my $self = shift;
-  my ($id) = @_;
+  my ($id,$timeout) = @_;
+  $timeout = "300" unless defined($timeout);
 
   $self->{DEBUG}->Log1("WaitForID: id($id)");
-  while(!$self->ReceivedID($id)) {
+  my $endTime = time + $timeout;
+  while(!$self->ReceivedID($id) && ($endTime >= time)) {
     $self->{DEBUG}->Log1("WaitForID: haven't gotten it yet... let's wait for more packets");
     return unless (defined($self->Process(1)));
     &{$self->{CB}->{update}}() if exists($self->{CB}->{update});
   }
-  $self->{DEBUG}->Log1("WaitForID: we got it!");
-  return $self->GetID($id);
+  if (!$self->ReceivedID($id)) {
+    $self->TimeoutID($id);
+    $self->{DEBUG}->Log1("WaitForID: timed out...");
+    return;
+  } else {
+    $self->{DEBUG}->Log1("WaitForID: we got it!");
+    return $self->GetID($id);
+  }
 }
 
 
@@ -957,6 +1067,37 @@ sub CheckID {
   return 0 if ($id eq "");
   $self->{DEBUG}->Log1("CheckID: we have that here somewhere...");
   return exists($self->{IDRegistry}->{$tag}->{$id});
+}
+
+
+###########################################################################
+#
+# TimeoutID - Timeout the tag and ID in the registry so that the CallBack
+#             can know what to put in the ID list and what to pass on.
+#
+###########################################################################
+sub TimeoutID {
+  shift;
+  my $self = shift;
+  my ($id) = @_;
+
+  $self->{DEBUG}->Log1("TimeoutID: id($id)");
+  $self->{LIST}->{$id} = 0;
+}
+
+
+###########################################################################
+#
+# TimedOutID - Timeout the tag and ID in the registry so that the CallBack
+#             can know what to put in the ID list and what to pass on.
+#
+###########################################################################
+sub TimedOutID {
+  shift;
+  my $self = shift;
+  my ($id) = @_;
+
+  return (exists($self->{LIST}->{$id}) && ($self->{LIST}->{$id} == 0));
 }
 
 
@@ -1013,10 +1154,14 @@ sub DefineNamespace {
 
   foreach my $function (@{$args{functions}}) {
     my %funcHash = %{$function};
-  croak("You must specify name=>'' for each function in call to DefineNamespace")
-    if !exists($funcHash{name});
+    foreach my $func (keys(%funcHash)) {
+      $funcHash{ucfirst(lc($func))} = $funcHash{$func};
+    }
 
-    my $name = delete($funcHash{name});
+    croak("You must specify name=>'' for each function in call to DefineNamespace")
+      if !exists($funcHash{Name});
+
+    my $name = delete($funcHash{Name});
     foreach my $func (keys(%funcHash)) {
       eval("\$Net::Jabber::$args{type}::NAMESPACES{\$args{xmlns}}->{\$name}->{\$func} = \$funcHash{\$func};");
     }
@@ -1054,15 +1199,18 @@ sub PresenceDBParse {
   my ($presence) = @_;
 
   my $type = $presence->GetType();
+  $type = "" unless defined($type);
   return $presence unless (($type eq "") ||
 			   ($type eq "available") ||
 			   ($type eq "unavailable"));
 
   my $fromJID = $presence->GetFrom("jid");
   my $fromID = $fromJID->GetJID();
+  $fromID = "" unless defined($fromID);
   my $resource = $fromJID->GetResource();
   $resource = " " unless ($resource ne "");
   my $priority = $presence->GetPriority();
+  $priority = 0 unless defined($priority);
 
   $self->{DEBUG}->Log1("PresenceDBParse: fromJID(",$fromJID->GetJID("full"),") resource($resource) priority($priority) type($type)");
   $self->{DEBUG}->Log2("PresenceDBParse: xml(",$presence->GetXML(),")");
@@ -1070,8 +1218,9 @@ sub PresenceDBParse {
   if (exists($self->{PRESENCEDB}->{$fromID})) {
 
     my $oldPriority = $self->{PRESENCEDB}->{$fromID}->{resources}->{$resource};
+    $oldPriority = "" unless defined($oldPriority);
 
-    my $loc;
+    my $loc = 0;
     foreach my $index (0..$#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}}) {
       $loc = $index
 	if ($self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}->[$index]->{resource} eq $resource);
@@ -1079,7 +1228,8 @@ sub PresenceDBParse {
     splice(@{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}},$loc,1);
     delete($self->{PRESENCEDB}->{$fromID}->{resources}->{$resource});
     delete($self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority})
-      if ($#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}} == -1);
+      if (exists($self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}) &&
+	  ($#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}} == -1));
     delete($self->{PRESENCEDB}->{$fromID})
       if (scalar(keys(%{$self->{PRESENCEDB}->{$fromID}})) == 0);
 
@@ -1118,15 +1268,12 @@ sub PresenceDBDelete {
   my $self = shift;
   my ($jid) = @_;
 
-  if (ref($jid) eq "Net::Jabber::JID") {
-    return if !exists($self->{PRESENCEDB}->{$jid->GetJID()});
-    delete($self->{PRESENCEDB}->{$jid->GetJID()});
-    $self->{DEBUG}->Log1("PresenceDBDelete: delete ",$jid->GetJID()," from the DB");
-  } else {
-    return if !exists($self->{PRESENCEDB}->{$jid});
-    delete($self->{PRESENCEDB}->{$jid});
-    $self->{DEBUG}->Log1("PresenceDBDelete: delete ",$jid," from the DB");
-  }
+  my $indexJID = $jid;
+  $indexJID = $jid->GetJID() if (ref($jid) eq "Net::Jabber::JID");
+
+  return if !exists($self->{PRESENCEDB}->{$indexJID});
+  delete($self->{PRESENCEDB}->{$indexJID});
+  $self->{DEBUG}->Log1("PresenceDBDelete: delete ",$indexJID," from the DB");
 }
 
 
@@ -1141,23 +1288,16 @@ sub PresenceDBQuery {
   my $self = shift;
   my ($jid) = @_;
 
-  if (ref($jid) eq "Net::Jabber::JID") {
-    return if !exists($self->{PRESENCEDB}->{$jid->GetJID()});
-    return if (scalar(keys(%{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}})) == 0);
+  my $indexJID = $jid;
+  $indexJID = $jid->GetJID() if (ref($jid) eq "Net::Jabber::JID");
 
-    my $highPriority =
-      (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}}))[0];
+  return if !exists($self->{PRESENCEDB}->{$indexJID});
+  return if (scalar(keys(%{$self->{PRESENCEDB}->{$indexJID}->{priorities}})) == 0);
 
-    return $self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$highPriority}->[0]->{presence};
-  } else {
-    return if !exists($self->{PRESENCEDB}->{$jid});
-    return if (scalar(keys(%{$self->{PRESENCEDB}->{$jid}->{priorities}})) == 0);
+  my $highPriority =
+    (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$indexJID}->{priorities}}))[0];
 
-    my $highPriority =
-      (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid}->{priorities}}))[0];
-
-    return $self->{PRESENCEDB}->{$jid}->{priorities}->{$highPriority}->[0]->{presence};
-  }
+  return $self->{PRESENCEDB}->{$indexJID}->{priorities}->{$highPriority}->[0]->{presence};
 }
 
 
@@ -1172,25 +1312,17 @@ sub PresenceDBResources {
   my $self = shift;
   my ($jid) = @_;
 
+  my $indexJID = $jid;
+  $indexJID = $jid->GetJID() if (ref($jid) eq "Net::Jabber::JID");
+
   my @resources;
 
-  if (ref($jid) eq "Net::Jabber::JID") {
-    return if !exists($self->{PRESENCEDB}->{$jid->GetJID()});
+  return if !exists($self->{PRESENCEDB}->{$indexJID});
 
-    foreach my $priority (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}})) {
-      foreach my $index (0..$#{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}}) {
-	next if ($self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}->[$index]->{resource} eq " ");
-	push(@resources,$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}->[$index]->{resource});
-      }
-    }
-  } else {
-    return if !exists($self->{PRESENCEDB}->{$jid});
-
-    foreach my $priority (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid}->{priorities}})) {
-      foreach my $index (0..$#{$self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}}) {
-	next if ($self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}->[$index]->{resource} eq " ");
-	push(@resources,$self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}->[$index]->{resource});
-      }
+  foreach my $priority (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$indexJID}->{priorities}})) {
+    foreach my $index (0..$#{$self->{PRESENCEDB}->{$indexJID}->{priorities}->{$priority}}) {
+      next if ($self->{PRESENCEDB}->{$indexJID}->{priorities}->{$priority}->[$index]->{resource} eq " ");
+      push(@resources,$self->{PRESENCEDB}->{$indexJID}->{priorities}->{$priority}->[$index]->{resource});
     }
   }
   return @resources;
@@ -1405,6 +1537,185 @@ sub AuthSend {
     if ($IQLogin->GetType() eq "error");
   return ("ok","");
 }
+
+
+###########################################################################
+#
+# BrowseRequest - requests the browse information from the specified JID.
+#
+###########################################################################
+sub BrowseRequest {
+  shift;
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  my $IQ = new Net::Jabber::IQ();
+  $IQ->SetIQ(to=>$args{jid},
+	     type=>"get");
+  my $IQBrowse = $IQ->NewQuery("jabber:iq:browse");
+
+  #------------------------------------------------------------------------
+  # Send the IQ with the next available ID and wait for a reply with that
+  # id to be received.  Then grab the IQ reply.
+  #------------------------------------------------------------------------
+  if (exists($args{timeout})) {
+    $IQ = $self->SendAndReceiveWithID($IQ,$args{timeout});
+  } else {
+    $IQ = $self->SendAndReceiveWithID($IQ);
+  }
+
+  #------------------------------------------------------------------------
+  # Check if there was an error.
+  #------------------------------------------------------------------------
+  return unless defined($IQ);
+  if ($IQ->GetType() eq "error") {
+    $self->SetErrorCode($IQ->GetErrorCode().": ".$IQ->GetError());
+    return;
+  }
+
+  $IQBrowse = $IQ->GetQuery();
+
+  if (defined($IQBrowse)) {
+    my %browse;
+    %browse = %{$self->BrowseParse($IQBrowse)};
+    return %browse;
+  } else {
+    return;
+  }
+}
+
+
+###########################################################################
+#
+# BrowseParse - helper function for BrowseRequest to convert the object
+#               tree into a hash for better consumption.
+#
+###########################################################################
+sub BrowseParse {
+  shift;
+  my $self = shift;
+  my $item = shift;
+  my %browse;
+
+  $browse{category} = $item->GetTag();
+  $browse{type} = $item->GetType();
+  $browse{name} = $item->GetName();
+  $browse{jid} = $item->GetJID();
+  $browse{ns} = [ $item->GetNS() ];
+
+  foreach my $subitem ($item->GetItems()) {
+    my ($subbrowse) = $self->BrowseParse($subitem);
+    push(@{$browse{children}},$subbrowse);
+  }
+
+  return \%browse;
+}
+
+
+###########################################################################
+#
+# BrowseDBDelete - delete the JID from the DB completely.
+#
+###########################################################################
+sub BrowseDBDelete {
+  shift;
+  my $self = shift;
+  my ($jid) = @_;
+
+  my $indexJID = $jid;
+  $indexJID = $jid->GetJID() if (ref($jid) eq "Net::Jabber::JID");
+
+  return if !exists($self->{BROWSEDB}->{$indexJID});
+  delete($self->{BROWSEDB}->{$indexJID});
+  $self->{DEBUG}->Log1("BrowseDBDelete: delete ",$indexJID," from the DB");
+}
+
+
+###########################################################################
+#
+# BrowseDBQuery - retrieve the last Net::Jabber::Browse received with
+#                  the highest priority.
+#
+###########################################################################
+sub BrowseDBQuery {
+  shift;
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  $args{timeout} = 10 unless exists($args{timeout});
+
+  my $indexJID = $args{jid};
+  $indexJID = $args{jid}->GetJID() if (ref($args{jid}) eq "Net::Jabber::JID");
+
+  if ((exists($args{refresh}) && ($args{refresh} eq "1")) ||
+      (!exists($self->{BROWSEDB}->{$indexJID}))) {
+    my %browse = $self->BrowseRequest(jid=>$args{jid},
+				      timeout=>$args{timeout});
+
+    $self->{BROWSEDB}->{$indexJID} = \%browse;
+  }
+  return %{$self->{BROWSEDB}->{$indexJID}};
+}
+
+
+###########################################################################
+#
+# LastQuery - Sends an iq:last query to either the server or the specified
+#             JID.
+#
+###########################################################################
+sub LastQuery {
+  shift;
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  $args{waitforid} = 0 unless exists($args{waitforid});
+  my $waitforid = delete($args{waitforid});
+
+  my $iq = new Net::Jabber::IQ();
+  $iq->SetIQ(to=>delete($args{to})) if exists($args{to});
+  $iq->SetIQ(type=>'get');
+  my $last = $iq->NewQuery("jabber:iq:last");
+
+  if ($waitforid == 0) {
+    $self->Send($iq);
+  } else {
+    $iq = $self->SendAndReceiveWithID($iq);
+
+    return unless defined($iq);
+
+    my $query = $iq->GetQuery();
+
+    return unless defined($query);
+
+    return $last->GetLast();
+  }
+}
+
+
+###########################################################################
+#
+# LastSend - sends an iq:last packet to the specified user.
+#
+###########################################################################
+sub LastSend {
+  shift;
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  my $iq = new Net::Jabber::IQ();
+  $iq->SetIQ(to=>delete($args{to}),
+	     type=>'result');
+  my $last = $iq->NewQuery("jabber:iq:last");
+  $last->SetLast(%args);
+
+  $self->Send($iq);
+}
+
 
 
 ###########################################################################
@@ -1672,7 +1983,47 @@ sub SearchRequest {
   #------------------------------------------------------------------------
   $IQSearch = $IQ->GetQuery();
 
-  return $IQSearch->GetSearch();
+  my %search;
+  #------------------------------------------------------------------------
+  # From the reply IQ determine what fields are required and send a hash
+  # back with the fields and any values that are already defined (like key)
+  #------------------------------------------------------------------------
+  $IQSearch = $IQ->GetQuery();
+  $search{fields} = { $IQSearch->GetSearch() };
+
+  #---------------------------------------------------------------------------
+  # Get any forms so that we have the option of showing a nive dynamic form
+  # to the user and not just a bunch of fields.
+  #---------------------------------------------------------------------------
+  foreach my $xForm ($IQ->GetX("jabber:x:form")) {
+    $search{instructions} = $xForm->GetInstructions();
+    foreach my $field ($xForm->GetFields()) {
+      my $order = $field->GetOrder();
+      $search{form}->[$order]->{type} = $field->GetType();
+      $search{form}->[$order]->{label} = $field->GetLabel();
+      $search{form}->[$order]->{var} = $field->GetVar();
+      $search{form}->[$order]->{value} = $field->GetValue();
+      my $count = 0;
+      foreach my $option ($field->GetOptions()) {
+	$search{form}->[$order]->{options}->[$count]->{value} =
+	  $option->GetValue();
+	$search{form}->[$order]->{options}->[$count]->{label} =
+	  $option->GetLabel();
+	$count++;
+      }
+    }
+  }
+
+  #---------------------------------------------------------------------------
+  # Get any oobs so that we have the option of sending the user to the http
+  # form and not a dynamic one.
+  #---------------------------------------------------------------------------
+  foreach my $xOob ($IQ->GetX("jabber:x:oob")) {
+    $search{oob}->{url} = $xOob->GetURL();
+    $search{oob}->{desc} = $xOob->GetDesc();
+  }
+
+  return %search;
 }
 
 

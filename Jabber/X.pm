@@ -102,7 +102,7 @@ Net::Jabber::X - Jabber X Module
 
 =head2 Generic Retrieval functions
 
-  GetXMLNS() - returns a string with the namespace of the query that
+  GetXMLNS() - returns a string with the namespace of the packet that
                the <x/> contains.
 
                $xmlns = $X->GetXMLNS();
@@ -305,7 +305,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS %NAMESPACES);
 
-$VERSION = "1.0022";
+$VERSION = "1.0023";
 
 sub new {
   my $proto = shift;
@@ -465,13 +465,13 @@ $NAMESPACES{"jabber:x:form"}->{Form}->{Get} = "__netjabber__:master";
 $NAMESPACES{"jabber:x:form"}->{Form}->{Set} = ["master"];
 
 $NAMESPACES{"jabber:x:form"}->{Field}->{Get}        = "";
-$NAMESPACES{"jabber:x:form"}->{Field}->{Set}        = ["add","Query","__netjabber__:x:form:field"];
-$NAMESPACES{"jabber:x:form"}->{Field}->{Defined}    = "query";
+$NAMESPACES{"jabber:x:form"}->{Field}->{Set}        = ["add","X","__netjabber__:x:form:field"];
+$NAMESPACES{"jabber:x:form"}->{Field}->{Defined}    = "x";
 $NAMESPACES{"jabber:x:form"}->{Field}->{Hash}       = "child-add";
 
 $NAMESPACES{"jabber:x:form"}->{Field}->{Add} = ["X","__netjabber__:x:form:field","Field","field"];
 
-$NAMESPACES{"jabber:x:form"}->{Fields}->{Get} = ["x","__netjabber__:x:form:field"];
+$NAMESPACES{"jabber:x:form"}->{Fields}->{Get} = ["__netjabber__:children:x","__netjabber__:x:form:field"];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:x:form:field
@@ -505,13 +505,13 @@ $NAMESPACES{"__netjabber__:x:form:field"}->{Field}->{Get} = "__netjabber__:maste
 $NAMESPACES{"__netjabber__:x:form:field"}->{Field}->{Set} = ["master"];
 
 $NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Get}        = "";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Set}        = ["add","Query","__netjabber__:x:form:field:option"];
-$NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Defined}    = "query";
+$NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Set}        = ["add","X","__netjabber__:x:form:field:option"];
+$NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Defined}    = "x";
 $NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Hash}       = "child-add";
 
 $NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Add} = ["X","__netjabber__:x:form:field:option","Option","option"];
 
-$NAMESPACES{"__netjabber__:x:form:field"}->{Options}->{Get} = ["x","__netjabber__:x:form:field:option"];
+$NAMESPACES{"__netjabber__:x:form:field"}->{Options}->{Get} = ["__netjabber__:children:x","__netjabber__:x:form:field:option"];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:x:form:field:option
@@ -549,13 +549,13 @@ $NAMESPACES{"jabber:x:oob"}->{Oob}->{Set} = ["master"];
 # jabber:x:roster
 #-----------------------------------------------------------------------------
 $NAMESPACES{"jabber:x:roster"}->{Item}->{Get}        = "";
-$NAMESPACES{"jabber:x:roster"}->{Item}->{Set}        = ["add","Query","__netjabber__:x:roster:item"];
-$NAMESPACES{"jabber:x:roster"}->{Item}->{Defined}    = "query";
+$NAMESPACES{"jabber:x:roster"}->{Item}->{Set}        = ["add","X","__netjabber__:x:roster:item"];
+$NAMESPACES{"jabber:x:roster"}->{Item}->{Defined}    = "x";
 $NAMESPACES{"jabber:x:roster"}->{Item}->{Hash}       = "child-add";
 
 $NAMESPACES{"jabber:x:roster"}->{Item}->{Add} = ["X","__netjabber__:x:roster:item","Item","item"];
 
-$NAMESPACES{"jabber:x:roster"}->{Items}->{Get} = ["x","__netjabber__:x:roster:item"];
+$NAMESPACES{"jabber:x:roster"}->{Items}->{Get} = ["__netjabber__:children:x","__netjabber__:x:roster:item"];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:x:roster:item
@@ -631,13 +631,13 @@ $NAMESPACES{"jabber:x:sxpm"}->{SXPM}->{Get} = "__netjabber__:master";
 $NAMESPACES{"jabber:x:sxpm"}->{SXPM}->{Set} = ["master"];
 
 $NAMESPACES{"jabber:x:sxpm"}->{Map}->{Get}        = "";
-$NAMESPACES{"jabber:x:sxpm"}->{Map}->{Set}        = ["add","Query","__netjabber__:x:sxpm:map"];
-$NAMESPACES{"jabber:x:sxpm"}->{Map}->{Defined}    = "query";
+$NAMESPACES{"jabber:x:sxpm"}->{Map}->{Set}        = ["add","X","__netjabber__:x:sxpm:map"];
+$NAMESPACES{"jabber:x:sxpm"}->{Map}->{Defined}    = "x";
 $NAMESPACES{"jabber:x:sxpm"}->{Map}->{Hash}       = "child-add";
 
 $NAMESPACES{"jabber:x:sxpm"}->{Map}->{Add} = ["X","__netjabber__:x:sxpm:map","Map","map"];
 
-$NAMESPACES{"jabber:x:sxpm"}->{Maps}->{Get} = ["x","__netjabber__:x:sxpm:map"];
+$NAMESPACES{"jabber:x:sxpm"}->{Maps}->{Get} = ["__netjabber__:children:x","__netjabber__:x:sxpm:map"];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:x:sxpm:map

@@ -241,7 +241,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0022";
+$VERSION = "1.0023";
 
 sub new {
   my $proto = shift;
@@ -350,14 +350,12 @@ sub Reply {
   $reply->SetID($self->GetID()) if ($self->GetID() ne "");
   $reply->SetType("result");
 
-  my $selfQuery = $self->GetQuery();
-  $reply->NewQuery($selfQuery->GetXMLNS());
+  $reply->AddQuery($self->GetQuery());
 
   $reply->SetIQ(to=>$self->GetFrom(),
-		from=>$self->GetTo()
+		from=>$self->GetTo(),
+		%args
 	       );
-
-  $reply->SetIQ(%args);
 
   return $reply;
 }

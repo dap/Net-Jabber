@@ -132,7 +132,7 @@ use XML::Stream 1.12 qw( Hash );
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0022";
+$VERSION = "1.0023";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&
@@ -283,9 +283,10 @@ sub Connect {
   if (($args{connectiontype} eq "accept") ||
       ($args{connectiontype} eq "tcpip")) {
     $self->Send("<handshake>".Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$args{secret})."</handshake>");
-    my @handshake = $self->Process();
-    return if ($handshake[0] eq "");
-    return if (&XML::Stream::GetXMLData("value",$handshake[0],"","") ne "");
+    my $handshake = $self->Process();
+
+    return if ($$handshake[0] eq "");
+    return if (&XML::Stream::GetXMLData("value",$$handshake[0],"","") ne "");
   }
 
   $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });

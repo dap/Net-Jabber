@@ -217,7 +217,7 @@ if (eval "require Time::Timezone") {
   $TIMEZONE = 0;
 }
 
-$VERSION = "1.0022";
+$VERSION = "1.0023";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -319,6 +319,11 @@ sub Get {
   my $args = shift;
   my $funcs = shift;
 
+  my $arg0 = "";
+  my $arg1 = "";
+  $arg0 = $_[0] if ($#_ >= 0);
+  $arg1 = $_[1] if ($#_ >= 1);
+
   my $xmlns = ((ref($args) eq "ARRAY") ? $$args[1] : "");
   my $key = ((ref($args) eq "ARRAY") ? $$args[0] : $args);
 
@@ -350,16 +355,16 @@ sub Get {
 
   if (ref($self->{$loc}->{$key}) eq "Net::Jabber::JID") {
     my $value = $self->{$loc}->{$key};
-    return $value->GetJID("full") if ($_[0] ne "jid");
+    return $value->GetJID("full") if ($arg0 ne "jid");
     return $value;
   }
   if (ref($self->{$loc}->{$key}) eq "ARRAY") {
     return $self->{$loc}->{$key}->[0]
-      if (($key eq "query") && ($xmlns eq "") && ($_[0] eq ""));
-    if ($_[0] ne "") {
+      if (($key eq "query") && ($xmlns eq "") && ($arg0 eq ""));
+    if ($arg0 ne "") {
       my @list;
       foreach my $item (@{$self->{$loc}->{$key}}) {
-	push(@list,$item) if ($item->GetXMLNS() eq $_[0]);
+	push(@list,$item) if ($item->GetXMLNS() eq $arg0);
       }
       return @list;
     }
@@ -376,9 +381,9 @@ sub Get {
     return @{$self->{$loc}->{$key}};
   }
   if (ref($self->{$loc}->{$key}) eq "HASH") {
-    return if (($_[0] ne "") && !exists($self->{$loc}->{$key}->{$_[0]}));
-    return $self->{$loc}->{$key}->{$_[0]}
-      if (($_[0] ne "") && exists($self->{$loc}->{$key}->{$_[0]}));
+    return if (($arg0 ne "") && !exists($self->{$loc}->{$key}->{$arg0}));
+    return $self->{$loc}->{$key}->{$arg0}
+      if (($arg0 ne "") && exists($self->{$loc}->{$key}->{$arg0}));
     return %{$self->{$loc}->{$key}};
   }
 
@@ -426,6 +431,11 @@ sub Set {
   my $type = $$args[0];
   my $key = $$args[1];
   $key = "" unless defined($key);
+
+  my $arg0 = "";
+  my $arg1 = "";
+  $arg0 = $_[0] if ($#_ >= 0);
+  $arg1 = $_[1] if ($#_ >= 1);
 
   #&DEBUG($self,"Set: type($type) key($key) args(",join(",",@_),")");
 
@@ -489,7 +499,7 @@ sub Set {
     return;
   }
   if ($type eq "special") {
-    if ($_[0] eq "") {
+    if ($arg0 eq "") {
       $self->{DATA}->{__netjabbertime__} = time
 	unless exists($self->{DATA}->{__netjabbertime__});
       my $value;
@@ -505,8 +515,8 @@ sub Set {
 
       $self->{DATA}->{$key} = $value;
     } else {
-      my $value = $_[0];
-      $value = $_[0]." - [Net::Jabber v$Net::Jabber::VERSION]"
+      my $value = $arg0;
+      $value = $arg0." - [Net::Jabber v$Net::Jabber::VERSION]"
 	if (($key eq "version") && ($PARSING == 0));
       $self->{DATA}->{$key} = $value;
     }
@@ -595,7 +605,9 @@ sub ParseTree {
     }
 
     if ($type eq "child-data") {
-      my @children = split(",",$self->{TREE}->{"$root-child"});
+      my @children;
+      @children = split(",",$self->{TREE}->{"$root-child"})
+	if exists($self->{TREE}->{"$root-child"});
       @children = grep { $self->{TREE}->{"$_-tag"} eq $lcfunc } @children;
       foreach my $childid (@children) {
 	eval "\$self->Set$function(\$self->{TREE}->{'${childid}-data'}) if exists(\$self->{TREE}->{'${childid}-data'});";
@@ -615,7 +627,9 @@ sub ParseTree {
 
     if ($type eq "child-add") {
       $lcfunc = $self->Add($function);
-      my @children = split(",",$self->{TREE}->{"$root-child"});
+      my @children;
+      @children = split(",",$self->{TREE}->{"$root-child"})
+	if exists($self->{TREE}->{"$root-child"});
       @children = grep { $self->{TREE}->{"$_-tag"} eq $lcfunc } @children
 	unless ($lcfunc eq "");
       eval "\$self->Set$function(\@children);";
@@ -626,7 +640,9 @@ sub ParseTree {
       my $child = $1;
       my $att = $2;
 
-      my @children = split(",",$self->{TREE}->{"$root-child"});
+      my @children;
+      @children = split(",",$self->{TREE}->{"$root-child"})
+	if exists($self->{TREE}->{"$root-child"});
       @children = grep { $self->{TREE}->{"$_-tag"} eq $child } @children;
       foreach my $childid (@children) {
 	eval "\$self->Set$function(\$self->{TREE}->{'${childid}-att-${att}'}) if exists(\$self->{TREE}->{'${childid}-att-${att}'});";
@@ -688,7 +704,7 @@ sub GetXML {
   my $self = shift;
   my(@funcs) = @_;
 
-  #&DEBUG($self,"\n",&Net::Jabber::sprintData("  \$self->{DATA}->",$self->{DATA})) if #&DEBUG($self,"GetXML: tree");
+  #&DEBUG($self,"\n",&Net::Jabber::sprintData("  \$self->{DATA}->",$self->{DATA})) if &DEBUG($self,"GetXML: tree");
 
   my %funcs;
   foreach my $func (@funcs) {
@@ -720,56 +736,65 @@ sub GetXML {
       exists($funcs{'child-data'}) ||
       exists($self->{CHILDREN}->{query}) ||
       exists($self->{CHILDREN}->{data}) ||
-      exists($self->{CHILDREN}->{x})) {
+      exists($self->{CHILDREN}->{x}) ||
+      (exists($self->{RAWXWML}) && ($#{$self->{RAWXML}} > 0))) {
 
     $string .= ">";
 
-    foreach my $func (split(",",$funcs{'data'})) {
-      $string .= &XML::Stream::EscapeXML(eval "\$self->Get$func();");
+    if (exists($funcs{'data'})) {
+      foreach my $func (split(",",$funcs{'data'})) {
+	$string .= &XML::Stream::EscapeXML(eval "\$self->Get$func();");
+      }
     }
 
-    foreach my $func (split(",",$funcs{'child-data'})) {
-      my $lcfunc = $self->Get($func);
-      my $addit = eval "\$self->Defined$func();";
-      my $valType = eval "\$self->ValType$func();";
-
-      if (($valType) eq "array") {
-	my @value = eval "\$self->Get$func();";
-	foreach my $item (@value) {
-	  $string .= "<$lcfunc>$item</$lcfunc>";
-	}
-      } else {
-	my $value = eval "\$self->Get$func();";
-	$value = &XML::Stream::EscapeXML($value);
-	my $test = "att-$lcfunc-";
-	my @attFuncs = grep { /^$test/; } keys(%funcs);
-
-	if (($addit == 1) || ($#attFuncs > -1)) {
-
-	  $string .= "<$lcfunc" if ($addit == 1);
-
-	  foreach my $att (@attFuncs) {
-	    my $attFunc = $funcs{$att};
-	    ($att) = ($att =~ /^$test(.*)$/);
+    if (exists($funcs{'child-data'})) {
+      foreach my $func (split(",",$funcs{'child-data'})) {
+	my $lcfunc = $self->Get($func);
+	my $addit = eval "\$self->Defined$func();";
+	$addit = 0 unless defined($addit);
+	my $valType = eval "\$self->ValType$func();";
 	
-	    my $pass = eval "\$self->Defined$attFunc();";
-	    my $attValue = eval "$self->Get$attFunc();";
-	    $pass = 0 if (($pass == 1) && 
-			  (($attValue eq "") || 
-			   ($attValue =~ /^__netjabber__/)));
-
-	    if ($pass == 1) {
-	      $string .= "<$lcfunc" if ($addit == 0);
-	      $addit = 1;
-	      $attValue = &XML::Stream::EscapeXML($attValue);
-	      $string .= " $att='$attValue'";
-	    }
+	if (($valType) eq "array") {
+	  my @value = eval "\$self->Get$func();";
+	  foreach my $item (@value) {
+	    $string .= "<$lcfunc>$item</$lcfunc>";
 	  }
-	  if ($addit == 1) {
-	    if ($value eq "") {
-	      $string .= "/>";
-	    } else {
-	      $string .= ">".$value."</$lcfunc>";
+	} else {
+	  my $value = eval "\$self->Get$func();";
+	  $value = &XML::Stream::EscapeXML($value);
+	  $value = "" unless defined($value);
+	  my $test = "att-$lcfunc-";
+	  my @attFuncs = grep { /^$test/; } keys(%funcs);
+
+	  if (($addit == 1) || ($#attFuncs > -1)) {
+
+	    $string .= "<$lcfunc" if ($addit == 1);
+
+	    foreach my $att (@attFuncs) {
+	      my $attFunc = $funcs{$att};
+	      ($att) = ($att =~ /^$test(.*)$/);
+
+	      my $pass = eval "\$self->Defined$attFunc();";
+	      $pass = 0 unless defined($pass);
+	      my $attValue = eval "\$self->Get$attFunc();";
+	      $attValue = "" unless defined($attValue);
+	      $pass = 0 if (($pass == 1) &&
+			    (($attValue eq "") ||
+			     ($attValue =~ /^__netjabber__/)));
+
+	      if ($pass == 1) {
+		$string .= "<$lcfunc" if ($addit == 0);
+		$addit = 1;
+		$attValue = &XML::Stream::EscapeXML($attValue);
+		$string .= " $att='$attValue'";
+	      }
+	    }
+	    if ($addit == 1) {
+	      if ($value eq "") {
+		$string .= "/>";
+	      } else {
+		$string .= ">".$value."</$lcfunc>";
+	      }
 	    }
 	  }
 	}
@@ -791,6 +816,9 @@ sub GetXML {
 	$string .= $x->GetXML();
       }
     }
+
+    $string .= join("",@{$self->{RAWXML}})
+      if (exists($self->{RAWXWML}) && ($#{$self->{RAWXML}} > 0));
 
     $string .= "</".$self->{TAG}.">";
   } else {
@@ -824,14 +852,25 @@ sub AutoLoad {
   $type = "" unless defined($type);
   $value = "" unless defined($value);
 
+  my $arg0 = "";
+  my $arg1 = "";
+  $arg0 = $_[0] if ($#_ >= 0);
+  $arg1 = $_[1] if ($#_ >= 1);
+
   return $self->{TAG} if ($AutoLoad eq "GetTag");
 
   my %FUNCTIONS;
   eval "\%FUNCTIONS = \%".$package."::FUNCTIONS";
 
-  return $FUNCTIONS{$_[0]}->{Hash} if (exists($FUNCTIONS{$_[0]}->{Hash}) && ($AutoLoad eq "Hash"));
-  return $FUNCTIONS{$_[0]}->{Get} if (exists($FUNCTIONS{$_[0]}->{Get}) && ($AutoLoad eq "Get"));
-  return $FUNCTIONS{$_[0]}->{Add}->[3] if (exists($FUNCTIONS{$_[0]}->{Add}) && ($AutoLoad eq "Add"));
+  return $FUNCTIONS{$arg0}->{Hash} if (($AutoLoad eq "Hash") &&
+				       exists($FUNCTIONS{$arg0}) &&
+				       exists($FUNCTIONS{$arg0}->{Hash}));
+  return $FUNCTIONS{$arg0}->{Get} if (($AutoLoad eq "Get") &&
+				      exists($FUNCTIONS{$arg0}) &&
+				      exists($FUNCTIONS{$arg0}->{Get}));
+  return $FUNCTIONS{$arg0}->{Add}->[3] if (($AutoLoad eq "Add") &&
+					   exists($FUNCTIONS{$arg0}) &&
+					   exists($FUNCTIONS{$arg0}->{Add}));
 
   my @funcs = grep { exists($FUNCTIONS{$_}->{Hash}) } keys(%FUNCTIONS);
 
@@ -848,30 +887,33 @@ sub AutoLoad {
     my $xmlns = $self->GetXMLNS();
     #&DEBUG($self,"xmlns(",$xmlns,")");
     #&DEBUG($self,"\%FUNCTIONS = \%{\$".$package."::NAMESPACES{\'".$xmlns."\'}}");
-    eval "\%FUNCTIONS = \%{\$".$package."::NAMESPACES{\'".$xmlns."\'}}";
+    if (defined($xmlns)) {
+      eval "\%FUNCTIONS = \%{\$".$package."::NAMESPACES{\'".$xmlns."\'}}";
 
-    push(@funcs, grep { exists($FUNCTIONS{$_}->{Hash}) } keys(%FUNCTIONS));
-    return &{$CALLBACKS{$type}}($self,$FUNCTIONS{$value}->{$type},\@funcs,@_)
-      if (exists($FUNCTIONS{$value}) &&
-	  exists($FUNCTIONS{$value}->{$type}));
+      push(@funcs, grep { exists($FUNCTIONS{$_}->{Hash}) } keys(%FUNCTIONS));
+      return &{$CALLBACKS{$type}}($self,$FUNCTIONS{$value}->{$type},\@funcs,@_)
+	if (exists($FUNCTIONS{$value}) &&
+	    exists($FUNCTIONS{$value}->{$type}));
 
-    return $FUNCTIONS{$value}->{Set}->[0]
-      if (exists($FUNCTIONS{$value}) && ($type eq "ValType"));
+      return $FUNCTIONS{$value}->{Set}->[0]
+	if (exists($FUNCTIONS{$value}) && ($type eq "ValType"));
+    }
   }
 
-  return $FUNCTIONS{$_[0]}->{Hash}
-    if (exists($FUNCTIONS{$_[0]}->{Hash}) && ($AutoLoad eq "Hash"));
-  return $FUNCTIONS{$_[0]}->{Get}
-    if (exists($FUNCTIONS{$_[0]}->{Get}) && ($AutoLoad eq "Get"));
-  return $FUNCTIONS{$_[0]}->{Add}->[3]
-    if (exists($FUNCTIONS{$_[0]}->{Add}) && ($AutoLoad eq "Add"));
+  return $FUNCTIONS{$arg0}->{Hash}
+    if (exists($FUNCTIONS{$arg0}->{Hash}) && ($AutoLoad eq "Hash"));
+  return $FUNCTIONS{$arg0}->{Get}
+    if (exists($FUNCTIONS{$arg0}->{Get}) && ($AutoLoad eq "Get"));
+  return $FUNCTIONS{$arg0}->{Add}->[3]
+    if (exists($FUNCTIONS{$arg0}->{Add}) && ($AutoLoad eq "Add"));
 
   #&DEBUG($self,"funcs(",join(",",@funcs),")");
 
   if ($AutoLoad eq "MasterSet") {
-    my (%args) = @_;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
     foreach my $func (@funcs) {
-      my $lcfunc = lc($func);#
+      my $lcfunc = lc($func);
       if (exists($args{$lcfunc})) {
 	#&DEBUG($self,"MasterSet: call(\$self->Set${func}(\$_[1]);)");
 	eval "\$self->Set${func}(\$args{\$lcfunc});";
@@ -881,7 +923,8 @@ sub AutoLoad {
   }
 
   if ($AutoLoad eq "MasterSetAll") {
-    my (%args) = @_;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
     foreach my $func (@funcs) {
       next if ($func eq "XMLNS");
       my $lcfunc = lc($func);
@@ -893,6 +936,8 @@ sub AutoLoad {
   return &Net::Jabber::ParseXMLNS($self) if ($AutoLoad eq "ParseXMLNS");
   return &Net::Jabber::ParseTree($self,@funcs) if ($AutoLoad eq "ParseTree");
   return &Net::Jabber::GetXML($self,@funcs) if ($AutoLoad eq "GetXML");
+  return &Net::Jabber::InsertRawXML($self,@_) if ($AutoLoad eq "InsertRawXML");
+  return &Net::Jabber::ClearRawXML($self) if ($AutoLoad eq "ClearRawXML");
 
   if (($AutoLoad eq "NewX") ||
       ($AutoLoad eq "NewQuery") ||
@@ -907,7 +952,7 @@ sub AutoLoad {
 
     my $tag;
     if ($AutoLoad =~ /^New(.*)$/) {
-      my $xmlns = $_[0];
+      my $xmlns = $arg0;
       my $obj = $1;
 
       eval "\%FUNCTIONS = \%{\$Net::Jabber::".$obj."::NAMESPACES{\'".$xmlns."\'}}";
@@ -1074,6 +1119,33 @@ sub RemoveData {
 
 ##############################################################################
 #
+# InsertRawXML - puts the specified string onto the list for raw XML to be
+#                included in the packet.
+#
+##############################################################################
+sub InsertRawXML {
+  my $self = shift;
+  my(@rawxml) = @_;
+  if (!exists($self->{RAWXML})) {
+    $self->{RAWXML} = [];
+  }
+  push(@{$self->{RAWXML}},@rawxml);
+}
+
+
+##############################################################################
+#
+# ClearRawXML - removes all raw XML from the packet.
+#
+##############################################################################
+sub ClearRawXML {
+  my $self = shift;
+  $self->{RAWXML} = [];
+}
+
+
+##############################################################################
+#
 # printData - debugging function to print out any data structure in an
 #             organized manner.  Very useful for debugging XML::Parser::Tree
 #             objects.  This is a private function that will only exist in
@@ -1103,12 +1175,12 @@ sub sprintData {
     my $key;
     foreach $key (sort { $a cmp $b } keys(%{$data})) {
       if (ref($$data{$key}) eq "") {
-	$outString .= $preString."{'$key'} = \"$$data{$key}\"\n";
+	$outString .= $preString."{'$key'} = \"$$data{$key}\";\n";
       } else {
 	if (ref($$data{$key}) =~ /Net::Jabber/) {
-	  $outString .= $preString."{'$key'} = ".ref($$data{$key})."\n";
+	  $outString .= $preString."{'$key'} = ".ref($$data{$key}).";\n";
 	} else {
-	  $outString .= $preString."{'$key'}\n";
+	  $outString .= $preString."{'$key'};\n";
 	  $outString .= &sprintData($preString."{'$key'}->",$$data{$key});
 	}
       }
@@ -1118,12 +1190,12 @@ sub sprintData {
       my $index;
       foreach $index (0..$#{$data}) {
 	if (ref($$data[$index]) eq "") {
-	  $outString .= $preString."[$index] = \"$$data[$index]\"\n";
+	  $outString .= $preString."[$index] = \"$$data[$index]\";\n";
 	} else {
 	  if (ref($$data[$index]) =~ /Net::Jabber/) {
-	    $outString .= $preString."[$index] = ".ref($$data[$index])."\n";
+	    $outString .= $preString."[$index] = ".ref($$data[$index]).";\n";
 	  } else {
-	    $outString .= $preString."[$index]\n";
+	    $outString .= $preString."[$index];\n";
 	    $outString .= &sprintData($preString."[$index]->",$$data[$index]);
 	  }
 	}
@@ -1133,9 +1205,9 @@ sub sprintData {
 	$outString .= &sprintData($preString."->",$$data);
       } else {
 	if (ref($data) eq "") {
-	  $outString .= $preString." = \"$data\"\n";
+	  $outString .= $preString." = \"$data\";\n";
 	} else {
- 	  $outString .= $preString." = ".ref($data)."\n";
+ 	  $outString .= $preString." = ".ref($data).";\n";
 	}
       }
     }

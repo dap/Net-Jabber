@@ -1,3 +1,12 @@
+1.0023
+======
+  - Fixed bugin accept for Components.
+  - Added InsertRawXML and ClearRawXML.
+  - Fixed Reply function in IQ.
+  - Fixed bug in X.pm.
+  - Added jabber:iq:pass support.  DRAFT
+  - Added jabber:iq:browse support into Protocol.
+
 1.0022
 ======
   - XML::Stream supports SSL.  Client docs updated to show the

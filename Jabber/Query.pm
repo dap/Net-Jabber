@@ -48,6 +48,7 @@ Net::Jabber::Query - Jabber Query Library
     jabber:iq:gateway
     jabber:iq:last
     jabber:iq:oob
+    jabber:iq:pass
     jabber:iq:register
     jabber:iq:roster
     jabber:iq:search
@@ -296,6 +297,21 @@ types I will use:
   string   GetURL()          SetURL()          DefinedURL()
   master   GetOob()          SetOob()
 
+=head1 jabber:iq:pass
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetClient()       SetClient()       DefinedClient()
+  string   GetClientPort()   SetClientPort()   DefinedClientPort()
+  string   GetClose()        SetClose()        DefinedClose()
+  string   GetExpire()       SetExpire()       DefinedExpire()
+  string   GetOneShot()      SetOneShot()      DefinedOneShot()
+  string   GetProxy()        SetProxy()        DefinedProxy()
+  string   GetProxyPort()    SetProxyPort()    DefinedProxyPort()
+  string   GetServer()       SetServer()       DefinedServer()
+  string   GetServerPort()   SetServerPort()   DefinedServerPort()
+  master   GetPass()         SetPass()
+
 =head1 jabber:iq:register
 
   Type     Get               Set               Defined
@@ -413,7 +429,7 @@ use strict;
 use Carp;
 use vars qw($VERSION %FUNCTIONS %NAMESPACES $AUTOLOAD);
 
-$VERSION = "1.0022";
+$VERSION = "1.0023";
 
 sub new {
   my $proto = shift;
@@ -645,7 +661,7 @@ $NAMESPACES{"jabber:iq:browse"}->{Browse}->{Get} = "__netjabber__:master";
 $NAMESPACES{"jabber:iq:browse"}->{Browse}->{Set} = ["master"];
 
 $NAMESPACES{"jabber:iq:browse"}->{Item}->{Get}     = "";
-$NAMESPACES{"jabber:iq:browse"}->{Item}->{Set}     = ["add","Query","__netjabber__:iq:browse"];
+$NAMESPACES{"jabber:iq:browse"}->{Item}->{Set}     = ["add","Query","__netjabber__:iq:browse","ns"];
 $NAMESPACES{"jabber:iq:browse"}->{Item}->{Defined} = "__netjabber__:children:query";
 $NAMESPACES{"jabber:iq:browse"}->{Item}->{Hash}    = "child-add";
 
@@ -864,6 +880,57 @@ $NAMESPACES{"jabber:iq:oob"}->{URL}->{Hash}    = "child-data";
 
 $NAMESPACES{"jabber:iq:oob"}->{Oob}->{Get} = "__netjabber__:master";
 $NAMESPACES{"jabber:iq:oob"}->{Oob}->{Set} = ["master"];
+
+#-----------------------------------------------------------------------------
+# jabber:iq:pass
+#-----------------------------------------------------------------------------
+$NAMESPACES{"jabber:iq:pass"}->{Client}->{Get}     = "client";
+$NAMESPACES{"jabber:iq:pass"}->{Client}->{Set}     = ["scalar","client"];
+$NAMESPACES{"jabber:iq:pass"}->{Client}->{Defined} = "client";
+$NAMESPACES{"jabber:iq:pass"}->{Client}->{Hash}    = "child-data";
+
+$NAMESPACES{"jabber:iq:pass"}->{ClientPort}->{Get}     = "clientport";
+$NAMESPACES{"jabber:iq:pass"}->{ClientPort}->{Set}     = ["scalar","clientport"];
+$NAMESPACES{"jabber:iq:pass"}->{ClientPort}->{Defined} = "clientport";
+$NAMESPACES{"jabber:iq:pass"}->{ClientPort}->{Hash}    = "att-client-port";
+
+$NAMESPACES{"jabber:iq:pass"}->{Close}->{Get}     = "close";
+$NAMESPACES{"jabber:iq:pass"}->{Close}->{Set}     = ["scalar","close"];
+$NAMESPACES{"jabber:iq:pass"}->{Close}->{Defined} = "close";
+$NAMESPACES{"jabber:iq:pass"}->{Close}->{Hash}    = "child-data";
+
+$NAMESPACES{"jabber:iq:pass"}->{Expire}->{Get}     = "expire";
+$NAMESPACES{"jabber:iq:pass"}->{Expire}->{Set}     = ["scalar","expire"];
+$NAMESPACES{"jabber:iq:pass"}->{Expire}->{Defined} = "expire";
+$NAMESPACES{"jabber:iq:pass"}->{Expire}->{Hash}    = "child-data";
+
+$NAMESPACES{"jabber:iq:pass"}->{OneShot}->{Get}     = "oneshot";
+$NAMESPACES{"jabber:iq:pass"}->{OneShot}->{Set}     = ["scalar","oneshot"];
+$NAMESPACES{"jabber:iq:pass"}->{OneShot}->{Defined} = "oneshot";
+$NAMESPACES{"jabber:iq:pass"}->{OneShot}->{Hash}    = "child-data";
+
+$NAMESPACES{"jabber:iq:pass"}->{Proxy}->{Get}     = "proxy";
+$NAMESPACES{"jabber:iq:pass"}->{Proxy}->{Set}     = ["scalar","proxy"];
+$NAMESPACES{"jabber:iq:pass"}->{Proxy}->{Defined} = "proxy";
+$NAMESPACES{"jabber:iq:pass"}->{Proxy}->{Hash}    = "child-data";
+
+$NAMESPACES{"jabber:iq:pass"}->{ProxyPort}->{Get}     = "proxyport";
+$NAMESPACES{"jabber:iq:pass"}->{ProxyPort}->{Set}     = ["scalar","proxyport"];
+$NAMESPACES{"jabber:iq:pass"}->{ProxyPort}->{Defined} = "proxyport";
+$NAMESPACES{"jabber:iq:pass"}->{ProxyPort}->{Hash}    = "att-proxy-port";
+
+$NAMESPACES{"jabber:iq:pass"}->{Server}->{Get}     = "server";
+$NAMESPACES{"jabber:iq:pass"}->{Server}->{Set}     = ["scalar","server"];
+$NAMESPACES{"jabber:iq:pass"}->{Server}->{Defined} = "server";
+$NAMESPACES{"jabber:iq:pass"}->{Server}->{Hash}    = "child-data";
+
+$NAMESPACES{"jabber:iq:pass"}->{ServerPort}->{Get}     = "serverport";
+$NAMESPACES{"jabber:iq:pass"}->{ServerPort}->{Set}     = ["scalar","serverport"];
+$NAMESPACES{"jabber:iq:pass"}->{ServerPort}->{Defined} = "serverport";
+$NAMESPACES{"jabber:iq:pass"}->{ServerPort}->{Hash}    = "att-server-port";
+
+$NAMESPACES{"jabber:iq:pass"}->{Pass}->{Get} = "__netjabber__:master";
+$NAMESPACES{"jabber:iq:pass"}->{Pass}->{Set} = ["master"];
 
 #-----------------------------------------------------------------------------
 # jabber:iq:register
