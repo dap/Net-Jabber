@@ -61,7 +61,7 @@ Net::Jabber::Query::AutoUpdate - Jabber IQ AutoUpdate Module
 
     $release = $autoupdate->AddRelease();
     $release = $autoupdate->AddRelease(type=>"beta",
-                                       ver=>"1.0b",
+                                       version=>"1.0b",
                                        desc=>"Beta...",
                                        url=>"http://xxx.yyy/zzz.tar.gz",
                                        priority=>"optional");
@@ -120,7 +120,7 @@ use strict;
 use POSIX;
 use vars qw($VERSION);
 
-$VERSION = "1.0";
+$VERSION = "1.0005";
 
 use Net::Jabber::Query::AutoUpdate::Release;
 ($Net::Jabber::Query::AutoUpdate::Release::VERSION < $VERSION) &&

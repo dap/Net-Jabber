@@ -99,7 +99,7 @@ use strict;
 use FileHandle;
 use vars qw($VERSION %HANDLES $DEFAULT $DEFAULTLEVEL);
 
-$VERSION = "1.0";
+$VERSION = "1.0005";
 
 sub new {
   my $proto = shift;

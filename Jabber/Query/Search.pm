@@ -242,7 +242,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0";
+$VERSION = "1.0005";
 
 use Net::Jabber::Query::Search::Item;
 ($Net::Jabber::Query::Search::Item::VERSION < $VERSION) &&

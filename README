@@ -1,4 +1,4 @@
-Net::Jabber v1.0a
+Net::Jabber v1.0005
 
 The Jabber Instant Messaging project is an Open Source project seeking
 to provide a complete cross protocol messaging solution.  The problem
@@ -13,9 +13,6 @@ Net::Jabber is a collection of Perl modules that provide a Perl Developer
 access to the Jabber protocol.  Using OOP modules we provide a clean
 interface to writing anything from a full client to a simple protocol
 tester.
-
-Support is planned for allowing Transports to be written in Perl so that
-prototyping can be done before the actual program is written.
 
 Ryan Eatmon
 Jabber Perl Team Leader
@@ -40,9 +37,10 @@ INSTALLATION
 
 STATUS
 
-  This module is mostly done.  The newest features are in beta (see CHANGES),
-but the other functions should be stable.
+  This module has moved into release and debugging.  For the most part things
+are stable, but if you see a newer version, you should switch to it immediatly
+and read the CHANGES file to find out what has changed.
 
 
 Please send any bug reports to reatmon@ti.com.
-04/17/2000
+2000/05/29

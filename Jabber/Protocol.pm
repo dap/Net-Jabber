@@ -153,7 +153,7 @@ Net::Jabber::Protocol - Jabber Protocol Library
 =head2 IQ::Search Functions
 
     %fields = $Con->SearchRequest();
-    %fields = $Con->SearchRequest(to=>"bob@jabber.org");
+    %fields = $Con->SearchRequest(to=>"users.jabber.org");
 
     $Con->SearchSend(name=>"",
                      first=>"Bob",
@@ -432,7 +432,9 @@ Net::Jabber::Protocol - Jabber Protocol Library
                                    ...
 
                                 The fields that are present are the
-                                required fields the server needs.
+                                required fields the server needs.  If
+                                the hash is undefined then there was
+                                an error with the request.
 
     SearchSend(to=>string|JID, - takes the contents of the hash and 
 	       hash)             passes it to the SetSearch function
@@ -490,7 +492,7 @@ it under the same terms as Perl itself.
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "1.0";
+$VERSION = "1.0005";
 
 sub new {
   my $proto = shift;
@@ -843,7 +845,8 @@ sub DeregisterID {
 ##############################################################################
 sub AddDelegate {
   my $self = shift;
-  my (%delegates) = @_;
+  my %delegates;
+  while($#_ >= 0) { $delegates{ lc pop(@_) } = pop(@_); }
 
   $Net::Jabber::DELEGATES{$delegates{namespace}}->{parent} = $delegates{parent};
   $Net::Jabber::DELEGATES{$delegates{namespace}}->{delegate} = $delegates{delegate};
@@ -1039,6 +1042,14 @@ sub RegisterRequest {
   $IQ = $self->SendAndReceiveWithID($IQ);
   
   #------------------------------------------------------------------------
+  # Check if there was an error.
+  #------------------------------------------------------------------------
+  if ($IQ->GetType() eq "error") {
+    $self->SetErrorCode($IQ->GetErrorCode().": ".$IQ->GetError());
+    return;
+  }
+
+  #------------------------------------------------------------------------
   # From the reply IQ determine what fields are required and send a hash
   # back with the fields and any values that are already defined (like key)
   #------------------------------------------------------------------------
@@ -1201,17 +1212,31 @@ sub SearchRequest {
   $IQ->SetIQ(type=>"get");
   my $IQSearch = $IQ->NewQuery("jabber:iq:search");
 
+  $self->{DEBUG}->Log1("SearchRequest: sent(",$IQ->GetXML(),")");
+
   #------------------------------------------------------------------------
   # Send the IQ with the next available ID and wait for a reply with that 
   # id to be received.  Then grab the IQ reply.
   #------------------------------------------------------------------------
   $IQ = $self->SendAndReceiveWithID($IQ);
   
+  $self->{DEBUG}->Log1("SearchRequest: received(",$IQ->GetXML(),")");
+
+  #------------------------------------------------------------------------
+  # Check if there was an error.
+  #------------------------------------------------------------------------
+  if ($IQ->GetType() eq "error") {
+    $self->SetErrorCode($IQ->GetErrorCode().": ".$IQ->GetError());
+    $self->{DEBUG}->Log1("SearchRequest: error(",$self->GetErrorCode(),")");
+    return;
+  }
+
   #------------------------------------------------------------------------
   # From the reply IQ determine what fields are required and send a hash
   # back with the fields and any values that are already defined (like key)
   #------------------------------------------------------------------------
   $IQSearch = $IQ->GetQuery();
+  $self->{DEBUG}->Log1("SearchRequest: return(",\%{$IQSearch->GetFields()},")");
   return %{$IQSearch->GetFields()};
 }
 

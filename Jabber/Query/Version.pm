@@ -107,7 +107,7 @@ use strict;
 use POSIX;
 use vars qw($VERSION);
 
-$VERSION = "1.0";
+$VERSION = "1.0005";
 
 sub new {
   my $proto = shift;
@@ -136,13 +136,13 @@ sub GetName {
 
 ##############################################################################
 #
-# GetVer - returns the timezone in the <query/>.
+# GetVer - returns the version in the <query/>.
 #
 ##############################################################################
 sub GetVer {
   shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"ver");
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"version");
 }
 
 
@@ -197,8 +197,8 @@ sub SetName {
 sub SetVer {
   shift;
   my $self = shift;
-  my ($ver) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"ver",$ver,{});
+  my ($version) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"version",$version,{});
 }
 
 

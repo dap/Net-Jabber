@@ -51,7 +51,7 @@ Net::Jabber::Query::AutoUpdate::Release - Jabber IQ AutoUpdate Release Module
 
 =head2 Retrieval functions
 
-    $version     = $release->GetVer();
+    $version     = $release->GetVersion();
     $description = $release->GetDesc();
     $url         = $release->GetURL();
     $priority    = $release->GetPriority();
@@ -61,11 +61,11 @@ Net::Jabber::Query::AutoUpdate::Release - Jabber IQ AutoUpdate Release Module
 
 =head2 Creation functions
 
-    $release->SetRelease(ver=>"1.3.2",
+    $release->SetRelease(version=>"1.3.2",
 		         desc=>"Bob's Client for Jabber",
 		         url=>"http://www.bobssite.com/client.1.3.2.tar.gz",
 		         priority=>"optional");
-    $release->SetVer('5.6');
+    $release->SetVersion('5.6');
     $release->SetDesc('A description of the client');
     $release->SetURL('http://somesite/path/client.tar.gz');
     $release->SetPriority("mandatory");
@@ -74,7 +74,7 @@ Net::Jabber::Query::AutoUpdate::Release - Jabber IQ AutoUpdate Release Module
 
 =head2 Retrieval functions
 
-  GetVer() - returns a string with the version number of this release.
+  GetVersion() - returns a string with the version number of this release.
 
   GetDesc() - returns a string with the description of this release.
 
@@ -94,7 +94,7 @@ Net::Jabber::Query::AutoUpdate::Release - Jabber IQ AutoUpdate Release Module
 
 =head2 Creation functions
 
-  SetRelease(ver=>string,      - set multiple fields in the release
+  SetRelease(version=>string,  - set multiple fields in the release
              desc=>string,       at one time.  This is a cumulative
              url=>string,        and overwriting action.  If you
              priority=>string,   set the "url" twice, the second
@@ -104,7 +104,7 @@ Net::Jabber::Query::AutoUpdate::Release - Jabber IQ AutoUpdate Release Module
                                  release tag.  For valid settings
                                  read the specific Set functions below.
 
-  SetVer(string) - sets the version number of this release.
+  SetVersion(string) - sets the version number of this release.
 
   SetDesc(string) - sets the description of this release.
 
@@ -131,7 +131,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0";
+$VERSION = "1.0005";
 
 sub new {
   my $proto = shift;
@@ -161,12 +161,12 @@ sub new {
 
 ##############################################################################
 #
-# GetVer - returns the version of this release
+# GetVersion - returns the version of this release
 #
 ##############################################################################
-sub GetVer {
+sub GetVersion {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{RELEASE},"ver","");
+  return &Net::Jabber::GetXMLData("value",$self->{RELEASE},"version","");
 }
 
 
@@ -238,7 +238,7 @@ sub SetRelease {
   my %release;
   while($#_ >= 0) { $release{ lc pop(@_) } = pop(@_); }
   
-  $self->SetVer($release{ver}) if exists($release{ver});
+  $self->SetVersion($release{version}) if exists($release{version});
   $self->SetDesc($release{desc}) if exists($release{desc});
   $self->SetURL($release{url}) if exists($release{url});
   $self->SetPriority($release{priority}) if exists($release{priority});
@@ -247,13 +247,13 @@ sub SetRelease {
 
 ##############################################################################
 #
-# SetVer - sets the version number of this release
+# SetVersion - sets the version number of this release
 #
 ##############################################################################
-sub SetVer {
+sub SetVersion {
   my $self = shift;
-  my ($ver) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{RELEASE},"ver","$ver",{});
+  my ($version) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{RELEASE},"version","$version",{});
 }
 
 

@@ -128,7 +128,7 @@ use Time::Local;
 use Carp;
 use vars qw($VERSION %DELEGATES);
 
-$VERSION = "1.0";
+$VERSION = "1.0005";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&

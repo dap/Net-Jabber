@@ -1,5 +1,14 @@
+1.0005
+======
+  - Changed AutoUpdate namespaces to show <ver/> becoming <version/>.
+  - When SeachRequest and RegisterRequest get errors they now return undef
+    to show that there was an error.
+  - Changed versioning scheme to match up Perl and Jabber.  1.005 refers to
+    Jabber version 1.0 and Net::Jabber verison 005.
+
 1.0d
 ====
+  - GetQuery and GetX returns undef if there is not valid namespace found.
   - Fixed bug in namespace handling.  Instead of hardcoding looking for <x/>
     and <query/> Net::Jabber now searches for any tag that has an xmlns and
     uses that tag as the query or x.
