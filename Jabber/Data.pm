@@ -195,7 +195,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS %NAMESPACES);
 
-$VERSION = "1.0025";
+$VERSION = "1.26";
 
 sub new {
   my $proto = shift;

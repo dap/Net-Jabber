@@ -159,11 +159,11 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-use XML::Stream 1.12 qw( Hash );
+use XML::Stream 1.15 qw( Hash );
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0025";
+$VERSION = "1.26";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&

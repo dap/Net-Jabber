@@ -1,3 +1,8 @@
+1.26
+====
+  - Changed to a more sane version scheme.
+  - Locked version of XML::Stream to 1.15.
+
 1.0025
 ======
   - Documented the PresenceSend function a little better.

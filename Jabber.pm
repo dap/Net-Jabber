@@ -242,7 +242,7 @@ if (eval "require Time::Timezone") {
   $TIMEZONE = 0;
 }
 
-$VERSION = "1.0025";
+$VERSION = "1.26";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
