@@ -49,19 +49,31 @@ Net::Jabber::X::Ident - Jabber X Ident Delegate
 
 =head2 Retrieval functions
 
-    $from      = $xTag->GetFrom();
-    $stamp     = $xTag->GetStamp();
-    $message   = $xTag->GetMessage();
-    $xmlns     = $xTag->GetXMLNS();
+    $from        = $xTag->GetFrom();
+    $to          = $xTag->GetTo();
+    $replyto     = $xtag->GetReplyTo();
+    $cc          = $xTag->GetCC();
+    $forwardedby = $xTag->GetForwardedBy();
 
 =head2 Creation functions
 
     $xTag->SetX(FRom=>"jabber:foo.bar.com",
-	        message=>"Stored offline");
+	        replyTo=>"bob@jabber.org");
+
     $xTag->SetFrom("bob@jabber.org");
-    $xTag->SetStamp();
-    $xTag->SetStamp("20000124T10:54:00");
-    $xTag->SetMessage("Stored Offline");
+    $xTag->SetFromID("bob@jabber.org");
+
+    $xTag->SetTo("bob@jabber.org");
+    $xTag->SetToID("bob@jabber.org");
+
+    $xTag->SetReplyTo("bob@jabber.org");
+    $xTag->SetReplyToID("bob@jabber.org");
+
+    $xTag->SetCC("bob@jabber.org");
+    $xTag->SetCCID("bob@jabber.org");
+
+    $xTag->SetForwardedBy("bob@jabber.org");
+    $xTag->SetForwardedByID("bob@jabber.org");
 
 =head1 METHODS
 
@@ -101,7 +113,7 @@ Net::Jabber::X::Ident - Jabber X Ident Delegate
  
 =head1 AUTHOR
 
-By Ryan Eatmon in January of 2000 for http://jabber.org..
+By Ryan Eatmon in May of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -115,7 +127,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "0.8.1";
+$VERSION = "1.0";
 
 sub new {
   my $proto = shift;
@@ -136,7 +148,7 @@ sub new {
 #
 ##############################################################################
 sub GetFrom {
-  my $self = shift;
+  shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("value",$self->{X},"","from");
 }
@@ -148,7 +160,7 @@ sub GetFrom {
 #
 ##############################################################################
 sub GetStamp {
-  my $self = shift;
+  shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("value",$self->{X},"","stamp");
 }
@@ -160,7 +172,7 @@ sub GetStamp {
 #
 ##############################################################################
 sub GetMessage {
-  my $self = shift;
+  shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("value",$self->{X},"","");
 }
@@ -172,7 +184,7 @@ sub GetMessage {
 #
 ##############################################################################
 sub GetXMLNS {
-  my $self = shift;
+  shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("value",$self->{X},"","xmlns");  
 }
@@ -185,14 +197,14 @@ sub GetXMLNS {
 #
 ##############################################################################
 sub SetX {
+  shift;
   my $self = shift;
-  my $master = shift;
   my %x;
   while($#_ >= 0) { $x{ lc pop(@_) } = pop(@_); }
 
-  $self->SetFrom($master,$x{from}) if exists($x{from});
-  $self->SetStamp($master,$x{stamp}) if exists($x{stamp});
-  $self->SetData($master,$x{data}) if exists($x{data});
+  $self->SetFrom($x{from}) if exists($x{from});
+  $self->SetStamp($x{stamp}) if exists($x{stamp});
+  $self->SetData($x{data}) if exists($x{data});
 }
 
 
@@ -202,7 +214,7 @@ sub SetX {
 #
 ##############################################################################
 sub SetFrom {
-  my $self = shift;
+  shift;
   my $self = shift;
   my ($from) = @_;
   &Net::Jabber::SetXMLData("single",$self->{X},"","",{from=>$from});
@@ -215,7 +227,7 @@ sub SetFrom {
 #
 ##############################################################################
 sub SetStamp {
-  my $self = shift;
+  shift;
   my $self = shift;
   my ($stamp) = @_;
   
@@ -233,7 +245,7 @@ sub SetStamp {
 #
 ##############################################################################
 sub SetMessage {
-  my $self = shift;
+  shift;
   my $self = shift;
   my ($message) = @_;
   &Net::Jabber::SetXMLData("single",$self->{X},"","$message",{});

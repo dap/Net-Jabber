@@ -40,7 +40,7 @@ Net::Jabber::X::Delay - Jabber X Delay Delegate
     use Net::Jabber;
 
     $foo = new Net::Jabber::Foo();
-    $x = $foo->NewX("jabber:x:delay");
+    $xTag = $foo->NewX("jabber:x:delay");
 
   Now you can call the creation functions below.
 
@@ -55,8 +55,9 @@ Net::Jabber::X::Delay - Jabber X Delay Delegate
 
 =head2 Creation functions
 
-    $xTag->SetX(FRom=>"jabber:foo.bar.com",
-	        message=>"Stored offline");
+    $xTag->SetDelay(FRom=>"jabber:foo.bar.com",
+	            message=>"Stored offline");
+
     $xTag->SetFrom("bob@jabber.org");
     $xTag->SetStamp();
     $xTag->SetStamp("20000124T10:54:00");
@@ -77,14 +78,14 @@ Net::Jabber::X::Delay - Jabber X Delay Delegate
 
 =head2 Creation functions
 
-  SetX(from=>string,    - set multiple fields in the <x/> at one
-       stamp=>string,     time.  This is a cumulative and over
-       message=>string)   writing action.  If you set the "from"
-                          attribute twice, the second setting is
-                          what is used.  If you set the status, and
-                          then set the priority then both will be in
-                          the <x/> tag.  For valid settings read the
-                          specific Set functions below.
+  SetDelay(from=>string,    - set multiple fields in the <x/> at one
+           stamp=>string,     time.  This is a cumulative and over
+           message=>string)   writing action.  If you set the "from"
+                              attribute twice, the second setting is
+                              what is used.  If you set the status, and
+                              then set the priority then both will be in
+                              the <x/> tag.  For valid settings read the
+                              specific Set functions below.
 
   SetFrom(string) - sets the from attribute of the server adding the
                     delay.
@@ -97,7 +98,7 @@ Net::Jabber::X::Delay - Jabber X Delay Delegate
  
 =head1 AUTHOR
 
-By Ryan Eatmon in January of 2000 for http://jabber.org..
+By Ryan Eatmon in May of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -111,7 +112,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "0.8.1";
+$VERSION = "1.0";
 
 sub new {
   my $proto = shift;
@@ -132,7 +133,7 @@ sub new {
 #
 ##############################################################################
 sub GetFrom {
-  my $self = shift;
+  shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("value",$self->{X},"","from");
 }
@@ -144,7 +145,7 @@ sub GetFrom {
 #
 ##############################################################################
 sub GetStamp {
-  my $self = shift;
+  shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("value",$self->{X},"","stamp");
 }
@@ -156,7 +157,7 @@ sub GetStamp {
 #
 ##############################################################################
 sub GetMessage {
-  my $self = shift;
+  shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("value",$self->{X},"","");
 }
@@ -164,19 +165,18 @@ sub GetMessage {
 
 ##############################################################################
 #
-# SetX - takes a hash of all of the things you can set on a jabber:x:delay and
-#        sets each one.
+# SetDelay - takes a hash of all of the things you can set on a jabber:x:delay #            and sets each one.
 #
 ##############################################################################
-sub SetX {
+sub SetDelay {
+  shift;
   my $self = shift;
-  my $master = shift;
-  my %x;
-  while($#_ >= 0) { $x{ lc pop(@_) } = pop(@_); }
+  my %delay;
+  while($#_ >= 0) { $delay{ lc pop(@_) } = pop(@_); }
 
-  $self->SetFrom($master,$x{from}) if exists($x{from});
-  $self->SetStamp($master,$x{stamp}) if exists($x{stamp});
-  $self->SetData($master,$x{data}) if exists($x{data});
+  $self->SetFrom($delay{from}) if exists($delay{from});
+  $self->SetStamp($delay{stamp}) if exists($delay{stamp});
+  $self->SetData($delay{data}) if exists($delay{data});
 }
 
 
@@ -186,7 +186,7 @@ sub SetX {
 #
 ##############################################################################
 sub SetFrom {
-  my $self = shift;
+  shift;
   my $self = shift;
   my ($from) = @_;
   &Net::Jabber::SetXMLData("single",$self->{X},"","",{from=>$from});
@@ -199,7 +199,7 @@ sub SetFrom {
 #
 ##############################################################################
 sub SetStamp {
-  my $self = shift;
+  shift;
   my $self = shift;
   my ($stamp) = @_;
   
@@ -217,7 +217,7 @@ sub SetStamp {
 #
 ##############################################################################
 sub SetMessage {
-  my $self = shift;
+  shift;
   my $self = shift;
   my ($message) = @_;
   &Net::Jabber::SetXMLData("single",$self->{X},"","$message",{});

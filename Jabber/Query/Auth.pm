@@ -1,24 +1,24 @@
-package Net::Jabber::IQ::Auth;
+package Net::Jabber::Query::Auth;
 
 =head1 NAME
 
-Net::Jabber::IQ::Auth - Jabber IQ Authentication Module
+Net::Jabber::Query::Auth - Jabber IQ Authentication Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::IQ::Auth is a companion to the Net::Jabber::IQ module.
+  Net::Jabber::Query::Auth is a companion to the Net::Jabber::Query module.
   It provides the user a simple interface to set and retrieve all parts
-  of a Jabber IQ Authentication query.
+  of a Jabber Authentication query.
 
 =head1 DESCRIPTION
 
-  To initialize the IQ with a Jabber <iq/> and then access the auth
+  To initialize the Query with a Jabber <iq/> and then access the auth
   query you must pass it the XML::Parser Tree array from the 
   Net::Jabber::Client module.  In the callback function for the iq:
 
     use Net::Jabber;
 
-    sub iq {
+    sub iqCB {
       my $iq = new Net::Jabber::IQ(@_);
       my $auth = $iq->GetQuery();
       .
@@ -28,20 +28,20 @@ Net::Jabber::IQ::Auth - Jabber IQ Authentication Module
 
   You now have access to all of the retrieval functions available.
 
-  To create a new IQ auth to send to the server:
+  To create a new Query auth to send to the server:
 
     use Net::Jabber;
 
-    $Client = new Net::Jabber::Client();
+    $client = new Net::Jabber::Client();
     ...
 
-    $IQ = new Net::Jabber::IQ();
-    $Auth = $IQ->NewQuery("auth");
+    $iq = new Net::Jabber::IQ();
+    $auth = $iq->NewQuery("jabber:iq:auth");
     ...
 
-    $Client->Send($IQ);
+    $client->Send($iq);
 
-  Using $Auth you can call the creation functions below to populate the 
+  Using $auth you can call the creation functions below to populate the 
   tag before sending it.
 
   For more information about the array format being passed to the CallBack
@@ -49,23 +49,22 @@ Net::Jabber::IQ::Auth - Jabber IQ Authentication Module
 
 =head2 Retrieval functions
 
-    $username = $Auth->GetUsername();
-    $password = $Auth->GetPassword();
-    $resource = $Auth->GetResource();
-
-    @auth     = $Auth->GetTree();
-    $str      = $Auth->GetXML();
+    $username = $auth->GetUsername();
+    $password = $auth->GetPassword();
+    $digest   = $auth->GetDigest();
+    $resource = $auth->GetResource();
 
 =head2 Creation functions
 
-    $Auth->SetAuth(resource=>'Anonymous');
-    $Auth->SetAuth(username=>'test',
+    $auth->SetAuth(resource=>'Anonymous');
+    $auth->SetAuth(username=>'test',
                    password=>'user',
                    resource=>'Test Account');
 
-    $Auth->SetUsername('bob');
-    $Auth->SetPassword('bobrulez');
-    $Auth->SetResource('Bob the Great');
+    $auth->SetUsername('bob');
+    $auth->SetPassword('bobrulez');
+    $auth->SetDigest('');
+    $auth->SetResource('Bob the Great');
 
 =head1 METHODS
 
@@ -75,21 +74,16 @@ Net::Jabber::IQ::Auth - Jabber IQ Authentication Module
 
   GetPassword() - returns a string with the password in the <query/>.
 
+  GetDigest() - returns a string with the SHA-1 digest in the <query/>.
+
   GetResource() - returns a string with the resource in the <query/>.
-
-  GetXML() - returns the XML string that represents the <presence/>.
-             This is used by the Send() function in Client.pm to send
-             this object as a Jabber Presence.
-
-  GetTree() - returns an array that contains the <presence/> tag
-              in XML::Parser Tree format.
 
 =head2 Creation functions
 
   SetAuth(username=>string, - set multiple fields in the <iq/> at one
           password=>string,   time.  This is a cumulative and over
-          resource=>string)   writing action.  If you set the "username" 
-                              twice, the second setting is what is
+          digest=>string,     writing action.  If you set the "username" 
+          resource=>string)   twice, the second setting is what is
                               used.  If you set the password, and then
                               set the resource then both will be in the
                               <query/> tag.  For valid settings read 
@@ -103,13 +97,17 @@ Net::Jabber::IQ::Auth - Jabber IQ Authentication Module
                         trying to connect with.  Leave blank for
                         an anonymous account.
 
+  SetDigest(string) - sets the SHA-1 digest for the account you are
+                      trying to connect with.  Leave blank for
+                      an anonymous account.
+
   SetResource(string) - sets the resource for the account you are
                         trying to connect with.  Leave blank for
                         an anonymous account.
 
 =head1 AUTHOR
 
-By Ryan Eatmon in December of 1999 for http://jabber.org..
+By Ryan Eatmon in May of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -123,7 +121,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "0.8.1";
+$VERSION = "1.0";
 
 sub new {
   my $proto = shift;
@@ -131,16 +129,9 @@ sub new {
   my $self = { };
   
   $self->{VERSION} = $VERSION;
-
+  
   bless($self, $proto);
-
-  if (@_ != ("")) {
-    my @temp = @_;
-    $self->{AUTH} = \@temp;
-  } else {
-    $self->{AUTH} = [ "query" , [{xmlns=>"jabber:iq:auth"}]];
-  }
-
+  
   return $self;
 }
 
@@ -151,8 +142,9 @@ sub new {
 #
 ##############################################################################
 sub GetUsername {
+  shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{AUTH},"username");
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"username");
 }
 
 
@@ -162,8 +154,21 @@ sub GetUsername {
 #
 ##############################################################################
 sub GetPassword {
+  shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{AUTH},"password");
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"password");
+}
+
+
+##############################################################################
+#
+# GetDigest - returns the SHA1 digest in the <query/>.
+#
+##############################################################################
+sub GetDigest {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"digest");
 }
 
 
@@ -173,32 +178,9 @@ sub GetPassword {
 #
 ##############################################################################
 sub GetResource {
+  shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{AUTH},"resource");
-}
-
-
-##############################################################################
-#
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  return &Net::Jabber::BuildXML(@{$self->{AUTH}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#           the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;  
-  return @{$self->{AUTH}};
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"resource");
 }
 
 
@@ -209,12 +191,14 @@ sub GetTree {
 #
 ##############################################################################
 sub SetAuth {
+  shift;
   my $self = shift;
   my %auth;
   while($#_ >= 0) { $auth{ lc pop(@_) } = pop(@_); }
   
   $self->SetUsername($auth{username}) if exists($auth{username});
   $self->SetPassword($auth{password}) if exists($auth{password});
+  $self->SetDigest($auth{digest}) if exists($auth{digest});
   $self->SetResource($auth{resource}) if exists($auth{resource});
   $self->SetResource("Anonymous") if !exists($auth{resource});
 }
@@ -226,9 +210,10 @@ sub SetAuth {
 #
 ##############################################################################
 sub SetUsername {
+  shift;
   my $self = shift;
   my ($username) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{AUTH},"username",$username,{});
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"username",$username,{});
 }
 
 
@@ -238,9 +223,24 @@ sub SetUsername {
 #
 ##############################################################################
 sub SetPassword {
+  shift;
   my $self = shift;
   my ($password) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{AUTH},"password",$password,{});
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"password",$password,{});
+}
+
+
+##############################################################################
+#
+# SetDigest - sets the SHA-1 digest of the password of the account you want
+#             to connect with.
+#
+##############################################################################
+sub SetDigest {
+  shift;
+  my $self = shift;
+  my ($digest) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"digest",$digest,{});
 }
 
 
@@ -250,22 +250,10 @@ sub SetPassword {
 #
 ##############################################################################
 sub SetResource {
+  shift;
   my $self = shift;
   my ($resource) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{AUTH},"resource",$resource,{});
-}
-
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug AUTH: $self\n";
-  &Net::Jabber::printData("debug: \$self->{AUTH}->",$self->{AUTH});
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"resource",$resource,{});
 }
 
 1;

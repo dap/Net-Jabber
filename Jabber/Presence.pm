@@ -42,7 +42,9 @@ Net::Jabber::Presence - Jabber Presence Module
 =head2 Retrieval functions
 
     $to       = $Pres->GetTo();
+    $toJID    = $Pres->GetTo("jid");
     $from     = $Pres->GetFrom();
+    $fromJID  = $Pres->GetFrom("jid");
     $type     = $Pres->GetType();
     $status   = $Pres->GetStatus();
     $priority = $Pres->GetPriority();
@@ -50,19 +52,19 @@ Net::Jabber::Presence - Jabber Presence Module
     $icon     = $Pres->GetIcon();
     $show     = $Pres->GetShow();
     $loc      = $Pres->GetLoc();
-    @xTags    = $Mess->GetX();
-    @xTags    = $Mess->GetX("my:namespace");
-    @xTrees   = $Mess->GetXTrees();
-    @xTrees   = $Mess->GetXTrees("my:namespace");
+    @xTags    = $Pres->GetX();
+    @xTags    = $Pres->GetX("my:namespace");
+    @xTrees   = $Pres->GetXTrees();
+    @xTrees   = $Pres->GetXTrees("my:namespace");
 
     $str      = $Pres->GetXML();
     @presence = $Pres->GetTree();
 
 =head2 Creation functions
 
-    $Pres->SetPresence(-TYPE=>"online",
-		       -StatuS=>"Open for Business",
-		       -iCoN=>"normal");
+    $Pres->SetPresence(TYPE=>"online",
+		       StatuS=>"Open for Business",
+		       iCoN=>"normal");
     $Pres->SetTo("bob\@jabber.org");
     $Pres->SetType("unavailable");
     $Pres->SetStatus("Taking a nap");
@@ -79,11 +81,17 @@ Net::Jabber::Presence - Jabber Presence Module
 
 =head2 Retrieval functions
 
-  GetTo() - returns a string with the Jabber Identifier of the 
-            person who is going to receive the <presence/>.
+  GetTo()      - returns either a string with the Jabber Identifier,
+  GetTo("jid")   or a Net::Jabber::JID object for the person who is 
+                 going to receive the <presence/>.  To get the JID
+                 object set the string to "jid", otherwise leave
+                 blank for the text string.
 
-  GetFrom() - returns a string with the Jabber Identifier of the 
-              person who sent the <presence/>.
+  GetFrom()      -  returns either a string with the Jabber Identifier,
+  GetFrom("jid")    or a Net::Jabber::JID object for the person who
+                    sent the <presence/>.  To get the JID object set 
+                    the string to "jid", otherwise leave blank for the 
+                    text string.
 
   GetType() - returns a string with the type <presence/> this is.
 
@@ -123,19 +131,25 @@ Net::Jabber::Presence - Jabber Presence Module
 
 =head2 Creation functions
 
-  SetPresence(to=>string,         - set multiple fields in the <presence/>
-              type=>string,         at one time.  This is a cumulative
-              status=>string,       and over writing action.  If you set
-              priority=>integer,    the "to" attribute twice, the second
-              meta=>string,         setting is what is used.  If you set
-              icon=>string,         the status, and then set the priority
-              show=>string,         then both will be in the <presence/>
-              loc=>string)          tag.  For valid settings read the
-                                    specific Set functions below.
+  SetPresence(to=>string|JID     - set multiple fields in the <presence/>
+              from=>string|JID,    at one time.  This is a cumulative
+              type=>string,        and over writing action.  If you set
+              status=>integer,     the "to" attribute twice, the second
+              priority=>string,    setting is what is used.  If you set
+              meta=>string,        the status, and then set the priority
+              icon=>string,        then both will be in the <presence/>
+              show=>string,        tag.  For valid settings read the
+              loc=>string)         specific Set functions below.
 
-  SetTo(string) - sets the to attribute.  Must be a valid Jabber Identifier 
-                  or the server will return an error message.
-                  (ie.  jabber:bob@jabber.org, etc...)
+  SetTo(string) - sets the to attribute.  You can either pass a string
+  SetTo(JID)      or a JID object.  They must be valid Jabber 
+                  Identifiers or the server will return an error message.
+                  (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+
+  SetFrom(string) - sets the from attribute.  You can either pass a string
+  SetFrom(JID)      or a JID object.  They must be valid Jabber 
+                    Identifiers or the server will return an error message.
+                    (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
 
   SetType(string) - sets the type attribute.  Valid settings are:
 
@@ -175,7 +189,7 @@ Net::Jabber::Presence - Jabber Presence Module
 
 =head1 AUTHOR
 
-By Ryan Eatmon in December of 1999 for http://jabber.org..
+By Ryan Eatmon in May of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -190,7 +204,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "0.8.1";
+$VERSION = "1.0";
 
 sub new {
   my $proto = shift;
@@ -201,7 +215,7 @@ sub new {
 
   bless($self, $proto);
 
-  if (@_ != ("")) {
+  if ("@_" ne ("")) {
     my @temp = @_;
     $self->{PRESENCE} = \@temp;
     my $xTree;
@@ -214,6 +228,17 @@ sub new {
   }
 
   return $self;
+}
+
+
+##############################################################################
+#
+# GetTag - returns the Jabber tag of this object
+#
+##############################################################################
+sub GetTag {
+  my $self = shift;
+  return "presence";
 }
 
 
@@ -236,7 +261,13 @@ sub GetID {
 ##############################################################################
 sub GetTo {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","to");
+  my ($type) = @_;
+  my $to = &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","to");
+  if ($type eq "jid") {
+    return new Net::Jabber::JID($to);
+  } else {
+    return $to;
+  }
 }
 
 
@@ -248,7 +279,13 @@ sub GetTo {
 ##############################################################################
 sub GetFrom {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","from");
+  my ($type) = @_;
+  my $from = &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","from");
+  if ($type eq "jid") {
+    return new Net::Jabber::JID($from);
+  } else {
+    return $from;
+  }
 }
 
 
@@ -404,6 +441,7 @@ sub SetPresence {
 
   $self->SetID($presence{id}) if exists($presence{id});
   $self->SetTo($presence{to}) if exists($presence{to});
+  $self->SetFrom($presence{from}) if exists($presence{from});
   $self->SetType($presence{type}) if exists($presence{type});
   $self->SetStatus($presence{status}) if exists($presence{status});
   $self->SetPriority($presence{priority}) if exists($presence{priority});
@@ -434,7 +472,25 @@ sub SetID {
 sub SetTo {
   my $self = shift;
   my ($to) = @_;
+  if (ref($to) eq "Net::Jabber::JID") {
+    $to = $to->GetJID();
+  }
   &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{to=>$to});
+}
+
+
+##############################################################################
+#
+# SetFrom - sets the from attribute in the <presence/>
+#
+##############################################################################
+sub SetFrom {
+  my $self = shift;
+  my ($from) = @_;
+  if (ref($from) eq "Net::Jabber::JID") {
+    $from = $from->GetJID();
+  }
+  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{from=>$from});
 }
 
 

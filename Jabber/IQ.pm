@@ -8,20 +8,20 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
   Net::Jabber::IQ is a companion to the Net::Jabber module. It
   provides the user a simple interface to set and retrieve all 
-  parts of a Jabber IQ Query.
+  parts of a Jabber IQ.
 
 =head1 DESCRIPTION
 
   Net::Jabber::IQ differs from the other Net::Jabber::* modules in that
   the XMLNS of the query is split out into more submodules under
   IQ.  For specifics on each module please view the documentation
-  for each Net::Jabber::IQ::* module.  The available modules are:
+  for each Net::Jabber::Query::* module.  The available modules are:
 
-    Net::Jabber::IQ::Auth      - Simple Client Authentication
-    Net::Jabber::IQ::Info      - Generic Info and Profile query
-    Net::Jabber::IQ::Register  - Registration requests
-    Net::Jabber::IQ::Resource  - User Resource Management
-    Net::Jabber::IQ::Roster    - Buddy List management
+    Net::Jabber::Query::Auth      - Simple Client Authentication
+    Net::Jabber::Query::Info      - Generic Info and Profile query
+    Net::Jabber::Query::Register  - Registration requests
+    Net::Jabber::Query::Resource  - User Resource Management
+    Net::Jabber::Query::Roster    - Buddy List management
 
   To initialize the IQ with a Jabber <iq/> you must pass it the 
   XML::Parser Tree array from the Net::Jabber::Client module.  In the
@@ -56,15 +56,16 @@ Net::Jabber::IQ - Jabber Info/Query Library
 =head2 Retrieval functions
 
     $to        = $IQ->GetTo();
+    $toJID     = $IQ->GetTo("jid");
     $from      = $IQ->GetFrom();
+    $fromJID   = $IQ->GetFrom("jid");
     $id        = $IQ->GetID();
     $type      = $IQ->GetType();
-    $xmlns     = $IQ->GetXMLNS();
     $error     = $IQ->GetError();
     $errorType = $IQ->GetErrorType();
 
-    $queryObj  = $IQ->GetQuery();
-    $tree      = $IQ->GetQueryTree();
+    $queryTag  = $IQ->GetQuery();
+    $qureyTree = $IQ->GetQueryTree();
 
     $str       = $IQ->GetXML();
     @iq        = $IQ->GetTree();
@@ -78,44 +79,44 @@ Net::Jabber::IQ - Jabber Info/Query Library
     $IQ->SetTo("bob@jabber.org");
     $IQ->SetType("set");
 
-    $IQ->SetIQ(-to=>"bob\@jabber.org",
-               -errortype=>"denied",
-               -error=>"Permission Denied");
+    $IQ->SetIQ(to=>"bob\@jabber.org",
+               errortype=>"denied",
+               error=>"Permission Denied");
     $IQ->SetErrorType("denied");
     $IQ->SetError("Permission Denied");
 
-    $IQObject = $IQ->NewQuery("auth");
+    $IQObject = $IQ->NewQuery("jabber:iq:auth");
+    $IQObject = $IQ->NewQuery("jabber:iq:roster");
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetTo() - returns a string with the Jabber Identifier of the 
-            person who is going to receive the <iq/>.  <iq/>s sent
-            to the server does not require a to.
+  GetTo()      - returns either a string with the Jabber Identifier,
+  GetTo("jid")   or a Net::Jabber::JID object for the person who is 
+                 going to receive the <iq/>.  To get the JID
+                 object set the string to "jid", otherwise leave
+                 blank for the text string.
 
-  GetFrom() - returns a string with the Jabber Identifier of the 
-              person who sent the <iq/>.
+  GetFrom()      -  returns either a string with the Jabber Identifier,
+  GetFrom("jid")    or a Net::Jabber::JID object for the person who
+                    sent the <iq/>.  To get the JID object set 
+                    the string to "jid", otherwise leave blank for the 
+                    text string.
 
   GetType() - returns a string with the type <iq/> this is.
 
   GetID() - returns an integer with the id of the <iq/>.
 
-  GetXMLNS() - returns a string with the namespace of the query that
-               the <iq/> contains.
-
   GetError() - returns a string with the text description of the error.
 
   GetErrorType() - returns a string with the type of error.
 
-  GetQuery() - returns a Net::Jabber::IQ::xxxxxx object that contains
-               the data in the query.  To learn how to use this object
-               please read the documentation for each 
-               Net::Jabber::IQ::xxxxxx module.  These are listed at the
-               top of this document.
+  GetQuery() - returns a Net::Jabber::Query object that contains the data
+               in the <query/> of the <iq/>.
 
-  GetQueryTree() - returns an XML::Parser tree that contains the data
-                   in the query.
+  GetQueryTree() - returns an XML::Parser::Tree object that contains the 
+                   data in the <query/> of the <iq/>.
 
   GetXML() - returns the XML string that represents the <iq/>. This 
              is used by the Send() function in Client.pm to send
@@ -126,9 +127,9 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
 =head2 Creation functions
 
-  SetIQ(to=>string,        - set multiple fields in the <iq/> at one
-        type=>string,        time.  This is a cumulative and over
-        query=>string,       writing action.  If you set the "to"
+  SetIQ(to=>string|JID,    - set multiple fields in the <iq/> at one
+        from=>string|JID,    time.  This is a cumulative and over
+        type=>string,        writing action.  If you set the "to"
         errortype=>string,   attribute twice, the second setting is
         error=>string)       what is used.  If you set the status, and
                              then set the priority then both will be in
@@ -148,20 +149,18 @@ Net::Jabber::IQ - Jabber Info/Query Library
  
   SetError(string) - sets the error string of the <iq/>.
  
-  NewQuery(string) - returns a Net::Jabber::IQ::xxxxxx object that contains
-                     the data in the query.  The kind of object that is
-                     created is based on the string that you pass to 
-                     NewQuery.  Valid query types are:
-
-                     auth        Authentication
-                     info        General Information
-                     register    Registration information
-                     resource    User Resource
-                     roster      Buddy Lists
+  NewQuery(string) - creates a new Net::Jabber::Query object with the 
+                     namespace in the string.  In order for this function 
+                     to work with a custom namespace, you must define and 
+                     register that namespace with the IQ module.  For more 
+                     information please read the documentation for 
+                     Net::Jabber::Query.  NOTE: Jabber does not support
+                     custom IQs at the time of this writing.  This was just
+                     including in case they do at some point.
 
 =head1 AUTHOR
 
-By Ryan Eatmon in December of 1999 for http://jabber.org..
+By Ryan Eatmon in May of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -175,27 +174,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "0.8.1";
-
-use Net::Jabber::IQ::Auth;
-($Net::Jabber::IQ::Auth::VERSION < $VERSION) &&
-  die("Net::Jabber::IQ::Auth $VERSION required--this is only version $Net::Jabber::IQ::Auth::VERSION");
-
-use Net::Jabber::IQ::Info;
-($Net::Jabber::IQ::Info::VERSION < $VERSION) &&
-  die("Net::Jabber::IQ::Info $VERSION required--this is only version $Net::Jabber::IQ::Info::VERSION");
-
-use Net::Jabber::IQ::Register;
-($Net::Jabber::IQ::Register::VERSION < $VERSION) &&
-  die("Net::Jabber::IQ::Register $VERSION required--this is only version $Net::Jabber::IQ::Register::VERSION");
-
-use Net::Jabber::IQ::Resource;
-($Net::Jabber::IQ::Resource::VERSION < $VERSION) &&
-  die("Net::Jabber::IQ::Resource $VERSION required--this is only version $Net::Jabber::IQ::Resource::VERSION");
-
-use Net::Jabber::IQ::Roster;
-($Net::Jabber::IQ::Roster::VERSION < $VERSION) &&
-  die("Net::Jabber::IQ::Roster $VERSION required--this is only version $Net::Jabber::IQ::Roster::VERSION");
+$VERSION = "1.0";
 
 sub new {
   my $proto = shift;
@@ -206,28 +185,27 @@ sub new {
 
   bless($self, $proto);
 
-  $self->{XMLNS}->{'auth'} = "jabber:iq:auth";
-  $self->{XMLNS}->{'info'} = "jabber:iq:info";
-  $self->{XMLNS}->{'register'} = "jabber:iq:register";
-  $self->{XMLNS}->{'resource'} = "jabber:iq:resource";
-  $self->{XMLNS}->{'roster'} = "jabber:iq:roster";
-  
-  $self->{CONSTRUCTORS}->{'jabber:iq:auth'} = "Net::Jabber::IQ::Auth";
-  $self->{CONSTRUCTORS}->{'jabber:iq:info'} = "Net::Jabber::IQ::Info";
-  $self->{CONSTRUCTORS}->{'jabber:iq:register'} = "Net::Jabber::IQ::Register";
-  $self->{CONSTRUCTORS}->{'jabber:iq:resource'} = "Net::Jabber::IQ::Resource";
-  $self->{CONSTRUCTORS}->{'jabber:iq:roster'} = "Net::Jabber::IQ::Roster";
-
-  if (@_ != ("")) {
+  if ("@_" ne ("")) {
     my @temp = @_;
     $self->{IQ} = \@temp;
-    $self->{QUERY} = $self->BuildQuery($self->GetQueryTree());
+    my @queryTree = $self->GetQueryTree();
+    $self->SetQuery(@queryTree);
   } else {
     $self->{IQ} = [ "iq" , [{}]];
-    $self->{QUERY} = "";
   }
 
   return $self;
+}
+
+
+##############################################################################
+#
+# GetTag - returns the Jabber tag of this object
+#
+##############################################################################
+sub GetTag {
+  my $self = shift;
+  return "iq";
 }
 
 
@@ -279,17 +257,6 @@ sub GetType {
 
 ##############################################################################
 #
-# GetXMLS - returns the namespace of the query in the <iq/>
-#
-##############################################################################
-sub GetXMLNS {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"query","xmlns");  
-}
-
-
-##############################################################################
-#
 # GetError - returns the text associated with the error in the <iq/>
 #
 ##############################################################################
@@ -312,27 +279,33 @@ sub GetErrorType {
 
 ##############################################################################
 #
-# GetQuery - returns a Net::Jabber::IQ::xxxxxx object that represents the
-#            <query/> in the <iq/>
+# GetErrorCode - returns the code of the error in the <iq/>
+#
+##############################################################################
+sub GetErrorCode {
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{IQ},"error","code");
+}
+
+
+##############################################################################
+#
+# GetQuery - returns a Net::Jabber::Query object that contains the <query/>
 #
 ##############################################################################
 sub GetQuery {
   my $self = shift;
-
-  $self->MergeQuery();
   return $self->{QUERY};
 }
 
 
 ##############################################################################
 #
-# GetQueryTree - returns an XML::Parser tree that represents the <query/> in 
-#                the <iq/>
+# GetQueryTree - returns an XML::Parser::Tree object of the <query/> tag
 #
 ##############################################################################
 sub GetQueryTree {
   my $self = shift;
-
   $self->MergeQuery();
   return &Net::Jabber::GetXMLData("tree",$self->{IQ},"query");
 }
@@ -377,8 +350,9 @@ sub SetIQ {
 
   $self->SetID($iq{id}) if exists($iq{id});
   $self->SetTo($iq{to}) if exists($iq{to});
+  $self->SetFrom($iq{from}) if exists($iq{from});
   $self->SetType($iq{type}) if exists($iq{type});
-  $self->NewQuery($iq{query}) if exists($iq{query});
+  $self->SetErrorCode($iq{errorcode}) if exists($iq{errorcode});
   $self->SetErrorType($iq{errortype}) if exists($iq{errortype});
   $self->SetError($iq{error}) if exists($iq{error});
 }
@@ -404,7 +378,25 @@ sub SetID {
 sub SetTo {
   my $self = shift;
   my ($to) = @_;
+  if (ref($to) eq "Net::Jabber::JID") {
+    $to = $to->GetJID();
+  }
   &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{to=>$to});
+}
+
+
+##############################################################################
+#
+# SetFrom - sets the from attribute in the <iq/>
+#
+##############################################################################
+sub SetFrom {
+  my $self = shift;
+  my ($from) = @_;
+  if (ref($from) eq "Net::Jabber::JID") {
+    $from = $from->GetJID();
+  }
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{from=>$from});
 }
 
 
@@ -422,7 +414,19 @@ sub SetType {
 
 ##############################################################################
 #
-# SetErrorType - sets the type attribute in the error tag of the <message/>
+# SetErrorCode - sets the code attribute in the error tag of the <iq/>
+#
+##############################################################################
+sub SetErrorCode {
+  my $self = shift;
+  my ($code) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"error",,{code=>$code});
+}
+
+
+##############################################################################
+#
+# SetErrorType - sets the type attribute in the error tag of the <iq/>
 #
 ##############################################################################
 sub SetErrorType {
@@ -434,7 +438,7 @@ sub SetErrorType {
 
 ##############################################################################
 #
-# SetError - sets the error of the <message/>
+# SetError - sets the error of the <iq/>
 #
 ##############################################################################
 sub SetError {
@@ -446,57 +450,65 @@ sub SetError {
 
 ##############################################################################
 #
-# NewQuery - returns a Net::Jabber::IQ::xxxxxx object based on the value
-#            of the string passed to it.  You can take that object and set
-#            values for the <query/> using the Set functions of each type.
+# NewQuery - calls SetQuery to create a new Net::Jabber::Query object, sets 
+#            the xmlns and returns a pointer to the new object.
 #
 ##############################################################################
 sub NewQuery {
   my $self = shift;
-  my ($type) = @_;
-  
-  $self->SetType("set") if ($self->GetType() eq "");
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"query","",{xmlns=>$self->{XMLNS}->{$type}});
-
-  $self->{QUERY} = $self->BuildQuery($self->GetQueryTree());
-
-  return $self->{QUERY};
+  my ($xmlns) = @_;
+  my $query = $self->SetQuery();
+  $query->SetXMLNS($xmlns) if $xmlns ne "";
+  return $query;
 }
 
+
 ##############################################################################
 #
-# BuildQuery - returns the new Net::Jabber::IQ::xxxxxx object based on the
-#              <query/> that is passed to it.  This is a private helper
-#              function.
+# SetQuery - creates a new Net::Jabber::Query object, sets the internal
+#            pointer to it, and returns a pointer to the new object.  This 
+#            is a private helper function. 
 #
 ##############################################################################
-sub BuildQuery {
+sub SetQuery {
   my $self = shift;
-  my (@tree) = @_;
-
-  my $xmlns = &Net::Jabber::GetXMLData("value",\@tree,"","xmlns");
-
-  my $obj;
-  eval("\$obj = new ".$self->{CONSTRUCTORS}->{$xmlns}."(\@tree);");
-
-  return $obj;
+  my (@queryTree) = @_;
+  my $query = new Net::Jabber::Query(@queryTree);
+  $self->{QUERY} = $query;
+  return $query;
 }
-
+  
 
 ##############################################################################
 #
-# MergeQuery - takes the <query/> in the Net::Jabber::IQ::xxxxxx object and
-#              pulls the data out and merges it into the <iq/>.  This is a
-#              private helper function.  It should be used any time you need
-#              access the full <iq/> so that the <query/> is included.
-#              (ie. GetXML, GetTree, debug, etc...)
+# MergeQuery - rebuilds the <query/>in memory and merges it into the current
+#              IQ tree. This is a private helper function.  It should be used
+#              any time you need access the full <iq/> so that the <query/> 
+#              tag is included.  (ie. GetXML, GetTree, debug, etc...)
 #
 ##############################################################################
 sub MergeQuery {
   my $self = shift;
 
-  return if (!$self->{QUERY});
-  $self->{IQ}->[1]->[2] = ($self->{QUERY}->GetTree())[1];
+  my $replaced = 0;
+
+  return if !(exists($self->{QUERY}));
+
+  my $query = $self->{QUERY};
+  my @queryTree = $query->GetTree();
+
+  my $i;
+  foreach $i (1..$#{$self->{IQ}->[1]}) {
+    if ($self->{IQ}->[1]->[$i] eq "query") {
+      $replaced = 1;
+      $self->{IQ}->[1]->[($i+1)] = $queryTree[1];
+    }
+  }
+
+  if ($replaced == 0) {
+    $self->{IQ}->[1]->[($#{$self->{IQ}->[1]}+1)] = "query";
+    $self->{IQ}->[1]->[($#{$self->{IQ}->[1]}+1)] = $queryTree[1];
+  }
 }
 
 

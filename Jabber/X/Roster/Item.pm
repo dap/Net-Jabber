@@ -1,29 +1,39 @@
-package Net::Jabber::IQ::Roster::Item;
+package Net::Jabber::X::Roster::Item;
 
 =head1 NAME
 
-Net::Jabber::IQ::Roster::Item - Jabber IQ Roster Item Module
+Net::Jabber::X::Roster::Item - Jabber IQ Roster Item Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::IQ::Roster::Item is a companion to the 
-  Net::Jabber::IQ::Roster module.  It provides the user a simple 
+  Net::Jabber::X::Roster::Item is a companion to the 
+  Net::Jabber::X::Roster module.  It provides the user a simple 
   interface to set and retrieve all parts of a Jabber Roster Item.
 
 =head1 DESCRIPTION
 
-  To initialize the Item with a Jabber <iq/> and then access the auth
-  query you must pass it the XML::Parser Tree array from the 
-  Net::Jabber::Client module.  In the callback function for the iq:
+  To initialize the Item with a Jabber <x/> and then access the </x>
+  you must pass it the XML::Parser Tree array from the 
+  Net::Jabber::Client module.  In the callback function for the object
+  type foo:
 
     use Net::Jabber;
 
-    sub iq {
-      my $iq = new Net::Jabber::IQ(@_);
-      my $roster = $iq->GetQuery();
-      my @items = $roster->GetItems();
-      foreach $item (@items) {
-        ...
+    sub foo {
+      my $foo = new Net::Jabber::Foo(@_);
+
+      my @xTags = $foo->GetX("jabber:x:roster");
+
+      my $xTag;
+      foreach $xTag (@xTags) {
+        my @items = $xTag->GetItems();
+	my $item;
+	foreach $item (@items) {
+	  $item->GetXXXX();
+	  .
+	  .
+	  .
+	}
       }
       .
       .
@@ -39,14 +49,14 @@ Net::Jabber::IQ::Roster::Item - Jabber IQ Roster Item Module
     $Client = new Net::Jabber::Client();
     ...
 
-    $IQ = new Net::Jabber::IQ();
-    $Roster = $IQ->NewQuery("roster");
-    $Item = $Roster->AddItem();
+    $foo = new Net::Jabber::Foo();
+    $roster = $foo->NewX("jabber:x:roster");
+    $foo = $roster->AddItem();
     ...
 
-    $Client->Send($IQ);
+    $client->Send($foo);
 
-  Using $Item you can call the creation functions below to populate the 
+  Using $item you can call the creation functions below to populate the 
   tag before sending it.
 
   For more information about the array format being passed to the CallBack
@@ -54,53 +64,38 @@ Net::Jabber::IQ::Roster::Item - Jabber IQ Roster Item Module
 
 =head2 Retrieval functions
 
-    $jid          = $Auth->GetJID();
-    $name         = $Auth->GetName();
-    $subscription = $Auth->GetSubscription();
-    $ask          = $Item->GetAsk();
-    @groups       = $Item->GetGroup();
+    $jid          = $item->GetJID();
+    $jidJID       = $item->GetJID("jid");
+    $name         = $item->GetName();
+    @groups       = $item->GetGroups();
 
-    @item         = $Item->GetTree();
-    $str          = $Item->GetXML();
+    @item         = $item->GetTree();
+    $str          = $item->GetXML();
 
 =head2 Creation functions
 
-    $Item->SetItem(jid=>'bob@jabber.org',
+    $item->SetItem(jid=>'bob@jabber.org',
 		   name=>'Bob',
 		   subscription=>'both',
-		   group=>[ 'friends','school' ]);
+		   groups=>[ 'friends','school' ]);
 
-    $Auth->SetJID('bob@jabber.org');
-    $Auth->SetName('Bob');
-    $Auth->SetSubscription('both');
-    $Auth->SetAsk('both');
-    $Auth->SetGroup(['friends','school']);
+    $item->SetJID('bob@jabber.org');
+    $item->SetName('Bob');
+    $item->SetGroups(['friends','school']);
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetJID() - returns a string with the jabber ID of this <item/>.
+  GetJID()      - returns either a string with the Jabber Identifier,
+  GetJID("jid")   or a Net::Jabber::JID object for the person who is 
+                  listed in this <item/>.  To get the JID object set the 
+                  string to "jid", otherwise leave blank for the text
+                  string.
 
   GetName() - returns a string with the name of the jabber ID.
 
-  GetSubscription() - returns a string with the current subscription 
-                      of this <item/>.
-
-                      none    means no one is getting <presence/> tags
-                      to      means we are getting their <presence/>
-                              but they are not getting ours
-                      from    means we are not getting their <presence/>
-                              but they are getting ours
-                      both    means we are getting their <presence/>
-                              and they are getting ours
-                      remove  remove this jid from the roster
-
-  GetAsk() - returns a string with the current ask of this <item/>.
-             This is the pending request by you to this JID, usually
-             handled by the server.
-
-  GetGroup() - returns an array of strings with the names of the groups
+  GetGroups() - returns an array of strings with the names of the groups
                that this <item/> belongs to.
 
   GetXML() - returns the XML string that represents the <presence/>.
@@ -112,11 +107,11 @@ Net::Jabber::IQ::Roster::Item - Jabber IQ Roster Item Module
 
 =head2 Creation functions
 
-  SetItem(jid=>string,          - set multiple fields in the <item/>
+  SetItem(jid=>string|JID,      - set multiple fields in the <item/>
           name=>string,           at one time.  This is a cumulative
           subscription=>string,   and overwriting action.  If you
           ask=>string,            set the "ask" twice, the second
-          group=>array)           setting is what is used.  If you set
+          groups=>array)          setting is what is used.  If you set
                                   the password, and then set the
                                   resource then both will be in the
                                   <item/> tag.  For valid settings
@@ -125,26 +120,21 @@ Net::Jabber::IQ::Roster::Item - Jabber IQ Roster Item Module
                                   manner.  For each group setting a
                                   new <group/> tag will be created.
 
-  SetJID(string) - sets the username for the account you are
-                        trying to connect with.  Leave blank for
-                        an anonymous account.
+  SetJID(string) - sets the Jabber Identifier.  You can either pass a
+  SetJID(JID)      string or a JID object.  They must be valid Jabber 
+                   Identifiers or the server will return an error message.
+                   (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
 
   SetName(string) - sets the password for the account you are
                         trying to connect with.  Leave blank for
                         an anonymous account.
 
-  SetSubscription(string) - sets the resource for the account you are
-                        trying to connect with.  Leave blank for
-                        an anonymous account.
-
-  SetAsk(string) - sets the ask for the <item/>.
-
-  SetGroup(array) - sets the group for each group in the array.
+  SetGroups(array) - sets the group for each group in the array.
 
 
 =head1 AUTHOR
 
-By Ryan Eatmon in December of 1999 for http://jabber.org..
+By Ryan Eatmon in May of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -158,7 +148,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "0.8.1";
+$VERSION = "1.0";
 
 sub new {
   my $proto = shift;
@@ -169,7 +159,7 @@ sub new {
 
   bless($self, $proto);
 
-  if (@_ != ("")) {
+  if ("@_" ne ("")) {
     my @temp = @_;
     $self->{ITEM} = \@temp;
   } else {
@@ -182,18 +172,24 @@ sub new {
 
 ##############################################################################
 #
-#
+# GetJID - returns the JID of the <item/>
 #
 ##############################################################################
 sub GetJID {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"","jid");
+  my ($type) = @_;
+  my $jid = &Net::Jabber::GetXMLData("value",$self->{ITEM},"","jid");
+  if ($type eq "jid") {
+    return new Net::Jabber::JID($jid);
+  } else {
+    return $jid;
+  }
 }
 
 
 ##############################################################################
 #
-#
+# GetName - returns the name of the <item/>
 #
 ##############################################################################
 sub GetName {
@@ -204,32 +200,10 @@ sub GetName {
 
 ##############################################################################
 #
-#
-#
-##############################################################################
-sub GetSubscription {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"","subscription");
-}
-
-
-##############################################################################
-#
-#
+# GetGroups - returns an array of the groups of the <item/>
 #
 ##############################################################################
-sub GetAsk {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"","ask");
-}
-
-
-##############################################################################
-#
-#
-#
-##############################################################################
-sub GetGroup {
+sub GetGroups {
   my $self = shift;
 
   return &Net::Jabber::GetXMLData("value array",$self->{ITEM},"group");
@@ -262,7 +236,7 @@ sub GetTree {
 
 ##############################################################################
 #
-# SetItem - takes a hash of all of the things you can set on an item <query/>
+# SetItem - takes a hash of all of the things you can set on an item <x/>
 #           and sets each one.
 #
 ##############################################################################
@@ -273,27 +247,28 @@ sub SetItem {
   
   $self->SetJID($item{jid}) if exists($item{jid});
   $self->SetName($item{name}) if exists($item{name});
-  $self->SetSubscription($item{subscription}) if exists($item{subscription});
-  $self->SetAsk($item{ask}) if exists($item{ask});
-  $self->SetGroup($item{group}) if exists($item{group});
+  $self->SetGroups($item{groups}) if exists($item{groups});
 }
 
 
 ##############################################################################
 #
-# SetJID - 
+# SetJID - sets the JID of the <item/>
 #
 ##############################################################################
 sub SetJID {
   my $self = shift;
   my ($jid) = @_;
+  if (ref($jid) eq "Net::Jabber::JID") {
+    $jid = $jid->GetJID();
+  }
   &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{jid=>$jid});
 }
 
 
 ##############################################################################
 #
-# SetName - 
+# SetName - sets the name of the <item/>
 #
 ##############################################################################
 sub SetName {
@@ -305,34 +280,10 @@ sub SetName {
 
 ##############################################################################
 #
-# SetSubscription - 
+# SetGroups - sets the groups of the <item/>
 #
 ##############################################################################
-sub SetSubscription {
-  my $self = shift;
-  my ($subscription) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{subscription=>$subscription});
-}
-
-
-##############################################################################
-#
-# SetAsk - 
-#
-##############################################################################
-sub SetAsk {
-  my $self = shift;
-  my ($ask) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{ask=>$ask});
-}
-
-
-##############################################################################
-#
-# SetGroup -
-#
-##############################################################################
-sub SetGroup {
+sub SetGroups {
   my $self = shift;
   my (@groups) = @_;
   my ($group);

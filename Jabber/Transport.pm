@@ -1,23 +1,22 @@
-package Net::Jabber::Client;
+package Net::Jabber::Transport;
 
 =head1 NAME
 
-Net::Jabber::Client - Jabber Client Library
+Net::Jabber::Transport - Jabber Transport Library
 
 =head1 SYNOPSIS
 
-  Net::Jabber::Client is a module that provides a developer easy access
-  to the Jabber Instant Messaging protocol.
+  Net::Jabber::Transport is a module that provides a developer easy access
+  to tranports in the Jabber Instant Messaging protocol.
 
 =head1 DESCRIPTION
 
-  Client.pm uses Protocol.pm to provide enough high level APIs and 
-  automation of the low level APIs that writing a Jabber Client in 
-  Perl is trivial.  For those that wish to work with the low level 
-  you can do that too, but those functions are covered in the 
-  documentation for each module.
+  Transport.pm seeks to provide enough high level APIs and automation of 
+  the low level APIs that writing a Jabber Transport in Perl is trivial.
+  For those that wish to work with the low level you can do that too, 
+  but those functions are covered in the documentation for each module.
 
-  Net::Jabber::Client provides functions to connect to a Jabber server,
+  Net::Jabber::Transport provides functions to connect to a Jabber server,
   login, send and receive messages, set personal information, create
   a new user account, manage the roster, and disconnect.  You can use
   all or none of the functions, there is no requirement.
@@ -32,7 +31,7 @@ Net::Jabber::Client - Jabber Client Library
 
     use Net::Jabber;
 
-    $Con = new Net::Jabber::Client();
+    $Con = new Net::Jabber::Transport();
 
     $Con->Connect(hostname=>"jabber.org");
 
@@ -46,17 +45,22 @@ Net::Jabber::Client - Jabber Client Library
 
 =head2 Basic Functions
 
-    new(debug=>string)       - creates the Client object.  debug
+    new(debug=>string)       - creates the Transport object.  debug
         debugfh=>FileHandle)   should be set to the path for the debug
                                log to be written.  If set to "stdout" 
                                then the debug will go there.  Also, you
                                can specify a filehandle that already
                                exists and use that.
 
-    Connect(hostname=>string, - opens a connection to the server listed
-	    port=>integer)      in the host name value, on the port
-                                listed.  The defaults for the two are
-				localhost and 5222.
+    Connect(hostname=>string,      - opens a connection to the server
+	    port=>integer,           listedt in the hostname value,
+	    secret=>string,          on the port listed.  The defaults
+	    transportname=>string)   for the two are localhost and 5222.
+				     The secret is the password needed
+                                     to attach the hostname, and the
+                                     transportname is the name that
+                                     server and clients will know the
+                                     transport by.
 
     Disconnect() - closes the connection to the server.
 
@@ -85,6 +89,8 @@ use Net::Jabber::Protocol;
   die("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
 
 sub new {
+  srand( time() ^ ($$ + ($$ << 15)));
+
   my $proto = shift;
   my $self = { };
 
@@ -127,8 +133,9 @@ sub new {
     }
   }
 
-  $self->{SERVER} = {"hostname" => "127.0.0.1", 
-		     "port" => 5222};
+  $self->{SERVER} = {hostname => "127.0.0.1", 
+		     port => 5269,
+		     transportname => ""};
 
   $self->{STREAM} = new XML::Stream(debugfh=>$self->{DEBUGFILE})
     if ($self->{DEBUG});
@@ -143,7 +150,8 @@ sub new {
     $self->{DIGEST} = 1;
     Digest::SHA1->import(qw(sha1 sha1_hex sha1_base64));
   } else {
-    $self->{DIGEST} = 0;
+    print "ERROR:  You cannot use Transport.pm unless you have Digest::SHA1 installed.\n";
+    exit(0);
   }
 
   $self->{DELEGATE} = new Net::Jabber::Protocol();
@@ -176,7 +184,7 @@ sub debug {
   my $self = shift;
   return if ($self->{DEBUG} == 0);
   my $fh = $self->{DEBUGFILE};
-  print $fh "Client: @_\n";
+  print $fh "Transport: @_\n";
 }
 
 
@@ -192,14 +200,47 @@ sub debug {
 ###########################################################################
 sub Connect {
   my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
-  while($#_ >= 0) { $self->{SERVER}{ lc pop(@_) } = pop(@_); }
+  if (!exists($args{hostname})) {
+    print "ERROR: no hostname specified.\n";
+    exit(0);
+  }
+
+  if (!exists($args{secret})) {
+    print "ERROR: no secret specified.\n";
+    exit(0);
+  }
+
+  if (!exists($args{transportname})) {
+    print "ERROR: no transport name specified.\n";
+    exit(0);
+  }
+
+  $self->{SERVER}->{hostname} = delete($args{hostname});
+  $self->{SERVER}->{port} = delete($args{port}) if exists($args{port});
+  $self->{SERVER}->{transportname} = delete($args{transportname});
+
+  $self->{SERVER}->{id} = rand(1000000);
+  $self->{SERVER}->{id} =~ s/\.//;
+  ($self->{SERVER}->{id}) = 
+    ($self->{SERVER}->{id} =~ /(\d\d\d\d\d\d\d\d\d\d)/);
+  $self->{SERVER}->{digest} =
+    Digest::SHA1::sha1_hex($self->{SERVER}->{id}.$args{secret});
+
+  $self->{NAMESPACE} = new XML::Stream::Namespace("etherx");
+  $self->{NAMESPACE}->SetXMLNS("http://etherx.jabber.org/");
+  $self->{NAMESPACE}->SetAttributes(secret=>$self->{SERVER}->{digest});
 
   $self->{SESSION} = 
     $self->{STREAM}->
       Connect(hostname=>$self->{SERVER}->{hostname},
 	      port=>$self->{SERVER}->{port},
-	      namespace=>"jabber:client"
+	      myhostname=>$self->{SERVER}->{transportname},
+	      id=>$self->{SERVER}->{id},
+	      namespace=>"jabber:server",
+	      namespaces=> [ $self->{NAMESPACE} ]
 	     ) || return undef;
   
   $self->{STREAM}->OnNode(sub{ $self->CallBack(@_) });

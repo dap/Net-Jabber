@@ -41,9 +41,11 @@ Net::Jabber::Message - Jabber Message Module
 
 =head2 Retrieval functions
 
+    $to       = $Mess->GetTo();
+    $toJID    = $Mess->GetTo("jid");
     $from     = $Mess->GetFrom();
+    $fromJID  = $Mess->GetFrom("jid");
     $resource = $Mess->GetResource();
-    $id       = $Mess->GetID();
     $type     = $Mess->GetType();
     $subject  = $Mess->GetSubject();
     $body     = $Mess->GetBody();
@@ -62,19 +64,19 @@ Net::Jabber::Message - Jabber Message Module
 
 =head2 Creation functions
 
-    $Mess->SetMessage(-TO=>"bob\@jabber.org/Working Bob",
-		      -Subject=>"Lunch",
-		      -BoDy=>"Let's go grab some lunch!",
-		      -priority=>100);
+    $Mess->SetMessage(TO=>"bob\@jabber.org/Working Bob",
+		      Subject=>"Lunch",
+		      BoDy=>"Let's go grab some lunch!",
+		      priority=>100);
     $Mess->SetTo("Test User");
     $Mess->SetSubject("This is a test");
     $Mess->SetBody("This is a test of the emergency broadcast system...");
     $Mess->SetThread("AE912B3");
     $Mess->SetPriority(1);
 
-    $Mess->SetMessage(-to=>"bob\@jabber.org",
-                      -errortype=>"denied",
-                      -error=>"Permission Denied");
+    $Mess->SetMessage(to=>"bob\@jabber.org",
+                      errortype=>"denied",
+                      error=>"Permission Denied");
     $Mess->SetErrorType("denied");
     $Mess->SetError("Permission Denied");
 
@@ -85,16 +87,20 @@ Net::Jabber::Message - Jabber Message Module
 
 =head2 Retrieval functions
 
-  GetTo() - returns a string with the Jabber Identifier of the 
-            person who is going to receive the <message/>.
+  GetTo()      - returns either a string with the Jabber Identifier,
+  GetTo("jid")   or a Net::Jabber::JID object for the person who is 
+                 going to receive the <message/>.  To get the JID
+                 object set the string to "jid", otherwise leave
+                 blank for the text string.
 
-  GetFrom() - returns a string with the Jabber Identifier of the 
-              person who sent the <message/>.
+  GetFrom()      -  returns either a string with the Jabber Identifier,
+  GetFrom("jid")    or a Net::Jabber::JID object for the person who
+                    sent the <message/>.  To get the JID object set 
+                    the string to "jid", otherwise leave blank for the 
+                    text string.
 
   GetResource() - returns a string with the Jabber Resource of the 
                   person who sent the <message/>.
-
-  GetID() - returns an integer with the id of the <message/>.
 
   GetType() - returns a string with the type <message/> this is.
 
@@ -118,18 +124,18 @@ Net::Jabber::Message - Jabber Message Module
 
   GetErrorType() - returns a string with the type of the <error/> tag.
 
-  GetX(string) - returns an array of Net::Jabber::X objects.  The string can 
-                 either be empty or the XML Namespace you are looking for.  
-                 If empty then GetX returns every <x/> tag in the 
+  GetX(string) - returns an array of Net::Jabber::X objects.  The string 
+                 can either be empty or the XML Namespace you are looking
+                 for.  If empty then GetX returns every <x/> tag in the 
                  <message/>.  If an XML Namespace is sent then GetX 
                  returns every <x/> tag with that Namespace.
 
   GetXTrees(string) - returns an array of XML::Parser::Tree objects.  The 
                       string can either be empty or the XML Namespace you 
-                      are looking for.  If empty then GetXTrees returns every 
-                      <x/> tag in the <message/>.  If an XML Namespace is 
-                      sent then GetXTrees returns every <x/> tag with that 
-                      Namespace.
+                      are looking for.  If empty then GetXTrees returns
+                      every <x/> tag in the <message/>.  If an XML
+                      Namespace is sent then GetXTrees returns every
+                      <x/> tag with that  Namespace.
 
   GetXML() - returns the XML string that represents the <message/>.
              This is used by the Send() function in Client.pm to send
@@ -140,19 +146,25 @@ Net::Jabber::Message - Jabber Message Module
 
 =head2 Creation functions
 
-  SetMessage(to=>string,         - set multiple fields in the <message/>
-             type=>string,         at one time.  This is a cumulative
-             subject=>string,      and over writing action.  If you set
-             body=>string,         the "to" attribute twice, the second
-             thread=>string,       setting is what is used.  If you set
-             priority=>integer,    the subject, and then set the body
-             errortype=>string,    then both will be in the <message/>
-             error=>string)        tag.  For valid settings read the
-                                   specific Set functions below.
+  SetMessage(to=>string|JID,     - set multiple fields in the <message/>
+             from=>string|JID,     at one time.  This is a cumulative
+             type=>string,         and over writing action.  If you set
+             subject=>string,      the "to" attribute twice, the second
+             body=>string,         setting is what is used.  If you set
+             thread=>integer,      the subject, and then set the body
+             priority=>string,     then both will be in the <message/>
+             errortype=>string,    tag.  For valid settings read the
+             error=>string)        specific Set functions below.
 
-  SetTo(string) - sets the to attribute.  Must be a valid Jabber Identifier 
-                  or the server will return an error message.
+  SetTo(string) - sets the to attribute.  You can either pass a string
+  SetTo(JID)      or a JID object.  They must be valid Jabber 
+                  Identifiers or the server will return an error message.
                   (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+
+  SetFrom(string) - sets the from attribute.  You can either pass a string
+  SetFrom(JID)      or a JID object.  They must be valid Jabber 
+                    Identifiers or the server will return an error message.
+                    (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
 
   SetType(string) - sets the type attribute.  Valid settings are:
 
@@ -185,7 +197,7 @@ Net::Jabber::Message - Jabber Message Module
 
 =head1 AUTHOR
 
-By Ryan Eatmon in December of 1999 for http://jabber.org..
+By Ryan Eatmon in May of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -199,7 +211,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "0.8.1";
+$VERSION = "1.0";
 
 sub new {
   my $proto = shift;
@@ -210,7 +222,7 @@ sub new {
 
   bless($self, $proto);
 
-  if (@_ != ("")) {
+  if ("@_" ne ("")) {
     my @temp = @_;
     $self->{MESSAGE} = \@temp;
     my $xTree;
@@ -223,6 +235,17 @@ sub new {
   }
 
   return $self;
+}
+
+
+##############################################################################
+#
+# GetTag - returns the Jabber tag of this object
+#
+##############################################################################
+sub GetTag {
+  my $self = shift;
+  return "message";
 }
 
 
@@ -242,11 +265,16 @@ sub GetID {
 # GetTo - returns the Jabber Identifier of the person you are sending the
 #         <message/> to.
 #
-#
 ##############################################################################
 sub GetTo {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","to");
+  my ($type) = @_;
+  my $to = &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","to");
+  if ($type eq "jid") {
+    return new Net::Jabber::JID($to);
+  } else {
+    return $to;
+  }
 }
 
 
@@ -255,11 +283,40 @@ sub GetTo {
 # GetFrom - returns the Jabber Identifier of the person who sent the 
 #           <message/>
 #
-#
 ##############################################################################
 sub GetFrom {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","from");
+  my ($type) = @_;
+  my $from = &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","from");
+  if ($type eq "jid") {
+    return new Net::Jabber::JID($from);
+  } else {
+    return $from;
+  }
+}
+
+
+##############################################################################
+#
+# GetTo - returns the Jabber Identifier of the person you are sending the
+#         <message/> to.
+#
+##############################################################################
+sub GetEtherxTo {
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","etherx:to");
+}
+
+
+##############################################################################
+#
+# GetFrom - returns the Jabber Identifier of the person who sent the 
+#           <message/>
+#
+##############################################################################
+sub GetEtherxFrom {
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","etherx:from");
 }
 
 
@@ -267,7 +324,6 @@ sub GetFrom {
 #
 # GetResource - returns the Jabber Resource of the person who sent the 
 #              <message/>
-#
 #
 ##############################################################################
 sub GetResource {
@@ -434,6 +490,9 @@ sub SetMessage {
 
   $self->SetID($message{id}) if exists($message{id});
   $self->SetTo($message{to}) if exists($message{to});
+  $self->SetFrom($message{from}) if exists($message{from});
+  $self->SetEtherxTo($message{etherxto}) if exists($message{etherxto});
+  $self->SetEtherxFrom($message{etherxfrom}) if exists($message{etherxfrom});
   $self->SetSubject($message{subject}) if exists($message{subject});
   $self->SetBody($message{body}) if exists($message{body});
   $self->SetThread($message{thread}) if exists($message{thread});
@@ -463,7 +522,49 @@ sub SetID {
 sub SetTo {
   my $self = shift;
   my ($to) = @_;
+  if (ref($to) eq "Net::Jabber::JID") {
+    $to = $to->GetJID();
+  }
   &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{to=>$to});
+}
+
+
+##############################################################################
+#
+# SetFrom - sets the from attribute in the <message/>
+#
+##############################################################################
+sub SetFrom {
+  my $self = shift;
+  my ($from) = @_;
+  if (ref($from) eq "Net::Jabber::JID") {
+    $from = $from->GetJID();
+  }
+  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{from=>$from});
+}
+
+
+##############################################################################
+#
+# SetEtherxTo - sets the to attribute in the <message/>
+#
+##############################################################################
+sub SetEtherxTo {
+  my $self = shift;
+  my ($etherxto) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{"etherx:to"=>$etherxto});
+}
+
+
+##############################################################################
+#
+# SetEtherxFrom - sets the from attribute in the <message/>
+#
+##############################################################################
+sub SetEtherxFrom {
+  my $self = shift;
+  my ($etherxfrom) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{"etherx:from"=>$etherxfrom});
 }
 
 

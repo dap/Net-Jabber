@@ -1,3 +1,27 @@
+1.0a
+======
+  - Added better example files in examples/.
+  - Wrote Transport.pm, it too uses Protocol.pm through delegates.
+  - Client.pm now uses delegates to pull in the functiosn from Protocol.pm.
+  - Moved high-level functions out of Client.pm into Protocol.pm.
+  - Added support for jabber:iq:agent, jabber:iq:agents, and jabber:x:roster.
+  - Updated example.pl.
+  - If you have Time::Timezone installed in the Query/Time.pm automagically
+    uses the timezone functions to figure out your timezone when you call
+    SetTZ().
+  - If you have Digest::SHA1 installed then Client.pm automagically uses the 
+    SHA-1 digest to encrypt the password for Authorization.
+  - RosterGet returns a complex data structure that contains the roster from
+    the server.
+  - <iq/> modules now use the AUTOLOAD and delegates same as the <x/> modules 
+    do.
+  - Bumped version to 1.0a.
+  - Changed method of handling timeouts.
+  - Added code to better handle errors on the Stream.  It now actually returns
+    undef, or "", when the server or connection dies.
+  - Added code to test a Connect without crashing.  Connect returns undef, or
+    "", if the Connect failed.
+
 0.8.1b
 ======
   - Added IgnoreIDs() and WatchIDs() in Client.pm.

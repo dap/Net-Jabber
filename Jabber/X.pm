@@ -20,23 +20,31 @@ Net::Jabber::X - Jabber X Module
     Net::Jabber::X::Delay     - Message Routing and Delay Information
     Net::Jabber::X::Ident     - Rich Identification
     Net::Jabber::X::Oob       - Out Of Band File Transfers
+    Net::Jabber::X::Roster    - Roster Items for embedding in messages
 
-  Each of these modules provided Net::Jabber::X with the functions
+  Each of these modules provide Net::Jabber::X with the functions
   to access the data.  By using delegates and the AUTOLOAD function
   the functions for each namespace is used when that namespace is
   active.
 
-  To initialize the X with a Jabber <x/> you must pass it the 
-  XML::Parser Tree array from the Net::Jabber::Client module.  In the
-  callback function for the x:
+  To access an X object you must create a Message object and use the
+  access functions there to get to the X.  To initialize the Message with 
+  a Jabber <message/> you must pass it the XML::Parser Tree array from the 
+  Net::Jabber::Client module.  In the callback function for the message
+  you can access the x tags for the namespace "my:namespace" by doing
+  the following:
 
     use Net::Jabber;
 
-    sub x {
-      my $x = new Net::Jabber::X(@_);
-      .
-      .
-      .
+    sub messageCB {
+      my $message = new Net::Jabber::Message(@_);
+      my @xTags = $mesage->GetX("my:namespace");
+      my $xTag;
+      foreach $xTag (@xTags) {
+        .
+        .
+        .
+      }
     }
 
   You now have access to all of the retrieval functions available.
@@ -45,13 +53,12 @@ Net::Jabber::X - Jabber X Module
 
     use Net::Jabber;
 
-    $X = new Net::Jabber::X();
-    $XType = $X->NewQuery( type );
-    $XType->SetXXXXX("yyyyy");
+    my $message = new Net::Jabber::Message();
+    my $x = $message->NewX("jabber:x:ident");
 
-  Now you can call the creation functions for the X, and for the <query/>
-  on the new Query object itself.  See below for the <x/> functions, and
-  in each query module for those functions.
+  Now you can call the creation functions for the X as defined in the
+  proper namespace.  See below for the general <x/> functions, and in 
+  each query module for those functions.
 
   For more information about the array format being passed to the CallBack
   please read the Net::Jabber::Client documentation.
@@ -71,8 +78,6 @@ Net::Jabber::X - Jabber X Module
 =head2 Creation functions
 
     $X->SetXMLNS("jabber:x:delay");
-
-    $X->SetDelegates("com:bar:foo"=>"Foo::Bar::X");
 
 =head1 METHODS
 
@@ -119,7 +124,7 @@ Net::Jabber::X - Jabber X Module
   or
 
     my $Client = new Net::Jabber::Client();
-    $Client->SetDelegates("blah:blah"=>"Blah::Blah");
+    $Client->SetXDelegates("blah:blah"=>"Blah::Blah");
 
   Once you have the delegate registered you need to define the access
   functions.  Here is a an example module:
@@ -136,15 +141,16 @@ Net::Jabber::X - Jabber X Module
     }
 
     sub SetBlah {
-      my $delegate = shift;
-      my $owner = shift;
-
+      shift;
+      my $self = shift;
+      my ($blah) = @_;
+      return &Net::Jabber::SetXMLData("single",$self->{X},"blah","$blah",{});
     }
 
     sub GetBlah {
-      my $delegate = shift;
-      my $owner = shift;
-      return &Net::Jabber::GetXMLData("value",$owner->{X},"blah","");
+      shift;
+      my $self = shift;
+      return &Net::Jabber::GetXMLData("value",$self->{X},"blah","");
     }
 
     1;
@@ -154,7 +160,7 @@ Net::Jabber::X - Jabber X Module
 
 =head1 AUTHOR
 
-By Ryan Eatmon in January of 2000 for http://jabber.org..
+By Ryan Eatmon in May of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -168,7 +174,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %DELEGATES);
 
-$VERSION = "0.8.1";
+$VERSION = "1.0";
 
 use Net::Jabber::X::Delay;
 ($Net::Jabber::X::Delay::VERSION < $VERSION) &&
@@ -178,13 +184,18 @@ use Net::Jabber::X::Delay;
 #($Net::Jabber::X::Ident::VERSION < $VERSION) &&
 #  die("Net::Jabber::X::Ident $VERSION required--this is only version $Net::Jabber::X::Ident::VERSION");
 
-#use Net::Jabber::X::Oob;
-#($Net::Jabber::X::Oob::VERSION < $VERSION) &&
-#  die("Net::Jabber::X::Oob $VERSION required--this is only version $Net::Jabber::X::Oob::VERSION");
+use Net::Jabber::X::Oob;
+($Net::Jabber::X::Oob::VERSION < $VERSION) &&
+  die("Net::Jabber::X::Oob $VERSION required--this is only version $Net::Jabber::X::Oob::VERSION");
+
+use Net::Jabber::X::Roster;
+($Net::Jabber::X::Roster::VERSION < $VERSION) &&
+  die("Net::Jabber::X::Roster $VERSION required--this is only version $Net::Jabber::X::Roster::VERSION");
 
 $DELEGATES{'jabber:x:delay'} = "Net::Jabber::X::Delay";
-$DELEGATES{'jabber:x:ident'} = "Net::Jabber::X::Ident";
+#$DELEGATES{'jabber:x:ident'} = "Net::Jabber::X::Ident";
 $DELEGATES{'jabber:x:oob'}   = "Net::Jabber::X::Oob";
+$DELEGATES{'jabber:x:roster'}   = "Net::Jabber::X::Roster";
 
 sub new {
   my $proto = shift;
@@ -195,7 +206,7 @@ sub new {
 
   bless($self, $proto);
 
-  if (@_ != ("")) {
+  if ("@_" ne ("")) {
     my @temp = @_;
     $self->{X} = \@temp;
     $self->GetDelegate();

@@ -1,33 +1,26 @@
-package Net::Jabber::X::Oob;
+package Net::Jabber::Query::Oob;
 
 =head1 NAME
 
-Net::Jabber::X::Oob - Jabber X Out Of Bandwidth File Transfer Module
+Net::Jabber::Query::Oob - Jabber Query Out Of Bandwidth File Transfer Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::X::Oob is a companion to the Net::Jabber::X module.
+  Net::Jabber::Query::Oob is a companion to the Net::Jabber::Query module.
   It provides the user a simple interface to set and retrieve all 
-  parts of a Jabber X Oob.
+  parts of a Jabber Query Oob.
 
 =head1 DESCRIPTION
 
-  To initialize the Oob with a Jabber <x/> you must pass it the 
-  XML::Parser Tree array from the module trying to access the <x/>.  
+  To initialize the Oob with a Jabber <iq/> you must pass it the 
+  XML::Parser Tree array from the module trying to access the <iq/>.  
   In the callback function:
 
     use Net::Jabber;
 
-    sub iq {
-      my $foo = new Net::Jabber::Foo(@_);
-
-      my @xTags = $foo->GetX("jabber:x:oob");
-
-      my $xTag;
-      foreach $xTag (@xTags) {
-	$xTag->....
-	
-      }
+    sub iqCB {
+      my $iq = new Net::Jabber::IQ(@_);
+      my $oob = $iq->GetQuery();
       .
       .
       .
@@ -39,8 +32,8 @@ Net::Jabber::X::Oob - Jabber X Out Of Bandwidth File Transfer Module
 
     use Net::Jabber;
 
-    $foo = new Net::Jabber::Foo();
-    $x = $foo->NewX("jabber:x:oob");
+    $iq = new Net::Jabber::IQ();
+    $oob = $iq->NewQuery("jabber:iq:oob");
 
   Now you can call the creation functions below.
 
@@ -49,16 +42,16 @@ Net::Jabber::X::Oob - Jabber X Out Of Bandwidth File Transfer Module
 
 =head2 Retrieval functions
 
-    $url  = $xTag->GetURL();
-    $desc = $xTag->GetDesc();
+    $url  = $oob->GetURL();
+    $desc = $oob->GetDesc();
 
 =head2 Creation functions
 
-    $xTag->SetOob(UrL=>"http://my.web.server.com/~me/pics/bob.jpg",
-	          desc=>"Picture of Bob, the one and only");
+    $oob->SetOob(UrL=>"http://my.web.server.com/~me/pics/bob.jpg",
+	         desc=>"Picture of Bob, the one and only");
 
-    $xTag->SetURL("http://my.web.server.com/~me/pics/bobandme.jpg");
-    $xTag->SetDesc("Bob and Me at the Open Source conference");
+    $oob->SetURL("http://my.web.server.com/~me/pics/bobandme.jpg");
+    $oob->SetDesc("Bob and Me at the Open Source conference");
 
 =head1 METHODS
 
@@ -71,13 +64,13 @@ Net::Jabber::X::Oob - Jabber X Out Of Bandwidth File Transfer Module
 
 =head2 Creation functions
 
-  SetOob(url=>string,  - set multiple fields in the <x/> at one
+  SetOob(url=>string,  - set multiple fields in the <iq/> at one
          desc=>string)   time.  This is a cumulative and over
                          writing action.  If you set the "url"
                          attribute twice, the second setting is
                          what is used.  If you set the url, and
                          then set the desc then both will be in
-                         the <x/> tag.  For valid settings read the
+                         the <iq/> tag.  For valid settings read the
                          specific Set functions below.
 
   SetURL(string) - sets the URL for the file being sent Oob.
@@ -117,32 +110,32 @@ sub new {
 
 ##############################################################################
 #
-# GetURL - returns the url of the jabber:x:oob
+# GetURL - returns the url of the jabber:iq:oob
 #
 ##############################################################################
 sub GetURL {
   shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"url","");
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"url","");
 }
 
 
 ##############################################################################
 #
-# GetDesc - returns the desc of the jabber:x:oob
+# GetDesc - returns the desc of the jabber:iq:oob
 #
 ##############################################################################
 sub GetDesc {
   shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"desc","");
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"desc","");
 }
 
 
 ##############################################################################
 #
-# SetOob - takes a hash of all of the things you can set on a jabber:x:oob and
-#          sets each one.
+# SetOob - takes a hash of all of the things you can set on a jabber:iq:oob 
+#          and sets each one.
 #
 ##############################################################################
 sub SetOob {
@@ -158,20 +151,20 @@ sub SetOob {
 
 ##############################################################################
 #
-# SetURL - sets the url in the jabber:x:oob
+# SetURL - sets the url in the jabber:iq:oob
 #
 ##############################################################################
 sub SetURL {
   shift;
   my $self = shift;
   my ($url) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{X},"url",$url,{});
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"url",$url,{});
 }
 
 
 ##############################################################################
 #
-# SetDesc - sets the desc in the jabber:x:oob
+# SetDesc - sets the desc in the jabber:iq:oob
 #
 ##############################################################################
 sub SetDesc {
@@ -179,7 +172,7 @@ sub SetDesc {
   my $self = shift;
   my ($desc) = @_;
   
-  &Net::Jabber::SetXMLData("single",$self->{X},"desc",$desc,{});
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"desc",$desc,{});
 }
 
 

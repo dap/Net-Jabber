@@ -9,6 +9,10 @@ Net::Jabber - Jabber Perl Library
   Net::Jabber provides a Perl user with access to the Jabber
   Instant Messaging protocol.
 
+  For more information about Jabber visit: 
+ 
+    http://www.jabber.org
+
 =head1 DESCRIPTION
 
   Net::Jabber is a convenient tool to use for any perl scripts
@@ -17,10 +21,16 @@ Net::Jabber - Jabber Perl Library
   all of the necessary back-end functions to make a CGI client 
   or command-line perl client feasible and easy to use.  
   Net::Jabber is a wrapper around the rest of the official
-  Net::Jabber::xxxxxx packages.  The synopsis above gives an 
-  example program that uses these packages to create a vary simple 
-  Jabber client that logs a user in and displays any messages
-  they receive.
+  Net::Jabber::xxxxxx packages.  
+
+  There is an example script, client.pl, that provides you with
+  an example a very simple Jabber client that logs a user in and
+  displays any messages they receive.  
+
+  There is also an example transport script, transport.pl,
+  that shows how to write a transport that gets a message,
+  converts the entire message to uppercase, and send it back
+  to the sender.
 
 =head1 PACKAGES
 
@@ -30,6 +40,24 @@ Net::Jabber - Jabber Perl Library
   stream from the server and based on what kind of tag it 
   encounters it calls a function to handle the tag.
 
+  Net::Jabber::Transport - this package contains the code needed
+  to write a transport.  A transport is a program tha handles
+  the communication between a jabber server and some outside
+  program or communications pacakge (IRC, talk, email, etc...)
+  With this module you can write a full transport in just
+  a few lines of Perl.  It uses XML::Stream to communicate with 
+  its host server and based on what kind of tag it encounters it 
+  calls a function to handle the tag.
+
+  Net::Jabber::Protocol - a collection of high-level functions
+  that Client and transport use to make their lives easier.
+  These functions are included through AUTOLOAD and delegates.
+
+  Net::Jabber::JID - the Jabber IDs consist of three parts:
+  user id, server, and resource.  This module gives you access
+  to those components without having to parse the string
+  yourself.
+
   Net::Jabber::Message - everything needed to create and read
   a <message/> received from the server.
 
@@ -37,27 +65,55 @@ Net::Jabber - Jabber Perl Library
   a <presence/> received from the server.
 
   Net::Jabber::IQ - IQ is a wrapper around a number of modules
-  that provide support for the various namespaces that Jabber
-  recognizes.
+  that provide support for the various Info/Query namespaces that 
+  Jabber recognizes.
 
-  Net::Jabber::IQ::Auth - everything needed to authenticate a
+  Net::Jabber::Query - this module uses delegates and autoloading
+  to provide access to all of the Query modules listed below.
+
+  Net::Jabber::Query::Agent - provides access to the information
+  about an agent that the server supports.
+
+  Net::Jabber::Query::Agents - the list of agents, see agent above,
+  that the server supports.
+
+  Net::Jabber::Query::Auth - everything needed to authenticate a
   session to the server.
 
-  Net::Jabber::IQ::Info - everything needed to manage and query 
-  the personal data stored on the server.
+  Net::Jabber::Query::Fneg - feature negoation between the client
+  and server.
 
-  Net::Jabber::IQ::Register - everything needed to create a new
+  Net::Jabber::Query::Oob - support for out of bandwidth file
+  transfers.
+
+  Net::Jabber::Query::Register - everything needed to create a new
   Jabber account on the server.
 
-  Net::Jabber::IQ::Resource - everything needed to manage and
-  query Jabber ID Resources.
-
-  Net::Jabber::IQ::Roster - everything needed to manage and query
+  Net::Jabber::Query::Roster - everything needed to manage and query
   the server side Rosters.
+
+  Net::Jabber::Query::Roster::Item - access to an item from the
+  roster.
+
+  Net::Jabber::Query::Time - exchange time information with the
+  target recipient (either server or client).
+
+  Net::Jabber::Query::Version - exchange version information with 
+  the target recipient (either server or client).
+
+  Net::Jabber::X::Delay - specifies the delays that the message 
+  went through before begin delivered.
+
+  Net::Jabber::X::Oob - out of bandwidth file transers.
+
+  Net::Jabber::X::Roster - support for embedded roster items.
+
+  Net::Jabber::X::Roster::Item - access to the item in a roster.
+
 
 =head1 AUTHOR
 
-By Ryan Eatmon in October of 1999 for http://perl.jabber.org/
+By Ryan Eatmon in May of 2000 for http://perl.jabber.org/
 
 =head1 COPYRIGHT
 
@@ -71,27 +127,41 @@ use strict;
 use Carp;
 use vars qw($VERSION %DELEGATES);
 
-$VERSION = "0.8.1";
+$VERSION = "1.0";
+
+use Net::Jabber::JID;
+($Net::Jabber::JID::VERSION < $VERSION) &&
+  die("Net::Jabber::JID $VERSION required--this is only version $Net::Jabber::JID::VERSION");
 
 use Net::Jabber::X;
-($Net::Jabber::X::VERSION < $Net::Jabber::JABBER_VERSION) &&
-  die("Net::Jabber::X $Net::Jabber::JABBER_VERSION required--this is only version $Net::Jabber::X::VERSION");
+($Net::Jabber::X::VERSION < $VERSION) &&
+  die("Net::Jabber::X $VERSION required--this is only version $Net::Jabber::X::VERSION");
+
+use Net::Jabber::Query;
+($Net::Jabber::Query::VERSION < $VERSION) &&
+  die("Net::Jabber::Query $VERSION required--this is only version $Net::Jabber::Query::VERSION");
 
 use Net::Jabber::Message;
-($Net::Jabber::Message::VERSION < $Net::Jabber::JABBER_VERSION) &&
-  die("Net::Jabber::Message $Net::Jabber::JABBER_VERSION required--this is only version $Net::Jabber::Message::VERSION");
+($Net::Jabber::Message::VERSION < $VERSION) &&
+  die("Net::Jabber::Message $VERSION required--this is only version $Net::Jabber::Message::VERSION");
 
 use Net::Jabber::IQ;
-($Net::Jabber::IQ::VERSION < $Net::Jabber::JABBER_VERSION) &&
-  die("Net::Jabber::IQ $Net::Jabber::JABBER_VERSION required--this is only version $Net::Jabber::IQ::VERSION");
+($Net::Jabber::IQ::VERSION < $VERSION) &&
+  die("Net::Jabber::IQ $VERSION required--this is only version $Net::Jabber::IQ::VERSION");
 
 use Net::Jabber::Presence;
-($Net::Jabber::Presence::VERSION < $Net::Jabber::JABBER_VERSION) &&
-  die("Net::Jabber::Presence $Net::Jabber::JABBER_VERSION required--this is only version $Net::Jabber::Presence::VERSION");
+($Net::Jabber::Presence::VERSION < $VERSION) &&
+  die("Net::Jabber::Presence $VERSION required--this is only version $Net::Jabber::Presence::VERSION");
 
 use Net::Jabber::Client;
-($Net::Jabber::Client::VERSION < $Net::Jabber::JABBER_VERSION) &&
-  die("Net::Jabber::Client $Net::Jabber::JABBER_VERSION required--this is only version $Net::Jabber::Client::VERSION");
+($Net::Jabber::Client::VERSION < $VERSION) &&
+  die("Net::Jabber::Client $VERSION required--this is only version $Net::Jabber::Client::VERSION");
+
+use Net::Jabber::Transport;
+($Net::Jabber::Transport::VERSION < $VERSION) &&
+  die("Net::Jabber::Transport $VERSION required--this is only version $Net::Jabber::Transport::VERSION");
+
+
 
 
 ##############################################################################
@@ -194,6 +264,9 @@ sub SetXMLData {
 ##############################################################################
 sub GetXMLData {
   my ($type,$XMLTree,$tag,$attrib,$value) = @_;
+
+  $attrib = "" if !defined($attrib);
+  $value = "" if !defined($value);
 
   #---------------------------------------------------------------------------
   # Check if a child tag in the root tag is being requested.
@@ -379,7 +452,7 @@ sub BuildXML {
     
     my $tempStr = &Net::Jabber::BuildXML(@{$parseTree[1]});
 
-    if ($tempStr eq "") {
+    if (!defined($tempStr) || ($tempStr eq "")) {
       $str .= "/>";
     } else {
       $str .= ">";

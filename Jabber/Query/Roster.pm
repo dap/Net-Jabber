@@ -1,12 +1,12 @@
-package Net::Jabber::IQ::Roster;
+package Net::Jabber::Query::Roster;
 
 =head1 NAME
 
-Net::Jabber::IQ::Roster - Jabber IQ Roster Module
+Net::Jabber::Query::Roster - Jabber IQ Roster Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::IQ::Roster is a companion to the Net::Jabber::IQ module.
+  Net::Jabber::Query::Roster is a companion to the Net::Jabber::Query module.
   It provides the user a simple interface to set and retrieve all parts 
   of a Jabber IQ Roster query.
 
@@ -32,16 +32,16 @@ Net::Jabber::IQ::Roster - Jabber IQ Roster Module
 
     use Net::Jabber;
 
-    $Client = new Net::Jabber::Client();
+    $client = new Net::Jabber::Client();
     ...
 
-    $IQ = new Net::Jabber::IQ();
-    $Roster = $IQ->NewQuery("roster");
+    $iq = new Net::Jabber::IQ();
+    $roster = $iq->NewQuery("jabber:iq:roster");
     ...
 
-    $Client->Send($IQ);
+    $client->Send($iq);
 
-  Using $Roster you can call the creation functions below to populate the 
+  Using $roster you can call the creation functions below to populate the 
   tag before sending it.
 
   For more information about the array format being passed to the CallBack
@@ -49,33 +49,23 @@ Net::Jabber::IQ::Roster - Jabber IQ Roster Module
 
 =head2 Retrieval functions
 
-    @items  = $Roster->GetItems();
-
-    @roster = $Roster->GetTree();
-    $str    = $Roster->GetXML();
+    @items  = $roster->GetItems();
 
 =head2 Creation functions
 
-    $item   = $Roster->AddItem();
+    $item   = $roster->AddItem();
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetItems() - returns an array of Net::Jabber::IQ::Roster::Item objects.
+  GetItems() - returns an array of Net::Jabber::Query::Roster::Item objects.
                These can be modified or accessed with the functions
                available to them.
 
-  GetXML() - returns the XML string that represents the <query/>.
-             This is used by the GetXML() function in IQ.pm to build
-             the XML string for the <iq/> that contains this <query/>.
-
-  GetTree() - returns an array that contains the <query/> tag
-              in XML::Parser Tree format.
-
 =head2 Creation functions
 
-  AddItem(XML::Parser tree) - creates a new Net::Jabbber::IQ::Roster::Item
+  AddItem(XML::Parser tree) - creates a new Net::Jabbber::Query::Roster::Item
                               object and populates it with the tree if one
                               was passed in.  This returns the pointer to
                               the <item/> so you can modify it with the
@@ -83,7 +73,7 @@ Net::Jabber::IQ::Roster - Jabber IQ Roster Module
 
 =head1 AUTHOR
 
-By Ryan Eatmon in December of 1999 for http://jabber.org..
+By Ryan Eatmon in May of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -97,11 +87,11 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "0.8.1";
+$VERSION = "1.0";
 
-use Net::Jabber::IQ::Roster::Item;
-($Net::Jabber::IQ::Roster::Item::VERSION < $VERSION) &&
-  die("Net::Jabber::IQ::Roster::Item $VERSION required--this is only version $Net::Jabber::IQ::Roster::Item::VERSION");
+use Net::Jabber::Query::Roster::Item;
+($Net::Jabber::Query::Roster::Item::VERSION < $VERSION) &&
+  die("Net::Jabber::Query::Roster::Item $VERSION required--this is only version $Net::Jabber::Query::Roster::Item::VERSION");
 
 sub new {
   my $proto = shift;
@@ -112,72 +102,44 @@ sub new {
 
   bless($self, $proto);
 
-  if (@_ != ("")) {
-    my @temp = @_;
-    $self->{ROSTER} = \@temp;
-
-    my ($itemTree);
-    foreach $itemTree ($self->GetItemTrees()) {
-      $self->AddItem(@{$itemTree});
-    }
-  } else {
-    $self->{ROSTER} = [ "query" , [{xmlns=>"jabber:iq:roster"}]];
-    $self->{ITEMS} = {};
-  }
   return $self;
 }
 
 
 ##############################################################################
 #
-# GetItems - returns an array of Net::Jabber::IQ::Roster::Item objects.
+# GetItems - returns an array of Net::Jabber::Query::Roster::Item objects.
 #
 ##############################################################################
 sub GetItems {
+  shift;
   my $self = shift;
 
-  return @{$self->{ITEMS}};
+  if (!(exists($self->{ITEMS}))) {
+    my $itemTree;
+    foreach $itemTree ($self->GetItemTrees()) {
+      my $item = new Net::Jabber::Query::Roster::Item(@{$itemTree});
+      push(@{$self->{ITEMS}},$item);
+    }
+  }
+
+  return (exists($self->{ITEMS}) ? @{$self->{ITEMS}} : ());
 }
 
 
 ##############################################################################
 #
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  $self->MergeItems();
-  return &Net::Jabber::BuildXML(@{$self->{ROSTER}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#           the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;  
-  $self->MergeItems();
-  return @{$self->{ROSTER}};
-}
-
-
-##############################################################################
-#
-# AddItem - creates a new Net::Jabber::IQ::Roster::Item object from the tree
+# AddItem - creates a new Net::Jabber::Query::Roster::Item object from the tree
 #           passed to the function if any.  Then it returns a pointer to that
 #           object so you can modify it.
 #
 ##############################################################################
 sub AddItem {
+  shift;
   my $self = shift;
   my (@tree) = @_;
   
-  my $itemObj = new Net::Jabber::IQ::Roster::Item(@tree);
+  my $itemObj = new Net::Jabber::Query::Roster::Item(@tree);
   push(@{$self->{ITEMS}},$itemObj);
   return $itemObj;
 }
@@ -189,14 +151,15 @@ sub AddItem {
 #
 ##############################################################################
 sub GetItemTrees {
+  shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("tree array",$self->{ROSTER},"item");
+  return &Net::Jabber::GetXMLData("tree array",$self->{QUERY},"item");
 }
 
 
 ##############################################################################
 #
-# MergeItems - takes the <item/>s in the Net::Jabber::IQ::Roster::Item
+# MergeItems - takes the <item/>s in the Net::Jabber::Query::Roster::Item
 #              objects and pulls the data out and merges it into the <query/>.
 #              This is a private helper function.  It should be used any time
 #              you need to access the full <query/> so that the <item/>s are
@@ -204,28 +167,17 @@ sub GetItemTrees {
 #
 ##############################################################################
 sub MergeItems {
+  shift;
   my $self = shift;
   my (@tree);
   my $count = 1;
   my ($item);
   foreach $item (@{$self->{ITEMS}}) {
     @tree = $item->GetTree();
-    $self->{ROSTER}->[1]->[$count++] = "item";
-    $self->{ROSTER}->[1]->[$count++] = ($item->GetTree())[1];
+    $self->{QUERY}->[1]->[$count++] = "item";
+    $self->{QUERY}->[1]->[$count++] = ($item->GetTree())[1];
   }
 }
 
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug ROSTER: $self\n";
-  $self->MergeItems();
-  &Net::Jabber::printData("debug: \$self->{ROSTER}->",$self->{ROSTER});
-}
 
 1;
