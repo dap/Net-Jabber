@@ -45,6 +45,6 @@ WriteMakefile(
 	      'PREREQ_PM' => {
 			      'XML::Stream' => 1.05
 			     },
-	      'VERSION' => '1.0008',
+	      'VERSION' => '1.0009',
 	      'dist' => { 'COMPRESS' => 'gzip --best' }
 	     );

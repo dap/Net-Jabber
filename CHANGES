@@ -1,3 +1,7 @@
+1.0009
+======
+  - Fixed bug in the error tags.
+
 1.0008
 ======
   - Fixed a bug in the AutoUpdate/Release.pm code.

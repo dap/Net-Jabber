@@ -55,7 +55,7 @@ Net::Jabber::Message - Jabber Message Module
     $thread     = $Mess->GetThread();
     $priority   = $Mess->GetPriority();
     $error      = $Mess->GetError();
-    $errType    = $Mess->GetErrorType();
+    $errCode    = $Mess->GetErrorCode();
     @xTags      = $Mess->GetX();
     @xTags      = $Mess->GetX("my:namespace");
     @xTrees     = $Mess->GetXTrees();
@@ -83,9 +83,9 @@ Net::Jabber::Message - Jabber Message Module
     $Mess->SetPriority(1);
 
     $Mess->SetMessage(to=>"bob\@jabber.org",
-                      errortype=>"denied",
+                      errorcode=>403,
                       error=>"Permission Denied");
-    $Mess->SetErrorType("denied");
+    $Mess->SetErrorCode(403);
     $Mess->SetError("Permission Denied");
 
     $X = $Mess->NewX("jabber:x:delay");
@@ -142,7 +142,7 @@ Net::Jabber::Message - Jabber Message Module
 
   GetError() - returns a string with the data of the <error/> tag.
 
-  GetErrorType() - returns a string with the type of the <error/> tag.
+  GetErrorCode() - returns a string with the code of the <error/> tag.
 
   GetX(string) - returns an array of Net::Jabber::X objects.  The string 
                  can either be empty or the XML Namespace you are looking
@@ -178,7 +178,7 @@ Net::Jabber::Message - Jabber Message Module
              body=>string,         setting is what is used.  If you set
              thread=>integer,      the subject, and then set the body
              priority=>string,     then both will be in the <message/>
-             errortype=>string,    tag.  For valid settings read the
+             errorcode=>string,    tag.  For valid settings read the
              error=>string)        specific Set functions below.
 
   SetTo(string) - sets the to attribute.  You can either pass a string
@@ -219,7 +219,7 @@ Net::Jabber::Message - Jabber Message Module
                          will deliver the message, even if the user has
                          specified no messages.
 
-  SetErrorType(string) - sets the error type of the <message/>.
+  SetErrorCode(string) - sets the error code of the <message/>.
 
   SetError(string) - sets the error string of the <message/>.
 
@@ -274,7 +274,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0008";
+$VERSION = "1.0009";
 
 sub new {
   my $proto = shift;
@@ -478,12 +478,12 @@ sub GetError {
 
 ##############################################################################
 #
-# GetErrorType - returns the type of the error
+# GetErrorCode - returns the code of the error
 #
 ##############################################################################
-sub GetErrorType {
+sub GetErrorCode {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"error","type");
+  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"error","code");
 }
 
 
@@ -589,7 +589,7 @@ sub SetMessage {
   $self->SetBody($message{body}) if exists($message{body});
   $self->SetThread($message{thread}) if exists($message{thread});
   $self->SetPriority($message{priority}) if exists($message{priority});
-  $self->SetErrorType($message{errortype}) if exists($message{errortype});
+  $self->SetErrorCode($message{errorcode}) if exists($message{errorcode});
   $self->SetError($message{error}) if exists($message{error});
 }
 
@@ -722,13 +722,13 @@ sub SetPriority {
 
 ##############################################################################
 #
-# SetErrorType - sets the type attribute in the error tag of the <message/>
+# SetErrorCode - sets the code attribute in the error tag of the <message/>
 #
 ##############################################################################
-sub SetErrorType {
+sub SetErrorCode {
   my $self = shift;
-  my ($type) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"error",,{type=>$type});
+  my ($code) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"error","",{code=>$code});
 }
 
 

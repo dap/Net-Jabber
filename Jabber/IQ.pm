@@ -59,7 +59,7 @@ Net::Jabber::IQ - Jabber Info/Query Library
     $id         = $IQ->GetID();
     $type       = $IQ->GetType();
     $error      = $IQ->GetError();
-    $errorType  = $IQ->GetErrorType();
+    $errorCode  = $IQ->GetErrorCode();
 
     $queryTag   = $IQ->GetQuery();
     $qureyTree  = $IQ->GetQueryTree();
@@ -80,9 +80,9 @@ Net::Jabber::IQ - Jabber Info/Query Library
     $IQ->SetType("set");
 
     $IQ->SetIQ(to=>"bob\@jabber.org",
-               errortype=>"denied",
+               errorcode=>403,
                error=>"Permission Denied");
-    $IQ->SetErrorType("denied");
+    $IQ->SetErrorCode(403);
     $IQ->SetError("Permission Denied");
 
     $IQObject = $IQ->NewQuery("jabber:iq:auth");
@@ -122,7 +122,7 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
   GetError() - returns a string with the text description of the error.
 
-  GetErrorType() - returns a string with the type of error.
+  GetErrorCode() - returns a string with the code of error.
 
   GetQuery() - returns a Net::Jabber::Query object that contains the data
                in the <query/> of the <iq/>.
@@ -142,7 +142,7 @@ Net::Jabber::IQ - Jabber Info/Query Library
   SetIQ(to=>string|JID,    - set multiple fields in the <iq/> at one
         from=>string|JID,    time.  This is a cumulative and over
         type=>string,        writing action.  If you set the "to"
-        errortype=>string,   attribute twice, the second setting is
+        errorcode=>string,   attribute twice, the second setting is
         error=>string)       what is used.  If you set the status, and
                              then set the priority then both will be in
                              the <iq/> tag.  For valid settings read the
@@ -171,7 +171,7 @@ Net::Jabber::IQ - Jabber Info/Query Library
                     get     request information
                     set     set information
 
-  SetErrorType(string) - sets the error type of the <iq/>.
+  SetErrorCode(string) - sets the error code of the <iq/>.
  
   SetError(string) - sets the error string of the <iq/>.
  
@@ -214,7 +214,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0008";
+$VERSION = "1.0009";
 
 sub new {
   my $proto = shift;
@@ -350,17 +350,6 @@ sub GetError {
 
 ##############################################################################
 #
-# GetErrorType - returns the type of the error in the <iq/>
-#
-##############################################################################
-sub GetErrorType {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"error","type");
-}
-
-
-##############################################################################
-#
 # GetErrorCode - returns the code of the error in the <iq/>
 #
 ##############################################################################
@@ -451,7 +440,6 @@ sub SetIQ {
   $self->SetEtherxFrom($iq{etherxfrom}) if exists($iq{etherxfrom});
   $self->SetType($iq{type}) if exists($iq{type});
   $self->SetErrorCode($iq{errorcode}) if exists($iq{errorcode});
-  $self->SetErrorType($iq{errortype}) if exists($iq{errortype});
   $self->SetError($iq{error}) if exists($iq{error});
 }
 
@@ -542,19 +530,7 @@ sub SetType {
 sub SetErrorCode {
   my $self = shift;
   my ($code) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"error",,{code=>$code});
-}
-
-
-##############################################################################
-#
-# SetErrorType - sets the type attribute in the error tag of the <iq/>
-#
-##############################################################################
-sub SetErrorType {
-  my $self = shift;
-  my ($type) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"error",,{type=>$type});
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"error","",{code=>$code});
 }
 
 

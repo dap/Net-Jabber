@@ -167,7 +167,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0008";
+$VERSION = "1.0009";
 
 use Net::Jabber::Query::Agent;
 ($Net::Jabber::Query::Agent::VERSION < $VERSION) &&
