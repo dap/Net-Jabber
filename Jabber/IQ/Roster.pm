@@ -170,7 +170,7 @@ sub GetTree {
 #
 # AddItem - creates a new Net::Jabber::IQ::Roster::Item object from the tree
 #           passed to the function if any.  Then it returns a pointer to that
-#           object so you cna modify it.
+#           object so you can modify it.
 #
 ##############################################################################
 sub AddItem {
@@ -197,7 +197,7 @@ sub GetItemTrees {
 ##############################################################################
 #
 # MergeItems - takes the <item/>s in the Net::Jabber::IQ::Roster::Item
-#              objects and pulls the data out amd merges it into the <query/>.
+#              objects and pulls the data out and merges it into the <query/>.
 #              This is a private helper function.  It should be used any time
 #              you need to access the full <query/> so that the <item/>s are
 #              included.  (ie. GetXML, GetTree, debug, etc...)
@@ -217,7 +217,7 @@ sub MergeItems {
 
 ##############################################################################
 #
-# debug - prints out the XML::Parser Tree in a readable format for dbeugging
+# debug - prints out the XML::Parser Tree in a readable format for debugging
 #
 ##############################################################################
 sub debug {

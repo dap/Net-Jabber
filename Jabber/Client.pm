@@ -12,7 +12,7 @@ Net::Jabber::Client - Jabber Client Library
 =head1 DESCRIPTION
 
   Client.pm seeks to provide enough high level APIs and automation of 
-  the low level APIs that writting a Jabber Client in Perl is trivial.
+  the low level APIs that writing a Jabber Client in Perl is trivial.
   For those that wish to work with the low level you can do that too, 
   but those functions are covered in the documentation for each module.
 
@@ -28,7 +28,7 @@ Net::Jabber::Client - Jabber Client Library
 
     use Net::Jabber;
 
-    $Con = new Net::Jabber::Client;
+    $Con = new Net::Jabber::Client();
 
     $Con->Connect(name=>"jabber.org");
 
@@ -53,6 +53,9 @@ Net::Jabber::Client - Jabber Client Library
     $receiveObj = $Con->GetID($id);    
     $receiveObj = $Con->WaitForID($id);
 
+    $Con->IgnoreIDs();
+    $Con->WatchIDs();
+
 =head2 Message Functions
 
     $Con->MessageSend(to=>"bob@jabber.org",
@@ -63,7 +66,7 @@ Net::Jabber::Client - Jabber Client Library
 
 =head2 Presence Functions
 
-    n/a
+    $Con->PresenceSend();
 
 =head2 IQ::Auth Functions
 
@@ -78,7 +81,9 @@ Net::Jabber::Client - Jabber Client Library
 
 =head2 IQ::Register Functions
 
-    n/a
+    @result = $Con->RegisterSend(usersname=>"newuser",
+				 resource=>"New User",
+				 password=>"imanewbie");
 
 =head2 IQ::Resource Functions
 
@@ -91,6 +96,10 @@ Net::Jabber::Client - Jabber Client Library
     $Con->RosterRemove(jid=>"bob@jabber.org");
 
 
+=head2 X Functions
+
+    $Con->SetXDelegates("com:bar:foo"=>"Foo::Bar");
+
 =head1 METHODS
 
 =head2 Basic Functions
@@ -100,19 +109,19 @@ Net::Jabber::Client - Jabber Client Library
                              defaults for the two are localhost and 5222.
 
     SetCallBacks(message=>function,  - sets the callback functions for
-                 presence=>function,   the toplevel tags listed.  The
+                 presence=>function,   the top level tags listed.  The
 		 iq=>function)         available tags to look for are
                                        <message/>, <presence/>, and
-                                       <iq/>.  If a packetis received
+                                       <iq/>.  If a packet is received
                                        with an ID then it is not sent
                                        to these functions, instead it
                                        is inserted into a LIST and can
-                                       be retreived by some functions
+                                       be retrieved by some functions
                                        we will mention later.
 
-    Process(integer) - takes the timeout period as an arguemnt.  If no
+    Process(integer) - takes the timeout period as an argument.  If no
                        timeout is listed then the function blocks until
-                       a packet is revceived.  Otherwise it waits that
+                       a packet is received.  Otherwise it waits that
                        number of seconds and then exits so your program
                        can continue doing useful things.  NOTE: This is
                        important for GUIs.  You need to leave time to
@@ -151,6 +160,17 @@ Net::Jabber::Client - Jabber Client Library
                          Returns the proper Net::Jabber::xxxxx object
                          based on the type of packet received
 
+    IgnoreIDs() - tells the client to stop putting IDs in a seperate array
+                  and just pass the object to the specified callback.
+                  This is useful for writing a daemon to listen to a
+                  Jabber account and respond back with an ID on
+                  a <message/>.
+
+    WatchIDs() - tells the client to start putting IDs in a seperate array
+                 and not pass the object to the specified callback.  If
+                 you call IgnoreIDs(), this function turns ID handling 
+                 back on.
+
 =head2 Message Functions
 
     MessageSend(hash) - takes the hash and passes it to SetMessage in
@@ -160,7 +180,7 @@ Net::Jabber::Client - Jabber Client Library
 
 =head2 Presence Functions
 
-    n/a
+#todo: document PresenceSend
 
 =head2 IQ::Auth Functions
 
@@ -178,7 +198,7 @@ Net::Jabber::Client - Jabber Client Library
                                    [ type , message ]
                                  If type is "ok" then authentication
                                  was successful, otherwise message
-                                 contains a litle more detail about the
+                                 contains a little more detail about the
                                  error.
 
 =head2 IQ::Info Functions
@@ -187,7 +207,21 @@ Net::Jabber::Client - Jabber Client Library
 
 =head2 IQ::Register Functions
 
-    n/a
+    RegisterSend(username=>string, - takes all of the information and
+                 password=>string,   builds a Net::Jabber::IQ::Register
+                 resource=>string)   packet.  It then sends that packet
+                                     to the server with an ID and waits
+                                     for that ID to return.  Then it
+                                     looks in resulting packet and
+                                     determines if registration was
+                                     successful for not.  The array
+                                     returned from RegisterSend looks
+                                     like this:
+                                       [ type , message ]
+                                     If type is "ok" then registration
+                                     was successful, otherwise message
+                                     contains a little more detail about the
+                                     error.
 
 =head2 IQ::Resource Functions
 
@@ -195,7 +229,7 @@ Net::Jabber::Client - Jabber Client Library
 
 =head2 IQ::Roster Functions
 
-    RosterGet() - sends an emtpy Net::Jabber::IQ::Roster tag to the
+    RosterGet() - sends an empty Net::Jabber::IQ::Roster tag to the
                   server so the server will send the Roster to the
                   client.
 
@@ -204,6 +238,13 @@ Net::Jabber::Client - Jabber Client Library
 
     RosterRemove(jid=>string) - sends a packet asking that the jid be
                              removed from the user's roster.
+
+=head2 X Functions
+
+    SetXDelegates(hash) - the hash gets sent to the 
+                          Net::Jabber::X::SetDelegates function.  For 
+                          more information about this function, read 
+                          the manpage for Net::Jabber::X.
 
 =head1 AUTHOR
 
@@ -246,6 +287,8 @@ sub new {
   $self->{VERSION} = $VERSION;
   
   $self->{LIST}->{currentID} = 0;
+
+  $self->{IGNOREIDS} = 0;
   
   bless($self, $proto);
   return $self;
@@ -296,11 +339,12 @@ sub CallBack {
   my $self = shift;
   my (@object) = @_;
 
-  if (exists($object[1]->[0]->{id})) {
-
+  if (($self->{IGNOREIDS} == 0) && exists($object[1]->[0]->{id})) {
     my $NJObject;
     $NJObject = new Net::Jabber::IQ(@object) 
       if ($object[0] eq "iq");
+    $NJObject = new Net::Jabber::Presence(@object) 
+      if ($object[0] eq "presence");
     $NJObject = new Net::Jabber::Message(@object) 
       if ($object[0] eq "message");
     $self->GotID($object[1]->[0]->{id},$NJObject);
@@ -390,7 +434,7 @@ sub SendXML {
 sub Disconnect {
   my $self = shift;
 
-  $self->SendXML("</stream:stream>");
+  $self->{STREAM}->Disconnect();
 }
 
 
@@ -413,10 +457,11 @@ sub SendWithID {
   my $xml;
   if (ref($object) eq "") {
     $xml = $object;
+    $xml =~ s/^(\<[^\>]+)(\>)/$1 id\=\'$currentID\'$2/;
   } else {
+    $object->SetID($currentID);
     $xml = $object->GetXML();
   }
-  $xml =~ s/^(\<[^\>]+)(\>)/$1 id\=\'$currentID\'$2/;
 
   #------------------------------------------------------------------------
   # Send the new XML string.
@@ -436,7 +481,7 @@ sub SendWithID {
 # SendAndReceiveWithID - Take either XML or a Net::Jabber::xxxxx object and
 #                        send it with the next ID.  Then wait for that ID
 #                        to come back and return the response in a
-#                        Net::Jabber::xxxx obejct.
+#                        Net::Jabber::xxxx object.
 #
 ###########################################################################
 sub SendAndReceiveWithID {
@@ -511,6 +556,32 @@ sub GotID {
 
 ###########################################################################
 #
+# IgnoreIDs - tell the CallBack function to not pay attention to IDs and
+#             pass the object to the specified callback function.
+#
+###########################################################################
+sub IgnoreIDs {
+  my $self = shift;
+  $self->{IGNOREIDS} = 1;
+}
+
+
+###########################################################################
+#
+# WatchIDs - tell the CallBack function to pay attention to IDs and not
+#            pass the object to the specified callback function.
+#
+###########################################################################
+sub WatchIDs {
+  my $self = shift;
+  $self->{IGNOREIDS} = 0;
+}
+
+
+
+
+###########################################################################
+#
 # MessageSend - Takes the same hash that Net::Jabber::Message->SetMessage
 #               takes and sends the message to the server.
 #
@@ -521,6 +592,19 @@ sub MessageSend {
   my $mess = new Net::Jabber::Message();
   $mess->SetMessage(@_);
   $self->Send($mess);
+}
+
+
+###########################################################################
+#
+# PresenceSend #todo
+#
+###########################################################################
+sub PresenceSend {
+  my $self = shift;
+
+  my $presence = new Net::Jabber::Presence();
+  $self->Send($presence);
 }
 
 
@@ -553,6 +637,39 @@ sub AuthSend {
   #------------------------------------------------------------------------
   return ( $IQLogin->GetErrorType() , $IQLogin->GetError() )
     if ($IQLogin->GetType() eq "error");
+  return ("ok","");
+}
+
+
+###########################################################################
+#
+# RegisterSend - This is a self contained function to send a registration
+#                iq tag with an id.  Then wait for a reply what the same
+#                id to come back and tell the caller what the result was.
+#
+###########################################################################
+sub RegisterSend {
+  my $self = shift;
+
+  #------------------------------------------------------------------------
+  # Create a Net::Jabber::IQ object to send to the server
+  #------------------------------------------------------------------------
+  my $IQ = new Net::Jabber::IQ;
+  my $IQRegister = $IQ->NewQuery("register");
+  $IQRegister->SetRegister(@_);
+
+  #------------------------------------------------------------------------
+  # Send the IQ with the next available ID and wait for a reply with that 
+  # id to be received.  Then grab the IQ reply.
+  #------------------------------------------------------------------------
+  $IQ = $self->SendAndReceiveWithID($IQ);
+  
+  #------------------------------------------------------------------------
+  # From the reply IQ determine if we were successful or not.  If yes then 
+  # return "".  If no then return error string from the reply.
+  #------------------------------------------------------------------------
+  return ( $IQ->GetErrorType() , $IQ->GetError() )
+    if ($IQ->GetType() eq "error");
   return ("ok","");
 }
 
@@ -606,6 +723,21 @@ sub RosterGet {
   $iq->SetIQ(type=>"get",
 	     query=>"roster");
   $self->Send($iq);
+}
+
+
+
+###########################################################################
+#
+# SetXDelegates - Sets the delegates for the <x/> that you might see during
+#                 the session.
+#
+###########################################################################
+sub SetXDelegates {
+  my $self = shift;
+
+  my $x = new Net::Jabber::X;
+  $x->SetDelegates(@_);
 }
 
 1;

@@ -19,7 +19,7 @@ Net::Jabber::Message - Jabber Message Module
     use Net::Jabber;
 
     sub message {
-      new $message = new Net::Jabber::Message(@_);
+      my $message = new Net::Jabber::Message(@_);
       .
       .
       .
@@ -54,6 +54,8 @@ Net::Jabber::Message - Jabber Message Module
     $errType  = $Mess->GetErrorType();
     @xTags    = $Mess->GetX();
     @xTags    = $Mess->GetX("my:namespace");
+    @xTrees   = $Mess->GetXTrees();
+    @xTrees   = $Mess->GetXTrees("my:namespace");
 
     $str      = $Mess->GetXML();
     @message  = $Mess->GetTree();
@@ -76,6 +78,9 @@ Net::Jabber::Message - Jabber Message Module
     $Mess->SetErrorType("denied");
     $Mess->SetError("Permission Denied");
 
+    $X = $Mess->NewX("jabber:x:delay");
+    $X = $Mess->NewX("my:namespace");
+
 =head1 METHODS
 
 =head2 Retrieval functions
@@ -97,7 +102,7 @@ Net::Jabber::Message - Jabber Message Module
 
   GetBody(string) - returns the data in the <body/> tag depending on the
                     value of the string passed to it.  The string
-                    represents the markup level to return.
+                    represents the mark up level to return.
 
                     none   returns a string with just the text of 
                            the <body/> (default)
@@ -113,11 +118,18 @@ Net::Jabber::Message - Jabber Message Module
 
   GetErrorType() - returns a string with the type of the <error/> tag.
 
-  GetX(string) - returns an array of XML::Parser::Tree objects.  The string
-                 can either be empty or the XML Namespace you are looking
-                 for.  If empty then GetX returns every <x/> tag in the
-                 <message/>.  If an XML Namespace is sent then GetX returns
-                 every <x/> tag with that Namespace.
+  GetX(string) - returns an array of Net::Jabber::X objects.  The string can 
+                 either be empty or the XML Namespace you are looking for.  
+                 If empty then GetX returns every <x/> tag in the 
+                 <message/>.  If an XML Namespace is sent then GetX 
+                 returns every <x/> tag with that Namespace.
+
+  GetXTrees(string) - returns an array of XML::Parser::Tree objects.  The 
+                      string can either be empty or the XML Namespace you 
+                      are looking for.  If empty then GetXTrees returns every 
+                      <x/> tag in the <message/>.  If an XML Namespace is 
+                      sent then GetXTrees returns every <x/> tag with that 
+                      Namespace.
 
   GetXML() - returns the XML string that represents the <message/>.
              This is used by the Send() function in Client.pm to send
@@ -129,7 +141,7 @@ Net::Jabber::Message - Jabber Message Module
 =head2 Creation functions
 
   SetMessage(to=>string,         - set multiple fields in the <message/>
-             type=>string,         at one time.  This is a cumlative
+             type=>string,         at one time.  This is a cumulative
              subject=>string,      and over writing action.  If you set
              body=>string,         the "to" attribute twice, the second
              thread=>string,       setting is what is used.  If you set
@@ -165,6 +177,12 @@ Net::Jabber::Message - Jabber Message Module
 
   SetError(string) - sets the error string of the <message/>.
 
+  NewX(string) - creates a new Net::Jabber::X object with the namespace
+                 in the string.  In order for this function to work with
+                 a custom namespace, you must define and register that  
+                 namespace with the X module.  For more information
+                 please read the documentation for Net::Jabber::X.
+
 =head1 AUTHOR
 
 By Ryan Eatmon in December of 1999 for http://jabber.org..
@@ -175,7 +193,6 @@ This module is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
-#'
 
 require 5.003;
 use strict;
@@ -196,15 +213,33 @@ sub new {
   if (@_ != ("")) {
     my @temp = @_;
     $self->{MESSAGE} = \@temp;
+    my $xTree;
+    foreach $xTree ($self->GetXTrees()) {
+      $self->AddX(@{$xTree});
+    }
   } else {
     $self->{MESSAGE} = [ "message" , [{}]];
+    $self->{XTAGS} = [];
   }
 
   return $self;
 }
+
+
 ##############################################################################
 #
-# GetTo - returns the Jabber Identifer of the person you are sending the
+# GetID - returns the id of the <message/>
+#
+##############################################################################
+sub GetID {
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","id");
+}
+
+
+##############################################################################
+#
+# GetTo - returns the Jabber Identifier of the person you are sending the
 #         <message/> to.
 #
 #
@@ -217,7 +252,7 @@ sub GetTo {
 
 ##############################################################################
 #
-# GetFrom - returns the Jabber Identifer of the person who sent the 
+# GetFrom - returns the Jabber Identifier of the person who sent the 
 #           <message/>
 #
 #
@@ -240,17 +275,6 @@ sub GetResource {
   my ($str) =
     (&Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","from") =~ /^[^\/]+\/?(.*)$/);
   return $str;
-}
-
-
-##############################################################################
-#
-# GetID - returns the id of the <message/>
-#
-##############################################################################
-sub GetID {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","id");
 }
 
 
@@ -337,13 +361,37 @@ sub GetErrorType {
 
 ##############################################################################
 #
-# GetX - returns an array of XML::Parser::Tree objects of the <x/> tags
+# GetX - returns an array of Net::Jabber::X objects.  If a namespace is 
+#        requested then only objects from that name space are returned.
 #
 ##############################################################################
 sub GetX {
   my $self = shift;
+  my($xmlns) = @_;
+  my @xTags;
+  my $xTag;
+  foreach $xTag (@{$self->{XTAGS}}) {
+    push(@xTags,$xTag) if (($xmlns eq "") || ($xTag->GetXMLNS() eq $xmlns));
+  }
+  return @xTags;
+}
+
+
+##############################################################################
+#
+# GetXTrees - returns an array of XML::Parser::Tree objects of the <x/> tags
+#
+##############################################################################
+sub GetXTrees {
+  my $self = shift;
+  $self->MergeX();
   my ($xmlns) = @_;
-  return &Net::Jabber::GetXMLData("tree array",$self->{MESSAGE},"x","xmlns",$xmlns);
+  my $xTree;
+  my @xTrees;
+  foreach $xTree (&Net::Jabber::GetXMLData("tree array",$self->{MESSAGE},"x","xmlns",$xmlns)) {
+    push(@xTrees,$xTree);
+  }
+  return @xTrees;
 }
 
 
@@ -355,6 +403,7 @@ sub GetX {
 ##############################################################################
 sub GetXML {
   my $self = shift;
+  $self->MergeX();
   return &Net::Jabber::BuildXML(@{$self->{MESSAGE}});
 }
 
@@ -367,7 +416,7 @@ sub GetXML {
 ##############################################################################
 sub GetTree {
   my $self = shift;
-
+  $self->MergeX();
   return %{$self->{MESSAGE}};
 }
 
@@ -383,6 +432,7 @@ sub SetMessage {
   my %message;
   while($#_ >= 0) { $message{ lc pop(@_) } = pop(@_); }
 
+  $self->SetID($message{id}) if exists($message{id});
   $self->SetTo($message{to}) if exists($message{to});
   $self->SetSubject($message{subject}) if exists($message{subject});
   $self->SetBody($message{body}) if exists($message{body});
@@ -390,6 +440,18 @@ sub SetMessage {
   $self->SetPriority($message{priority}) if exists($message{priority});
   $self->SetErrorType($message{errortype}) if exists($message{errortype});
   $self->SetError($message{error}) if exists($message{error});
+}
+
+
+##############################################################################
+#
+# SetID - sets the to attribute in the <message/>
+#
+##############################################################################
+sub SetID {
+  my $self = shift;
+  my ($id) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{id=>$id});
 }
 
 
@@ -446,6 +508,18 @@ sub SetThread {
 # SetPriority - sets the priority of the <message/>
 #
 ##############################################################################
+sub SetPriority {
+  my $self = shift;
+  my ($priority) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"priority",$priority,{});
+}
+
+
+##############################################################################
+#
+# SetErrorType - sets the type attribute in the error tag of the <message/>
+#
+##############################################################################
 sub SetErrorType {
   my $self = shift;
   my ($type) = @_;
@@ -455,7 +529,7 @@ sub SetErrorType {
 
 ##############################################################################
 #
-# SetPriority - sets the priority of the <message/>
+# SetError - sets the error of the <message/>
 #
 ##############################################################################
 sub SetError {
@@ -465,15 +539,87 @@ sub SetError {
 }
 
 
+
 ##############################################################################
 #
-# debug - prints out the XML::Parser Tree in a readable format for dbeugging
+# NewX - calls AddX to create a new Net::Jabber::X object, sets the xmlns and 
+#        returns a pointer to the new object.
+#
+##############################################################################
+sub NewX {
+  my $self = shift;
+  my ($xmlns) = @_;
+  my $xTag = $self->AddX();
+  $xTag->SetXMLNS($xmlns) if $xmlns ne "";
+  return $xTag;
+}
+
+
+##############################################################################
+#
+# AddX - creates a new Net::Jabber::X object, pushes it on the list, and 
+#        returns a pointer to the new object.  This is a private helper 
+#        function. 
+#
+##############################################################################
+sub AddX {
+  my $self = shift;
+  my (@xTree) = @_;
+  my $xTag = new Net::Jabber::X(@xTree);
+  push(@{$self->{XTAGS}},$xTag);
+  return $xTag;
+}
+  
+
+##############################################################################
+#
+# MergeX - runs through the list of <x/> in the current message and replaces
+#          them with the list of <x/> in the internal list.  If any old <x/>
+#          in the <message/> are left, then they are removed.  If any new <x/>
+#          are left in the interanl list, then they are added to the end of
+#          the message.  This is a private helper function.  It should be 
+#          used any time you need access the full <message/> so that all of
+#          the <x/> tags are included.  (ie. GetXML, GetTree, debug, etc...)
+#
+##############################################################################
+sub MergeX {
+  my $self = shift;
+
+  return if !(exists($self->{XTAGS}));
+
+  my $xTag;
+  my @xTags;
+  foreach $xTag (@{$self->{XTAGS}}) {
+    push(@xTags,$xTag);
+  }
+
+  my $i;
+  foreach $i (1..$#{$self->{MESSAGE}->[1]}) {
+    if ($self->{MESSAGE}->[1]->[$i] eq "x") {
+      my $xTag = pop(@xTags);
+      my @xTree = $xTag->GetTree();
+      $self->{MESSAGE}->[1]->[($i+1)] = $xTree[1];
+    }
+  }
+
+  foreach $xTag (@xTags) {
+    my @xTree = $xTag->GetTree();
+    $self->{MESSAGE}->[1]->[($#{$self->{MESSAGE}->[1]}+1)] = "x";
+    $self->{MESSAGE}->[1]->[($#{$self->{MESSAGE}->[1]}+1)] = $xTree[1];
+  }
+}
+
+
+##############################################################################
+#
+# debug - prints out the XML::Parser Tree in a readable format for debugging
 #
 ##############################################################################
 sub debug {
   my $self = shift;
 
   print "debug MESSAGE: $self\n";
+  $self->MergeX();
   &Net::Jabber::printData("debug: \$self->{MESSAGE}->",$self->{MESSAGE});
 }
 

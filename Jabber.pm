@@ -14,7 +14,7 @@ Net::Jabber - Jabber Perl Library
   Net::Jabber is a convenient tool to use for any perl scripts
   that would like to utilize the Jabber Instant Messaging 
   protocol.  While not a client in and of itself, it provides 
-  all of the necessary back-end functions to make a cgi client 
+  all of the necessary back-end functions to make a CGI client 
   or command-line perl client feasible and easy to use.  
   Net::Jabber is a wrapper around the rest of the official
   Net::Jabber::xxxxxx packages.  The synopsis above gives an 
@@ -44,7 +44,7 @@ Net::Jabber - Jabber Perl Library
   session to the server.
 
   Net::Jabber::IQ::Info - everything needed to manage and query 
-  the personal data sotred on the server.
+  the personal data stored on the server.
 
   Net::Jabber::IQ::Register - everything needed to create a new
   Jabber account on the server.
@@ -69,9 +69,13 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION %DELEGATES);
 
 $VERSION = "0.8.1";
+
+use Net::Jabber::X;
+($Net::Jabber::X::VERSION < $Net::Jabber::JABBER_VERSION) &&
+  die("Net::Jabber::X $Net::Jabber::JABBER_VERSION required--this is only version $Net::Jabber::X::VERSION");
 
 use Net::Jabber::Message;
 ($Net::Jabber::Message::VERSION < $Net::Jabber::JABBER_VERSION) &&
@@ -92,12 +96,12 @@ use Net::Jabber::Client;
 
 ##############################################################################
 #
-# SetXMLData - takes a host of arguments and sets a portion of the specfied
+# SetXMLData - takes a host of arguments and sets a portion of the specified
 #              XML::Parser::Tree object with that data.  The function works
 #              in two modes "single" or "multiple".  "single" denotes that 
 #              the function should locate the current tag that matches this 
 #              data and overwrite it's contents with data passed in.  
-#              "mulitple" denotes that a new tag should be created even if 
+#              "multiple" denotes that a new tag should be created even if 
 #              others exist.
 #
 #              type    - single or multiple
@@ -118,11 +122,12 @@ sub SetXMLData {
       foreach $child (1..$#{$$XMLTree[1]}) {
 	if ($$XMLTree[1]->[$child] eq $tag) {
 	  if ($data ne "") {
+	    #todo: add code to handle writing the cdata again and appending it.
 	    $$XMLTree[1]->[$child+1]->[1] = 0;
-	    $$XMLTree[1]->[$child+1]->[2] = $data;
+	    $$XMLTree[1]->[$child+1]->[2] = &EscapeXML($data);
 	  }
 	  foreach $key (keys(%{$attribs})) {
-	    $$XMLTree[1]->[$child+1]->[0]->{$key} = $$attribs{$key};
+	    $$XMLTree[1]->[$child+1]->[0]->{$key} = &EscapeXML($$attribs{$key});
 	  }
 	  return;
 	}
@@ -131,13 +136,24 @@ sub SetXMLData {
     $$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = $tag;
     $$XMLTree[1]->[($#{$$XMLTree[1]}+1)]->[0] = {};
     foreach $key (keys(%{$attribs})) {
-      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[0]->{$key} = $$attribs{$key};
+      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[0]->{$key} = &EscapeXML($$attribs{$key});
     }
-    $$XMLTree[1]->[$#{$$XMLTree[1]}]->[1] = 0;
-    $$XMLTree[1]->[$#{$$XMLTree[1]}]->[2] = $data;
+    if ($data ne "") {
+      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[1] = 0;
+      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[2] = &EscapeXML($data);
+    }
   } else {
     foreach $key (keys(%{$attribs})) {
-      $$XMLTree[1]->[0]->{$key} = $$attribs{$key};
+      $$XMLTree[1]->[0]->{$key} = &EscapeXML($$attribs{$key});
+    }
+    if ($data ne "") {
+      if (($#{$$XMLTree[1]} > 0) &&
+	  ($$XMLTree[1]->[($#{$$XMLTree[1]}-1)] eq "0")) {
+	$$XMLTree[1]->[$#{$$XMLTree[1]}] .= &EscapeXML($data);
+      } else {
+	$$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = 0;
+	$$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = &EscapeXML($data);
+      }
     }
   }
 }
@@ -148,15 +164,15 @@ sub SetXMLData {
 # GetXMLData - takes a host of arguments and returns various data structures
 #              that match them.
 #
-#              type - "existance" - returns 1 or 0 if the tag exists in the
+#              type - "existence" - returns 1 or 0 if the tag exists in the
 #                                   top level.
 #                     "value" - returns either the CDATA of the tag, or the
 #                               value of the attribute depending on which is
-#                               sought.  This ignores any markups to the data
+#                               sought.  This ignores any mark ups to the data
 #                               and just returns the raw CDATA.
 #                     "value array" - returns an array of strings representing
 #                                     all of the CDATA in the specified tag.
-#                                     This ignores any markups to the data
+#                                     This ignores any mark ups to the data
 #                                     and just returns the raw CDATA.
 #                     "tree" - returns an XML::Parser::Tree object with the
 #                              specified tag as the root tag.
@@ -172,13 +188,16 @@ sub SetXMLData {
 #                        attributes and values.
 #              value   - only valid if an attribute is supplied.  Used to
 #                        filter for tags that only contain this attribute.
-#                        Useful to search through mulitple tags that all
+#                        Useful to search through multiple tags that all
 #                        reference different name spaces.
 #
 ##############################################################################
 sub GetXMLData {
   my ($type,$XMLTree,$tag,$attrib,$value) = @_;
 
+  #---------------------------------------------------------------------------
+  # Check if a child tag in the root tag is being requested.
+  #---------------------------------------------------------------------------
   if ($tag ne "") {
     my (@array);
     my ($child);
@@ -190,13 +209,13 @@ sub GetXMLData {
 	next if (($value ne "") && ($attrib ne "") && exists($$XMLTree[1]->[$child+1]->[0]->{$attrib}) && ($$XMLTree[1]->[$child+1]->[0]->{$attrib} ne $value));
 
         #---------------------------------------------------------------------
-	# Check for existance
+	# Check for existence
         #---------------------------------------------------------------------
-	if ($type eq "existance") {
+	if ($type eq "existence") {
 	  return 1;
 	}
         #---------------------------------------------------------------------
-	# Return the raw CDATA value without markups, or the value of the
+	# Return the raw CDATA value without mark ups, or the value of the
         # requested attribute.
         #---------------------------------------------------------------------
 	if ($type eq "value") {
@@ -211,14 +230,14 @@ sub GetXMLData {
 		$next = 1;
 	      }
 	    }
-	    return $str;
+	    return &UnescapeXML($str);
 	  }
-	  return $$XMLTree[1]->[$child+1]->[0]->{$attrib}
+	  return &UnescapeXML($$XMLTree[1]->[$child+1]->[0]->{$attrib})
 	    if (exists $$XMLTree[1]->[$child+1]->[0]->{$attrib});
 	}
         #---------------------------------------------------------------------
 	# Return an array of values that represent the raw CDATA without
-        # markup tags for the requested tags.
+        # mark up tags for the requested tags.
         #---------------------------------------------------------------------
 	if ($type eq "value array") {
 	  my $str = "";
@@ -231,7 +250,7 @@ sub GetXMLData {
 	      $next = 1;
 	    }
 	  }
-	  push(@array,$str);
+	  push(@array,&UnescapeXML($str));
 	}
         #---------------------------------------------------------------------
 	# Return a pointer to a new XML::Parser::Tree object that has the
@@ -258,20 +277,45 @@ sub GetXMLData {
       return @array;
     }
   } else {
-    #
-    # NOTE:  This is going to change.  I just realized that I need to handle
-    #        the toplevel tag the same os the lower level tags.  Returning
-    #        either raw CDATA on a "value" or the entire tree on a "tree".
-    #
-    return %{$$XMLTree[1]->[0]} if ($attrib eq "");
-    return $$XMLTree[1]->[0]->{$attrib} 
-      if (exists($$XMLTree[1]->[0]->{$attrib}));
+    #---------------------------------------------------------------------
+    # This is the root tag, so handle things a level up.
+    #---------------------------------------------------------------------
+
+    #---------------------------------------------------------------------
+    # Return the raw CDATA value without mark ups, or the value of the
+    # requested attribute.
+    #---------------------------------------------------------------------
+    if ($type eq "value") {
+      if ($attrib eq "") {
+	my $str = "";
+	my $next = 0;
+	my $index;
+	foreach $index (1..$#{$$XMLTree[1]}) {
+	  if ($next == 1) { $next = 0; next; }
+	  if ($$XMLTree[1]->[$index] eq "0") {
+	    $str .= $$XMLTree[1]->[$index+1];
+	    $next = 1;
+	  }
+	}
+	return &UnescapeXML($str);
+      }
+      return &UnescapeXML($$XMLTree[1]->[0]->{$attrib})
+        if (exists $$XMLTree[1]->[0]->{$attrib});
+    }
+    #---------------------------------------------------------------------
+    # Return a pointer to a new XML::Parser::Tree object that has the
+    # requested tag as the root tag.
+    #---------------------------------------------------------------------
+    if ($type eq "tree") {
+      my @tree =  @{$$XMLTree};
+      return @tree;
+    }
   }
   #---------------------------------------------------------------------------
-  # Return 0 if this was a request for existance, or "" if a request for
+  # Return 0 if this was a request for existence, or "" if a request for
   # a "value", or [] for "tree", "value array", and "tree array".
   #---------------------------------------------------------------------------
-  return 0 if ($type eq "existance");
+  return 0 if ($type eq "existence");
   return "" if ($type eq "value");
   return [];
 }
@@ -279,7 +323,7 @@ sub GetXMLData {
 
 ##############################################################################
 #
-# EscapeXML - Simple funtion to make sure that no bad characters make it into
+# EscapeXML - Simple function to make sure that no bad characters make it into
 #             in the XML string that might cause the string to be 
 #             misinterpreted.
 #
@@ -290,7 +334,22 @@ sub EscapeXML {
   $Data =~ s/</&lt;/g;
   $Data =~ s/>/&gt;/g;
   $Data =~ s/\"/&quot;/g;
-  $Data =~ s/\'/&apos;/g;
+  return $Data;
+}
+
+
+##############################################################################
+#
+# UnescapeXML - Simple function to unecnode the bad characters from the XML
+#              string.
+#
+##############################################################################
+sub UnescapeXML {
+  my $Data = shift;
+  $Data =~ s/&quot;/\"/g;
+  $Data =~ s/&gt;/>/g;
+  $Data =~ s/&lt;/</g;
+  $Data =~ s/&amp;/&/g;
   return $Data;
 }
 
@@ -310,7 +369,7 @@ sub BuildXML {
   if (ref($parseTree[0]) eq "") {
 
     if ($parseTree[0] eq "0") {
-      return &EscapeXML($parseTree[1]);
+      return $parseTree[1];
     }
 
     $str = "<".$parseTree[0];
@@ -381,8 +440,6 @@ sub printData {
     print $preString," = \"",$data,"\"\n";
   }
 }
-
-
 
 1;
 

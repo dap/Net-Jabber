@@ -86,7 +86,7 @@ Net::Jabber::IQ::Register - Jabber IQ Registration Module
 =head2 Creation functions
 
   SetRegister(username=>string, - set multiple fields in the <iq/>
-              password=>string,   at one time.  This is a cumlative
+              password=>string,   at one time.  This is a cumulative
               resource=>string)   and over writing action.  If you
                                   set the "username" twice, the second
                                   setting is what is used.  If you set
@@ -257,7 +257,7 @@ sub SetResource {
 
 ##############################################################################
 #
-# debug - prints out the XML::Parser Tree in a readable format for dbeugging
+# debug - prints out the XML::Parser Tree in a readable format for debugging
 #
 ##############################################################################
 sub debug {

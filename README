@@ -1,4 +1,4 @@
-Net::Jabber v0.8.1a
+Net::Jabber v0.8.1b
 
 The Jabber Instant Messaging project is an Open Source project seeking
 to provide a complete cross protocol messaging solution.  The problem
@@ -36,8 +36,9 @@ INSTALLATION
 
 STATUS
 
-  This module is still in alpha.  Use at your own risk.
+  This module is still in beta.  Less risk to you, but still bad things 
+might happen...
 
 
 Please send any bug reports to reatmon@ti.com.
-01/12/2000
+02/03/2000

@@ -13,3 +13,7 @@ Jabber/IQ/Register.pm
 Jabber/IQ/Resource.pm
 Jabber/IQ/Roster.pm
 Jabber/IQ/Roster/Item.pm
+Jabber/X.pm
+Jabber/X/Delay.pm
+Jabber/X/Ident.pm
+Jabber/X/Oob.pm

@@ -78,8 +78,13 @@ Net::Jabber::IQ - Jabber Info/Query Library
     $IQ->SetTo("bob@jabber.org");
     $IQ->SetType("set");
 
-    $IQObject = $IQ->NewQuery("auth");
+    $IQ->SetIQ(-to=>"bob\@jabber.org",
+               -errortype=>"denied",
+               -error=>"Permission Denied");
+    $IQ->SetErrorType("denied");
+    $IQ->SetError("Permission Denied");
 
+    $IQObject = $IQ->NewQuery("auth");
 
 =head1 METHODS
 
@@ -121,13 +126,14 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
 =head2 Creation functions
 
-  SetIQ(to=>string,    - set multiple fields in the <iq/> at one time.  This
-        type=>string,    is a cumlative and over writing action.  If you set 
-        query=>string)   the "to" attribute twice, the second setting is 
-                         what is used.  If you set the status, and then set
-                         the priority then both will be in the <iq/> tag.
-                         For valid settings read the specific Set functions 
-                         below.
+  SetIQ(to=>string,        - set multiple fields in the <iq/> at one
+        type=>string,        time.  This is a cumulative and over
+        query=>string,       writing action.  If you set the "to"
+        errortype=>string,   attribute twice, the second setting is
+        error=>string)       what is used.  If you set the status, and
+                             then set the priority then both will be in
+                             the <iq/> tag.  For valid settings read the
+                             specific Set functions below.
 
   SetTo(string) - sets the to attribute.  Must be a valid Jabber Identifier 
                   or the server will return an error message.
@@ -138,6 +144,10 @@ Net::Jabber::IQ - Jabber Info/Query Library
                     get     request information
                     set     set information
 
+  SetErrorType(string) - sets the error type of the <iq/>.
+ 
+  SetError(string) - sets the error string of the <iq/>.
+ 
   NewQuery(string) - returns a Net::Jabber::IQ::xxxxxx object that contains
                      the data in the query.  The kind of object that is
                      created is based on the string that you pass to 
@@ -145,9 +155,9 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
                      auth        Authentication
                      info        General Information
-                     register    Registrion information
+                     register    Registration information
                      resource    User Resource
-                     roster      Buddy LIsts
+                     roster      Buddy Lists
 
 =head1 AUTHOR
 
@@ -223,7 +233,7 @@ sub new {
 
 ##############################################################################
 #
-# GetTo - returns the Jabber Identifer of the person you are sending the
+# GetTo - returns the Jabber Identifier of the person you are sending the
 #         <iq/> to.
 #
 ##############################################################################
@@ -235,7 +245,7 @@ sub GetTo {
 
 ##############################################################################
 #
-# GetFrom - returns the Jabber Identifer of the person who sent the 
+# GetFrom - returns the Jabber Identifier of the person who sent the 
 #           <iq/>
 #
 ##############################################################################
@@ -365,9 +375,24 @@ sub SetIQ {
   my %iq;
   while($#_ >= 0) { $iq{ lc pop(@_) } = pop(@_); }
 
+  $self->SetID($iq{id}) if exists($iq{id});
   $self->SetTo($iq{to}) if exists($iq{to});
   $self->SetType($iq{type}) if exists($iq{type});
   $self->NewQuery($iq{query}) if exists($iq{query});
+  $self->SetErrorType($iq{errortype}) if exists($iq{errortype});
+  $self->SetError($iq{error}) if exists($iq{error});
+}
+
+
+##############################################################################
+#
+# SetID - sets the id attribute in the <iq/>
+#
+##############################################################################
+sub SetID {
+  my $self = shift;
+  my ($id) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{id=>$id});
 }
 
 
@@ -392,6 +417,30 @@ sub SetType {
   my $self = shift;
   my ($type) = @_;
   &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{type=>$type});
+}
+
+
+##############################################################################
+#
+# SetErrorType - sets the type attribute in the error tag of the <message/>
+#
+##############################################################################
+sub SetErrorType {
+  my $self = shift;
+  my ($type) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"error",,{type=>$type});
+}
+
+
+##############################################################################
+#
+# SetError - sets the error of the <message/>
+#
+##############################################################################
+sub SetError {
+  my $self = shift;
+  my ($error) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"error",$error,{});
 }
 
 
@@ -453,7 +502,7 @@ sub MergeQuery {
 
 ##############################################################################
 #
-# debug - prints out the XML::Parser Tree in a readable format for dbeugging
+# debug - prints out the XML::Parser Tree in a readable format for debugging
 #
 ##############################################################################
 sub debug {
@@ -465,6 +514,3 @@ sub debug {
 }
 
 1;
-
-
-#todo: SetError and SetErrorType

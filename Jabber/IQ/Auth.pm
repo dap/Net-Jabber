@@ -87,7 +87,7 @@ Net::Jabber::IQ::Auth - Jabber IQ Authentication Module
 =head2 Creation functions
 
   SetAuth(username=>string, - set multiple fields in the <iq/> at one
-          password=>string,   time.  This is a cumlative and over
+          password=>string,   time.  This is a cumulative and over
           resource=>string)   writing action.  If you set the "username" 
                               twice, the second setting is what is
                               used.  If you set the password, and then
@@ -215,7 +215,7 @@ sub SetAuth {
   
   $self->SetUsername($auth{username}) if exists($auth{username});
   $self->SetPassword($auth{password}) if exists($auth{password});
-  $self->SetResource($auth{username}) if exists($auth{resource});
+  $self->SetResource($auth{resource}) if exists($auth{resource});
   $self->SetResource("Anonymous") if !exists($auth{resource});
 }
 
@@ -258,7 +258,7 @@ sub SetResource {
 
 ##############################################################################
 #
-# debug - prints out the XML::Parser Tree in a readable format for dbeugging
+# debug - prints out the XML::Parser Tree in a readable format for debugging
 #
 ##############################################################################
 sub debug {

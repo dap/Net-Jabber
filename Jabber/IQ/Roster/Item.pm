@@ -113,7 +113,7 @@ Net::Jabber::IQ::Roster::Item - Jabber IQ Roster Item Module
 =head2 Creation functions
 
   SetItem(jid=>string,          - set multiple fields in the <item/>
-          name=>string,           at one time.  This is a cumlative
+          name=>string,           at one time.  This is a cumulative
           subscription=>string,   and overwriting action.  If you
           ask=>string,            set the "ask" twice, the second
           group=>array)           setting is what is used.  If you set
@@ -345,7 +345,7 @@ sub SetGroup {
 
 ##############################################################################
 #
-# debug - prints out the XML::Parser Tree in a readable format for dbeugging
+# debug - prints out the XML::Parser Tree in a readable format for debugging
 #
 ##############################################################################
 sub debug {

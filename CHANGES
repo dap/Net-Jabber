@@ -1,3 +1,18 @@
+0.8.1b
+======
+  - Added IgnoreIDs() and WatchIDs() in Client.pm.
+  - Added support for delegates in the X/pm module.
+  - Added X.pm alpha code to handle reading and setting <x/> tags in various
+    top-level tags.
+  - Added PresenceSend to send a presence tag.
+  - Added RegisterSend to send a registration packet.
+  - Fixed SetError and SetErrorType in Message.pm.
+  - Added SetError and SetErrorType to IQ.pm.
+  - Added support for "value" and "tree" on the root tag in the GetXMLData
+    function in Jabber.pm.
+  - Moved Disconnect functionality into XML::Stream.  That's really where we
+    should have been sending the closing tag...
+
 0.8.1a
 ======
   - Supports Jabber v0.8.1.
