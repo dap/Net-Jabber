@@ -25,6 +25,7 @@ Net::Jabber::Query - Jabber Query Library
     Net::Jabber::Query::Oob        - Out of Bandwidth File Transfers
     Net::Jabber::Query::Register   - Registration requests
     Net::Jabber::Query::Roster     - Buddy List management
+    Net::Jabber::Query::Search     - Searching User Directories
     Net::Jabber::Query::Time       - Client Time
     Net::Jabber::Query::Version    - Client Version
 
@@ -65,11 +66,6 @@ Net::Jabber::Query - Jabber Query Library
   For more information about the array format being passed to the CallBack
   please read the Net::Jabber::Client documentation.
 
-=head2 Basic functions
-
-    $Query->SetDelegates("com:ti:foo"=>"TI::Foo",
-                         "bar:foo"=>"Foo::Bar");
-
 =head2 Retrieval functions
 
     $xmlns     = $IQ->GetXMLNS();
@@ -82,16 +78,6 @@ Net::Jabber::Query - Jabber Query Library
     $Query->SetXMLNS("jabber:iq:roster");
 
 =head1 METHODS
-
-=head2 Basic functions
-
-  SetDelegates(hash) - sets the appropriate delegate for each namespace
-                       in the list.  Format is namspace=>package.  When
-                       a function is called against the Query object and
-                       it is not defined in this package, the delegate
-                       is searched for that function.  This allows for
-                       easy development of a package to handle new <query/>
-                       tags for what ever application.
 
 =head2 Retrieval functions
 
@@ -120,13 +106,17 @@ Net::Jabber::Query - Jabber Query Library
   object and register it once, or you can use the SetDelegates
   function in Client.pm to do it for you:
 
-    my $query = new Net::Jabber::Query();
-    $query->SetDelegates("blah:blah"=>"Blah::Blah");
-
+    my $Client = new Net::Jabber::Client();
+    $Client->AddDelegate(namespace=>"blah:blah",
+			 parent=>"Net::Jabber::Query",
+			 delegate=>"Blah::Blah");
+    
   or
 
-    my $Client = new Net::Jabber::Client();
-    $Client->SetQueryDelegates("blah:blah"=>"Blah::Blah");
+    my $Transport = new Net::Jabber::Transport();
+    $Transport->AddDelegate(namespace=>"blah:blah",
+			    parent=>"Net::Jabber::Query",
+			    delegate=>"Blah::Blah");
 
   Once you have the delegate registered you need to define the access
   functions.  Here is a an example module:
@@ -174,7 +164,7 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION $AUTOLOAD %DELEGATES);
+use vars qw($VERSION $AUTOLOAD);
 
 $VERSION = "1.0";
 
@@ -210,6 +200,10 @@ use Net::Jabber::Query::Roster;
 ($Net::Jabber::Query::Roster::VERSION < $VERSION) &&
   die("Net::Jabber::Query::Roster $VERSION required--this is only version $Net::Jabber::Query::Roster::VERSION");
 
+use Net::Jabber::Query::Search;
+($Net::Jabber::Query::Search::VERSION < $VERSION) &&
+  die("Net::Jabber::Query::Search $VERSION required--this is only version $Net::Jabber::Query::Search::VERSION");
+
 use Net::Jabber::Query::Time;
 ($Net::Jabber::Query::Time::VERSION < $VERSION) &&
   die("Net::Jabber::Query::Time $VERSION required--this is only version $Net::Jabber::Query::Time::VERSION");
@@ -217,17 +211,6 @@ use Net::Jabber::Query::Time;
 use Net::Jabber::Query::Version;
 ($Net::Jabber::Query::Version::VERSION < $VERSION) &&
   die("Net::Jabber::Query::Version $VERSION required--this is only version $Net::Jabber::Query::Version::VERSION");
-
-$DELEGATES{'jabber:iq:agent'} = "Net::Jabber::Query::Agent";
-$DELEGATES{'jabber:iq:agents'} = "Net::Jabber::Query::Agents";
-$DELEGATES{'jabber:iq:auth'} = "Net::Jabber::Query::Auth";
-$DELEGATES{'jabber:iq:autoupdate'} = "Net::Jabber::Query::AutoUpdate";
-$DELEGATES{'jabber:iq:fneg'} = "Net::Jabber::Query::Fneg";
-$DELEGATES{'jabber:iq:oob'} = "Net::Jabber::Query::Oob";
-$DELEGATES{'jabber:iq:register'} = "Net::Jabber::Query::Register";
-$DELEGATES{'jabber:iq:roster'} = "Net::Jabber::Query::Roster";
-$DELEGATES{'jabber:iq:time'} = "Net::Jabber::Query::Time";
-$DELEGATES{'jabber:iq:version'} = "Net::Jabber::Query::Version";
 
 sub new {
   my $proto = shift;
@@ -274,24 +257,8 @@ sub GetDelegate {
   my $self = shift;
   my $xmlns = $self->GetXMLNS();
   return if $xmlns eq "";
-  if (exists($DELEGATES{$xmlns})) {
-    eval("\$self->{DELEGATE} = new ".$DELEGATES{$xmlns}."()");
-  }
-}
-
-
-##############################################################################
-#
-# SetDelegates - adds the namespace and corresponding pacakge onto the list
-#                of availbale delegates based on the namespace.
-#
-##############################################################################
-sub SetDelegates {
-  my $self = shift;
-  my (%delegates) = @_;
-  my $delegate;
-  foreach $delegate (keys(%delegates)) {
-    $Net::Jabber::Query::DELEGATES{$delegate} = $delegates{$delegate};
+  if (exists($Net::Jabber::DELEGATES{$xmlns})) {
+    eval("\$self->{DELEGATE} = new ".$Net::Jabber::DELEGATES{$xmlns}->{delegate}."()");
   }
 }
 

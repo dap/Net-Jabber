@@ -219,7 +219,7 @@ sub GetJID {
   my $self = shift;
   my ($type) = @_;
   return $self->{JID} if ($type eq "full");
-  return $self->GetUserID()."\@".$self->GetServer();
+  return $self->{USERID}."\@".$self->{SERVER};
 }
 
 

@@ -54,6 +54,9 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $username = $register->GetUsername();
     $password = $register->GetPassword();
     $name     = $register->GetName();
+    $first    = $register->GetFirst();
+    $last     = $register->GetLast();
+    $nick     = $register->GetNick();
     $email    = $register->GetEmail();
     $address  = $register->GetAddress();
     $city     = $register->GetCity();
@@ -78,6 +81,9 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $register->SetUsername('bob');
     $register->SetPassword('bobrulez');
     $register->SetName('Bob the Great');
+    $register->SetFirst('Bob');
+    $register->SetLast('Smith');
+    $register->SetNick('bobocity');
     $register->SetEmail('bob\@bob.net');
     $register->SetAddress('121 Bob St.');
     $register->SetCity('Bobville');
@@ -104,6 +110,9 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $register->SetUsername();
     $register->SetPassword();
     $register->SetName();
+    $register->SetFirst();
+    $register->SetLast();
+    $register->SetNick();
     $register->SetEmail();
     $register->SetAddress();
     $register->SetCity();
@@ -122,6 +131,9 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $test = $register->DefinedUsername();
     $test = $register->DefinedPassword();
     $test = $register->DefinedName();
+    $test = $register->DefinedFirst();
+    $test = $register->DefinedLast();
+    $test = $register->DefinedNick();
     $test = $register->DefinedEmail();
     $test = $register->DefinedAddress();
     $test = $register->DefinedCity();
@@ -146,6 +158,12 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
   GetPassword() - returns a string with the password in the <query/>.
 
   GetName() - returns a string with the name in the <query/>.
+
+  GetFirst() - returns a string with the fisrt in the <query/>.
+
+  GetLast() - returns a string with the last in the <query/>.
+
+  GetNick() - returns a string with the nick in the <query/>.
 
   GetEmail() -  returns a string with the email in the <query/>.
 
@@ -181,11 +199,14 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
 	      username=>string,       at one time.  This is a cumulative
               password=>string,       and over writing action.  If you
               name=>string,           set the "username" twice, the second
-              email=>string,          setting is what is used.  If you set
-              address=>string,        the password, and then set the 
-              city=>string,           name then both will be in the
-              state=>string,          <query/> tag.  For valid settings
-              zip=>string,            read  the specific Set functions below.
+              first=>string,          setting is what is used.  If you set
+              last=>string,           the password, and then set the 
+              nick=>string,           name then both will be in the
+              email=>string,          <query/> tag.  For valid settings
+              address=>string,        read  the specific Set functions below.
+              city=>string,
+              state=>string,
+              zip=>string,
               phone=>string,
               url=>string,
               date=>string,
@@ -205,6 +226,18 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
   SetName(string) - sets the name for the account you are
                     trying to create.  Set string to "" to send
                     <name/> for instructions.
+
+  SetFirst(string) - sets the first for the account you are
+                    trying to create.  Set string to "" to send
+                    <first/> for instructions.
+
+  SetLast(string) - sets the last for the account you are
+                    trying to create.  Set string to "" to send
+                    <last/> for instructions.
+
+  SetNick(string) - sets the nick for the account you are
+                    trying to create.  Set string to "" to send
+                    <nick/> for instructions.
 
   SetEmail(string) - sets the email for the account you are
                      trying to create.  Set string to "" to send
@@ -262,6 +295,15 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
                       0 if not.
 
   DefinedName() - returns 1 if there is a <name/> in the query,
+                  0 if not.
+
+  DefinedFirst() - returns 1 if there is a <first/> in the query,
+                  0 if not.
+
+  DefinedLast() - returns 1 if there is a <last/> in the query,
+                  0 if not.
+
+  DefinedNick() - returns 1 if there is a <nick/> in the query,
                   0 if not.
 
   DefinedEmail() - returns 1 if there is a <email/> in the query,
@@ -376,6 +418,42 @@ sub GetName {
   shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("value",$self->{QUERY},"name");
+}
+
+
+##############################################################################
+#
+# GetFirst - returns the first in the <query/>.
+#
+##############################################################################
+sub GetFirst {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"first");
+}
+
+
+##############################################################################
+#
+# GetLast - returns the last in the <query/>.
+#
+##############################################################################
+sub GetLast {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"last");
+}
+
+
+##############################################################################
+#
+# GetNick - returns the nick in the <query/>.
+#
+##############################################################################
+sub GetNick {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"nick");
 }
 
 
@@ -532,13 +610,15 @@ sub GetRemove {
 sub GetFields {
   shift;
   my $self = shift;
-
   my %fields;
 
   $fields{instructions} = $self->GetInstructions() if ($self->DefinedInstructions() == 1);
   $fields{username} = $self->GetUsername() if ($self->DefinedUsername() == 1);
   $fields{password} = $self->GetPassword() if ($self->DefinedPassword() == 1);
   $fields{name} = $self->GetName() if ($self->DefinedName() == 1);
+  $fields{first} = $self->GetFirst() if ($self->DefinedFirst() == 1);
+  $fields{last} = $self->GetLast() if ($self->DefinedLast() == 1);
+  $fields{nick} = $self->GetNick() if ($self->DefinedNick() == 1);
   $fields{email} = $self->GetEmail() if ($self->DefinedEmail() == 1);
   $fields{address} = $self->GetAddress() if ($self->DefinedAddress() == 1);
   $fields{city} = $self->GetCity() if ($self->DefinedCity() == 1);
@@ -573,6 +653,9 @@ sub SetRegister {
   $self->SetUsername($register{username}) if exists($register{username});
   $self->SetPassword($register{password}) if exists($register{password});
   $self->SetName($register{name}) if exists($register{name});
+  $self->SetFirst($register{first}) if exists($register{first});
+  $self->SetLast($register{last}) if exists($register{last});
+  $self->SetNick($register{nick}) if exists($register{nick});
   $self->SetEmail($register{email}) if exists($register{email});
   $self->SetAddress($register{address}) if exists($register{address});
   $self->SetCity($register{city}) if exists($register{city});
@@ -637,6 +720,45 @@ sub SetName {
   my $self = shift;
   my ($name) = @_;
   &Net::Jabber::SetXMLData("single",$self->{QUERY},"name",$name,{});
+}
+
+
+##############################################################################
+#
+# SetFirst - sets the first of the account you want to connect with.
+#
+##############################################################################
+sub SetFirst {
+  shift;
+  my $self = shift;
+  my ($first) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"first",$first,{});
+}
+
+
+##############################################################################
+#
+# SetLast - sets the last of the account you want to connect with.
+#
+##############################################################################
+sub SetLast {
+  shift;
+  my $self = shift;
+  my ($last) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"last",$last,{});
+}
+
+
+##############################################################################
+#
+# SetNick - sets the nick of the account you want to connect with.
+#
+##############################################################################
+sub SetNick {
+  shift;
+  my $self = shift;
+  my ($nick) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"nick",$nick,{});
 }
 
 
@@ -841,6 +963,42 @@ sub DefinedName {
   shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"name");
+}
+
+
+##############################################################################
+#
+# DefinedFirst - returns the first in the <query/>.
+#
+##############################################################################
+sub DefinedFirst {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"first");
+}
+
+
+##############################################################################
+#
+# DefinedLast - returns the last in the <query/>.
+#
+##############################################################################
+sub DefinedLast {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"last");
+}
+
+
+##############################################################################
+#
+# DefinedNick - returns the nick in the <query/>.
+#
+##############################################################################
+sub DefinedNick {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"nick");
 }
 
 

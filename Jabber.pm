@@ -130,6 +130,10 @@ use vars qw($VERSION %DELEGATES);
 
 $VERSION = "1.0";
 
+use Net::Jabber::Debug;
+($Net::Jabber::JID::VERSION < $VERSION) &&
+  die("Net::Jabber::JID $VERSION required--this is only version $Net::Jabber::JID::VERSION");
+
 use Net::Jabber::JID;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
   die("Net::Jabber::JID $VERSION required--this is only version $Net::Jabber::JID::VERSION");
@@ -163,6 +167,46 @@ use Net::Jabber::Transport;
   die("Net::Jabber::Transport $VERSION required--this is only version $Net::Jabber::Transport::VERSION");
 
 
+##############################################################################
+#
+# NameSpace delegates
+#
+##############################################################################
+$DELEGATES{'jabber:iq:agent'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:agent'}->{delegate} = "Net::Jabber::Query::Agent";
+$DELEGATES{'jabber:iq:agents'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:agents'}->{delegate} = "Net::Jabber::Query::Agents";
+$DELEGATES{'jabber:iq:auth'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:auth'}->{delegate} = "Net::Jabber::Query::Auth";
+$DELEGATES{'jabber:iq:autoupdate'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:autoupdate'}->{delegate} = "Net::Jabber::Query::AutoUpdate";
+$DELEGATES{'jabber:iq:fneg'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:fneg'}->{delegate} = "Net::Jabber::Query::Fneg";
+$DELEGATES{'jabber:iq:oob'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:oob'}->{delegate} = "Net::Jabber::Query::Oob";
+$DELEGATES{'jabber:iq:register'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:register'}->{delegate} = "Net::Jabber::Query::Register";
+$DELEGATES{'jabber:iq:roster'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:roster'}->{delegate} = "Net::Jabber::Query::Roster";
+$DELEGATES{'jabber:iq:search'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:search'}->{delegate} = "Net::Jabber::Query::Search";
+$DELEGATES{'jabber:iq:time'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:time'}->{delegate} = "Net::Jabber::Query::Time";
+$DELEGATES{'jabber:iq:version'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{'jabber:iq:version'}->{delegate} = "Net::Jabber::Query::Version";
+
+$DELEGATES{'jabber:x:autoupdate'}->{parent} = "Net::Jabber::X";
+$DELEGATES{'jabber:x:autoupdate'}->{delegate} = "Net::Jabber::X::AutoUpdate";
+$DELEGATES{'jabber:x:delay'}->{parent} = "Net::Jabber::X";
+$DELEGATES{'jabber:x:delay'}->{delegate} = "Net::Jabber::X::Delay";
+$DELEGATES{'jabber:x:gc'}->{parent} = "Net::Jabber::X";
+$DELEGATES{'jabber:x:gc'}->{delegate} = "Net::Jabber::X::GC";
+#$DELEGATES{'jabber:x:ident'}->{parent} = "Net::Jabber::X";
+#$DELEGATES{'jabber:x:ident'}->{delegate} = "Net::Jabber::X::Ident";
+$DELEGATES{'jabber:x:oob'}->{parent}   = "Net::Jabber::X";
+$DELEGATES{'jabber:x:oob'}->{delegate}   = "Net::Jabber::X::Oob";
+$DELEGATES{'jabber:x:roster'}->{parent}   = "Net::Jabber::X";
+$DELEGATES{'jabber:x:roster'} ->{delegate}  = "Net::Jabber::X::Roster";
 
 
 ##############################################################################
@@ -276,11 +320,14 @@ sub GetXMLData {
     my (@array);
     my ($child);
     foreach $child (1..$#{$$XMLTree[1]}) {
-      if ($$XMLTree[1]->[$child] eq $tag) {
+      if (($$XMLTree[1]->[$child] eq $tag) || ($tag eq "*")) {
+	next if (ref($$XMLTree[1]->[$child]) eq "ARRAY");
+
         #---------------------------------------------------------------------
         # Filter out tags that do not contain the attribute and value.
         #---------------------------------------------------------------------
 	next if (($value ne "") && ($attrib ne "") && exists($$XMLTree[1]->[$child+1]->[0]->{$attrib}) && ($$XMLTree[1]->[$child+1]->[0]->{$attrib} ne $value));
+	next if (($attrib ne "") && !exists($$XMLTree[1]->[$child+1]->[0]->{$attrib}));
 
         #---------------------------------------------------------------------
 	# Check for existence
@@ -408,6 +455,7 @@ sub EscapeXML {
   $Data =~ s/</&lt;/g;
   $Data =~ s/>/&gt;/g;
   $Data =~ s/\"/&quot;/g;
+  $Data =~ s/\'/&apos;/g;
   return $Data;
 }
 
@@ -420,6 +468,7 @@ sub EscapeXML {
 ##############################################################################
 sub UnescapeXML {
   my $Data = shift;
+  $Data =~ s/&apos;/\'/g;
   $Data =~ s/&quot;/\"/g;
   $Data =~ s/&gt;/>/g;
   $Data =~ s/&lt;/</g;
@@ -516,7 +565,11 @@ sub printData {
 }
 
 
-
+##############################################################################
+#
+# GetTimeStamp - generic funcion for getting a timestamp.
+#
+##############################################################################
 sub GetTimeStamp {
   my($type,$time) = @_;
 
@@ -542,6 +595,7 @@ sub GetTimeStamp {
   $mon = ('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')[$mon];
   return sprintf("%3s %3s %02d, %d %02d:%02d:%02d",$wday,$mon,$mday,($year + 1900),$hour,$min,$sec);
 }
+
 
 1;
 

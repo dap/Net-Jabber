@@ -15,13 +15,8 @@ Net::Jabber::IQ - Jabber Info/Query Library
   Net::Jabber::IQ differs from the other Net::Jabber::* modules in that
   the XMLNS of the query is split out into more submodules under
   IQ.  For specifics on each module please view the documentation
-  for each Net::Jabber::Query::* module.  The available modules are:
-
-    Net::Jabber::Query::Auth      - Simple Client Authentication
-    Net::Jabber::Query::Info      - Generic Info and Profile query
-    Net::Jabber::Query::Register  - Registration requests
-    Net::Jabber::Query::Resource  - User Resource Management
-    Net::Jabber::Query::Roster    - Buddy List management
+  for each Net::Jabber::Query::* module.  To see the list of avilable
+  namspaces and modules see Net::Jabber::Query.
 
   To initialize the IQ with a Jabber <iq/> you must pass it the 
   XML::Parser Tree array from the Net::Jabber::Client module.  In the
@@ -230,11 +225,15 @@ sub new {
 
   bless($self, $proto);
 
+  $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
+					  header=>"NJ::IQ");
+  
   if ("@_" ne ("")) {
     my @temp = @_;
     $self->{IQ} = \@temp;
+    my $xmlns = $self->GetQueryXMLNS();
     my @queryTree = $self->GetQueryTree();
-    $self->SetQuery(@queryTree);
+    $self->SetQuery($xmlns,@queryTree) if ($xmlns ne "");
   } else {
     $self->{IQ} = [ "iq" , [{}]];
   }
@@ -376,7 +375,9 @@ sub GetErrorCode {
 ##############################################################################
 sub GetQuery {
   my $self = shift;
-  return $self->{QUERY};
+  $self->{DEBUG}->Log2("GetQuery: return($self->{QUERY})");
+  return $self->{QUERY} if ($self->{QUERY} ne "");
+  return;
 }
 
 
@@ -388,7 +389,19 @@ sub GetQuery {
 sub GetQueryTree {
   my $self = shift;
   $self->MergeQuery();
-  return &Net::Jabber::GetXMLData("tree",$self->{IQ},"query");
+  return &Net::Jabber::GetXMLData("tree",$self->{IQ},"*");
+}
+
+
+##############################################################################
+#
+# GetQueryXMLNS - returns the xmlns of the <query/> tag
+#
+##############################################################################
+sub GetQueryXMLNS {
+  my $self = shift;
+  $self->MergeQuery();
+  return &Net::Jabber::GetXMLData("value",$self->{IQ},"*","xmlns");
 }
 
 
@@ -564,7 +577,8 @@ sub SetError {
 sub NewQuery {
   my $self = shift;
   my ($xmlns) = @_;
-  my $query = $self->SetQuery();
+  return if !exists($Net::Jabber::DELEGATES{$xmlns});
+  my $query = $self->SetQuery($xmlns);
   $query->SetXMLNS($xmlns) if $xmlns ne "";
   return $query;
 }
@@ -574,15 +588,17 @@ sub NewQuery {
 #
 # SetQuery - creates a new Net::Jabber::Query object, sets the internal
 #            pointer to it, and returns a pointer to the new object.  This 
-#            is a private helper function. 
+#            is a private helper function.
 #
 ##############################################################################
 sub SetQuery {
   my $self = shift;
-  my (@queryTree) = @_;
-  my $query = new Net::Jabber::Query(@queryTree);
-  $self->{QUERY} = $query;
-  return $query;
+  my ($xmlns,@queryTree) = @_;
+  return if !exists($Net::Jabber::DELEGATES{$xmlns});
+  $self->{DEBUG}->Log2("SetQuery: xmlns($xmlns) tree(",\@queryTree,")");
+  eval("\$self->{QUERY} = new ".$Net::Jabber::DELEGATES{$xmlns}->{parent}."(\@queryTree);");
+  $self->{DEBUG}->Log2("SetQuery: return($self->{QUERY})");
+  return $self->{QUERY};
 }
   
 
@@ -597,25 +613,39 @@ sub SetQuery {
 sub MergeQuery {
   my $self = shift;
 
+  $self->{DEBUG}->Log2("MergeQuery: start");
+
   my $replaced = 0;
 
-  return if !(exists($self->{QUERY}));
+  return if (!exists($self->{QUERY}) || !defined($self->{QUERY}));
+
+  $self->{DEBUG}->Log2("MergeQuery: selfQuery($self->{QUERY})");
 
   my $query = $self->{QUERY};
   my @queryTree = $query->GetTree();
 
+  $self->{DEBUG}->Log2("MergeQuery: Check the old tags");
+  $self->{DEBUG}->Log2("MergeQuery: length(",$#{$self->{IQ}->[1]},")");
+
   my $i;
   foreach $i (1..$#{$self->{IQ}->[1]}) {
-    if ($self->{IQ}->[1]->[$i] eq "query") {
+    $self->{DEBUG}->Log2("MergeQuery: i($i)");
+    $self->{DEBUG}->Log2("MergeQuery: data(",$self->{IQ}->[1]->[$i],")");
+    if ((ref($self->{IQ}->[1]->[($i+1)]) eq "ARRAY") &&
+	exists($self->{IQ}->[1]->[($i+1)]->[0]->{xmlns})) {
       $replaced = 1;
+      $self->{IQ}->[1]->[$i] = $queryTree[0];
       $self->{IQ}->[1]->[($i+1)] = $queryTree[1];
     }
   }
 
   if ($replaced == 0) {
-    $self->{IQ}->[1]->[($#{$self->{IQ}->[1]}+1)] = "query";
+    $self->{DEBUG}->Log2("MergeQuery: new tag");
+    $self->{IQ}->[1]->[($#{$self->{IQ}->[1]}+1)] = $queryTree[0];
     $self->{IQ}->[1]->[($#{$self->{IQ}->[1]}+1)] = $queryTree[1];
   }
+
+  $self->{DEBUG}->Log2("MergeQuery: end");
 }
 
 

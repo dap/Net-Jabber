@@ -19,6 +19,7 @@ Net::Jabber::X - Jabber X Module
 
     Net::Jabber::X::AutoUpdate - Auto Update information
     Net::Jabber::X::Delay      - Message Routing and Delay Information
+    Net::Jabber::X::GC         - GroupChat
     Net::Jabber::X::Ident      - Rich Identification
     Net::Jabber::X::Oob        - Out Of Band File Transfers
     Net::Jabber::X::Roster     - Roster Items for embedding in messages
@@ -64,11 +65,6 @@ Net::Jabber::X - Jabber X Module
   For more information about the array format being passed to the CallBack
   please read the Net::Jabber::Client documentation.
 
-=head2 Basic functions
-
-    $X->SetDelegates("com:ti:foo"=>"TI::Foo",
-                     "bar:foo"=>"Foo::Bar");
-
 =head2 Retrieval functions
 
     $xmlns     = $X->GetXMLNS();
@@ -81,16 +77,6 @@ Net::Jabber::X - Jabber X Module
     $X->SetXMLNS("jabber:x:delay");
 
 =head1 METHODS
-
-=head2 Basic functions
-
-  SetDelegates(hash) - sets the appropriate delegate for each namespace
-                       in the list.  Format is namspace=>package.  When
-                       a function is called against the X object and
-                       it is not defined in this package, the delegate
-                       is searched for that function.  This allows for
-                       easy development of a package to handle new <x/>
-                       tags for what ever application.
 
 =head2 Retrieval functions
 
@@ -119,14 +105,18 @@ Net::Jabber::X - Jabber X Module
   object and register it once, or you can use the SetDelegates
   function in Client.pm to do it for you:
 
-    my $X = new Net::Jabber::X();
-    $X->SetDelegates("blah:blah"=>"Blah::Blah");
-
+    my $Client = new Net::Jabber::Client();
+    $Client->AddDelegate(namespace=>"blah:blah",
+			 parent=>"Net::Jabber::X",
+			 delegate=>"Blah::Blah");
+    
   or
 
-    my $Client = new Net::Jabber::Client();
-    $Client->SetXDelegates("blah:blah"=>"Blah::Blah");
-
+    my $Transport = new Net::Jabber::Transport();
+    $Transport->AddDelegate(namespace=>"blah:blah",
+			    parent=>"Net::Jabber::X",
+			    delegate=>"Blah::Blah");
+    
   Once you have the delegate registered you need to define the access
   functions.  Here is a an example module:
 
@@ -173,7 +163,7 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION $AUTOLOAD %DELEGATES);
+use vars qw($VERSION $AUTOLOAD);
 
 $VERSION = "1.0";
 
@@ -184,6 +174,10 @@ use Net::Jabber::X::AutoUpdate;
 use Net::Jabber::X::Delay;
 ($Net::Jabber::X::Delay::VERSION < $VERSION) &&
   die("Net::Jabber::X::Delay $VERSION required--this is only version $Net::Jabber::X::Delay::VERSION");
+
+use Net::Jabber::X::GC;
+($Net::Jabber::X::GC::VERSION < $VERSION) &&
+  die("Net::Jabber::X::GC $VERSION required--this is only version $Net::Jabber::X::GC::VERSION");
 
 #use Net::Jabber::X::Ident;
 #($Net::Jabber::X::Ident::VERSION < $VERSION) &&
@@ -196,12 +190,6 @@ use Net::Jabber::X::Oob;
 use Net::Jabber::X::Roster;
 ($Net::Jabber::X::Roster::VERSION < $VERSION) &&
   die("Net::Jabber::X::Roster $VERSION required--this is only version $Net::Jabber::X::Roster::VERSION");
-
-$DELEGATES{'jabber:x:autoupdate'} = "Net::Jabber::X::AutoUpdate";
-$DELEGATES{'jabber:x:delay'} = "Net::Jabber::X::Delay";
-#$DELEGATES{'jabber:x:ident'} = "Net::Jabber::X::Ident";
-$DELEGATES{'jabber:x:oob'}   = "Net::Jabber::X::Oob";
-$DELEGATES{'jabber:x:roster'}   = "Net::Jabber::X::Roster";
 
 sub new {
   my $proto = shift;
@@ -248,24 +236,8 @@ sub GetDelegate {
   my $self = shift;
   my $xmlns = $self->GetXMLNS();
   return if $xmlns eq "";
-  if (exists($DELEGATES{$xmlns})) {
-    eval("\$self->{DELEGATE} = new ".$DELEGATES{$xmlns}."()");
-  }
-}
-
-
-##############################################################################
-#
-# SetDelegates - adds the namespace and corresponding pacakge onto the list
-#                of availbale delegates based on the namespace.
-#
-##############################################################################
-sub SetDelegates {
-  my $self = shift;
-  my (%delegates) = @_;
-  my $delegate;
-  foreach $delegate (keys(%delegates)) {
-    $Net::Jabber::X::DELEGATES{$delegate} = $delegates{$delegate};
+  if (exists($Net::Jabber::DELEGATES{$xmlns})) {
+    eval("\$self->{DELEGATE} = new ".$Net::Jabber::DELEGATES{$xmlns}->{delegate}."()");
   }
 }
 

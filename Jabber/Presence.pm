@@ -263,12 +263,17 @@ sub new {
 
   bless($self, $proto);
 
+  $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
+					  header=>"NJ::Presence");
+
   if ("@_" ne ("")) {
     my @temp = @_;
     $self->{PRESENCE} = \@temp;
     my $xTree;
     foreach $xTree ($self->GetXTrees()) {
-      $self->AddX(@{$xTree});
+      my $xmlns = &Net::Jabber::GetXMLData("value",$xTree,"","xmlns");
+      next if !exists($Net::Jabber::DELEGATES{$xmlns});
+      $self->AddX($xmlns,@{$xTree}) if ($xmlns ne "");
     }
   } else {
     $self->{PRESENCE} = [ "presence" , [{}] ];
@@ -467,7 +472,7 @@ sub GetXTrees {
   my ($xmlns) = @_;
   my $xTree;
   my @xTrees;
-  foreach $xTree (&Net::Jabber::GetXMLData("tree array",$self->{PRESENCE},"x","xmlns",$xmlns)) {
+  foreach $xTree (&Net::Jabber::GetXMLData("tree array",$self->{PRESENCE},"*","xmlns",$xmlns)) {
     push(@xTrees,$xTree);
   }
   return @xTrees;
@@ -685,7 +690,8 @@ sub SetLoc {
 sub NewX {
   my $self = shift;
   my ($xmlns) = @_;
-  my $xTag = $self->AddX();
+  return if !exists($Net::Jabber::DELEGATES{$xmlns});
+  my $xTag = $self->AddX($xmlns);
   $xTag->SetXMLNS($xmlns) if $xmlns ne "";
   return $xTag;
 }
@@ -700,8 +706,12 @@ sub NewX {
 ##############################################################################
 sub AddX {
   my $self = shift;
-  my (@xTree) = @_;
-  my $xTag = new Net::Jabber::X(@xTree);
+  my ($xmlns,@xTree) = @_;
+  return if !exists($Net::Jabber::DELEGATES{$xmlns});
+  $self->{DEBUG}->Log2("AddX: xmlns($xmlns) xTree(",\@xTree,")");
+  my $xTag;
+  eval("\$xTag = new ".$Net::Jabber::DELEGATES{$xmlns}->{parent}."(\@xTree);");
+  $self->{DEBUG}->Log2("AddX: xTag(",$xTag,")");
   push(@{$self->{XTAGS}},$xTag);
   return $xTag;
 }
@@ -721,7 +731,11 @@ sub AddX {
 sub MergeX {
   my $self = shift;
 
+  $self->{DEBUG}->Log2("MergeX: start");
+
   return if !(exists($self->{XTAGS}));
+
+  $self->{DEBUG}->Log2("MergeX: xTags(",$self->{XTAGS},")");
 
   my $xTag;
   my @xTags;
@@ -729,20 +743,38 @@ sub MergeX {
     push(@xTags,$xTag);
   }
 
+  $self->{DEBUG}->Log2("MergeX: xTags(",\@xTags,")");
+  $self->{DEBUG}->Log2("MergeX: Check the old tags");
+  $self->{DEBUG}->Log2("MergeX: length(",$#{$self->{PRESENCE}->[1]},")");
+
   my $i;
   foreach $i (1..$#{$self->{PRESENCE}->[1]}) {
-    if ($self->{PRESENCE}->[1]->[$i] eq "x") {
+    $self->{DEBUG}->Log2("MergeX: i($i)");
+    $self->{DEBUG}->Log2("MergeX: data(",$self->{PRESENCE}->[1]->[$i],")");
+
+    if ((ref($self->{PRESENCE}->[1]->[($i+1)]) eq "ARRAY") &&
+	exists($self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns})) {
+      $self->{DEBUG}->Log2("MergeX: found a namespace xmlns(",$self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns},")");
+      next if !exists($Net::Jabber::DELEGATES{$self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns}});
+      $self->{DEBUG}->Log2("MergeX: merge index($i)");
       my $xTag = pop(@xTags);
+      $self->{DEBUG}->Log2("MergeX: merge xTag($xTag)");
       my @xTree = $xTag->GetTree();
+      $self->{DEBUG}->Log2("MergeX: merge xTree(",\@xTree,")");
+      $self->{PRESENCE}->[1]->[$i] = $xTree[0];
       $self->{PRESENCE}->[1]->[($i+1)] = $xTree[1];
     }
   }
 
+  $self->{DEBUG}->Log2("MergeX: Insert new tags");
   foreach $xTag (@xTags) {
+    $self->{DEBUG}->Log2("MergeX: new tag");
     my @xTree = $xTag->GetTree();
-    $self->{PRESENCE}->[1]->[($#{$self->{PRESENCE}->[1]}+1)] = "x";
+    $self->{PRESENCE}->[1]->[($#{$self->{PRESENCE}->[1]}+1)] = $xTree[0];
     $self->{PRESENCE}->[1]->[($#{$self->{PRESENCE}->[1]}+1)] = $xTree[1];
   }
+
+  $self->{DEBUG}->Log2("MergeX: end");
 }
 
 

@@ -12,7 +12,7 @@ Net::Jabber::Query::Roster::Item - Jabber IQ Roster Item Module
 
 =head1 DESCRIPTION
 
-  To initialize the Item with a Jabber <iq/> and then access the auth
+  To initialize the Item with a Jabber <iq/> and then access the roster
   query you must pass it the XML::Parser Tree array from the 
   Net::Jabber::Client module.  In the callback function for the iq:
 
@@ -122,8 +122,8 @@ Net::Jabber::Query::Roster::Item - Jabber IQ Roster Item Module
           subscription=>string,   and overwriting action.  If you
           ask=>string,            set the "ask" twice, the second
           groups=>array)          setting is what is used.  If you set
-                                  the password, and then set the
-                                  resource then both will be in the
+                                  the name, and then set the
+                                  jid then both will be in the
                                   <item/> tag.  For valid settings
                                   read the specific Set functions below.
                                   Note: group does not behave in this
@@ -247,7 +247,6 @@ sub GetGroups {
   foreach $index (0..$#groups) {
     splice(@groups,$index,1) if ($groups[$index] eq "");
   }
-  print "$#groups (@groups)\n";
   return @groups;
 }
 
@@ -353,10 +352,10 @@ sub SetAsk {
 ##############################################################################
 sub SetGroups {
   my $self = shift;
-  my (@groups) = @_;
+  my ($groups) = @_;
   my ($group);
 
-  foreach $group (@groups) {
+  foreach $group (@{$groups}) {
     &Net::Jabber::SetXMLData("multiple",$self->{ITEM},"group",$group,{});
   }
 }

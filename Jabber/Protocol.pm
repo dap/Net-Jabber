@@ -69,6 +69,15 @@ Net::Jabber::Protocol - Jabber Protocol Library
     $receiveObj = $Con->GetID($id);    
     $receiveObj = $Con->WaitForID($id);
 
+=head2 Namespace Functions
+
+    $Con->AddDelegate(namespace=>"foo::bar",
+                      parent=>"Foo::Bar");
+
+    $Con->AddDelegate(namespace=>"foo::bar::bob",
+                      parent=>"Foo::Bar",
+                      delegate=>"Foo::Bar::Bob");
+
 =head2 Message Functions
 
     $Con->MessageSend(to=>"bob@jabber.org",
@@ -96,8 +105,6 @@ Net::Jabber::Protocol - Jabber Protocol Library
 		       to=>"bob@jabber.org");
 
 =head2 IQ  Functions
-
-    $Con->SetQueryDelegates("com:bar:foo"=>"Foo::Bar");
 
 =head2 IQ::Agents Functions
 
@@ -143,6 +150,18 @@ Net::Jabber::Protocol - Jabber Protocol Library
     $Con->RosterRemove(jid=>"bob@jabber.org");
 
 
+=head2 IQ::Search Functions
+
+    %fields = $Con->SearchRequest();
+    %fields = $Con->SearchRequest(to=>"bob@jabber.org");
+
+    $Con->SearchSend(name=>"",
+                     first=>"Bob",
+                     last=>"",
+                     nick=>"bob",
+                     email=>"",
+                     key=>"som key");
+
 =head2 IQ::Time Functions
 
     %result = $Con->TimeQuery();
@@ -161,8 +180,6 @@ Net::Jabber::Protocol - Jabber Protocol Library
                       os=>"Perl");
 
 =head2 X Functions
-
-    $Con->SetXDelegates("com:bar:foo"=>"Foo::Bar");
 
 =head1 METHODS
 
@@ -234,6 +251,21 @@ Net::Jabber::Protocol - Jabber Protocol Library
            <presence/> with an id is a risk.  Both clients must support 
            this for these functions to work.
 
+=head2 Namespace Functions
+
+    AddNamespace(namespace=>string, - this tells the Net::Jabber modules
+                 parent=>string,      about the new namespace.  The
+                 delegate=>string)    namespaces determines how the xmlns
+                                      looks in the tag.  The parent is
+                                      the name of the module to create
+                                      when you use this namespace.  The
+                                      delegate is only needed if the
+                                      parent module uses delegates to
+                                      distinguish between namespaces
+                                      (like the Net::Jabber::IQ and
+                                      Net::Jabber::X modules do).  The
+                                      delegate must be a valid Perl
+                                      Module.
 
 =head2 Message Functions
 
@@ -262,11 +294,6 @@ Net::Jabber::Protocol - Jabber Protocol Library
                            unsubscribed - response to an unsubscribe
 
 =head2 IQ Functions
-
-    SetQueryDelegates(hash) - the hash gets sent to the 
-                              Net::Jabber::Query::SetDelegates function.
-                              For more information about this function,
-                              read the manpage for Net::Jabber::Query.
 
 =head2 IQ::Agents Functions
 
@@ -390,6 +417,28 @@ Net::Jabber::Protocol - Jabber Protocol Library
                          in the Net::Jabber::Query::Roster::Item
                          module.
 
+=head2 IQ::Search Functions
+
+    SearchRequest(to=>string) - send an <iq/> request to the specified
+    SearchRequest()             server/transport, if not specified it
+                                sends to the current active server.
+                                The function returns a hash that
+                                contains the required fields.   Here
+                                is an example of the hash:
+
+	                           $fields{intructions} = "do this..."
+                                   $fields{key} = "some key"
+                                   $fields{name} = ""
+                                   ...
+
+                                The fields that are present are the
+                                required fields the server needs.
+
+    SearchSend(to=>string|JID, - takes the contents of the hash and 
+	       hash)             passes it to the SetSearch function
+                                 in the module Net::Jabber::Query::Search.
+                                 And then send the packet.
+
 =head2 IQ::Time Functions
 
     TimeQuery(to=>string) - asks the jid specified for its local time.
@@ -421,11 +470,6 @@ Net::Jabber::Protocol - Jabber Protocol Library
                 os=>string)
 
 =head2 X Functions
-
-    SetXDelegates(hash) - the hash gets sent to the 
-                          Net::Jabber::X::SetDelegates function.  For 
-                          more information about this function, read 
-                          the manpage for Net::Jabber::X.
 
 =head1 AUTHOR
 
@@ -503,17 +547,17 @@ sub CallBack {
   my $self = shift;
   my (@object) = @_;
 
-  $self->debug("CallBack: received(",&Net::Jabber::BuildXML(@object),")");
+  $self->{DEBUG}->Log1("CallBack: received(",&Net::Jabber::BuildXML(@object),")");
 
   my $tag = $object[0];
   my $id;
   $id = $object[1]->[0]->{id} if (exists($object[1]->[0]->{id}));
 
-  $self->debug("CallBack: tag($tag)");
-  $self->debug("CallBack: id($id)") if ($id ne "");
+  $self->{DEBUG}->Log1("CallBack: tag($tag)");
+  $self->{DEBUG}->Log1("CallBack: id($id)") if ($id ne "");
 
   if ($self->CheckID($tag,$id)) {
-    $self->debug("CallBack: found registry entry: tag($tag) id($id)");
+    $self->{DEBUG}->Log1("CallBack: found registry entry: tag($tag) id($id)");
     $self->DeregisterID($tag,$id);
     my $NJObject;
     $NJObject = new Net::Jabber::IQ(@object) 
@@ -524,12 +568,12 @@ sub CallBack {
       if ($tag eq "message");
     $self->GotID($object[1]->[0]->{id},$NJObject);
   } else {
-    $self->debug("CallBack: no registry entry");  
+    $self->{DEBUG}->Log1("CallBack: no registry entry");  
     if (exists($self->{CB}->{$tag})) {
-      $self->debug("CallBack: goto user function($self->{CB}->{$tag})");
+      $self->{DEBUG}->Log1("CallBack: goto user function($self->{CB}->{$tag})");
       &{$self->{CB}->{$tag}}(@object);
     } else {
-      $self->debug("CallBack: no defined function.  Dropping packet.");
+      $self->{DEBUG}->Log1("CallBack: no defined function.  Dropping packet.");
     }
   }
 }
@@ -549,7 +593,7 @@ sub SetCallBacks {
   while($#_ >= 0) {
     my $func = pop(@_);
     my $tag = pop(@_);
-    $self->debug("SetCallBacks: tag($tag) func($func)");
+    $self->{DEBUG}->Log1("SetCallBacks: tag($tag) func($func)");
     $self->{CB}{$tag} = $func;
   }
 }
@@ -571,7 +615,7 @@ sub Process {
   my ($timeout) = @_;
   my ($status);
 
-  $self->debug("Process: timeout($timeout)");
+  $self->{DEBUG}->Log1("Process: timeout($timeout)");
 
   if (!defined($timeout) || ($timeout eq "")) {
     while(1) {
@@ -579,7 +623,7 @@ sub Process {
       last if (($status != 0) || ($status eq ""));
       select(undef,undef,undef,.25);
     }
-    $self->debug("Process: return($status)");
+    $self->{DEBUG}->Log1("Process: return($status)");
     return $status;
   } else {
     return $self->{STREAM}->Process($timeout);
@@ -615,7 +659,7 @@ sub SendXML {
   shift;
   my $self = shift;
   my($xml) = @_;
-  $self->debug("SendXML: sent($xml)");
+  $self->{DEBUG}->Log1("SendXML: sent($xml)");
   $self->{STREAM}->Send($xml);
 }
 
@@ -791,6 +835,22 @@ sub DeregisterID {
 }
 
 
+##############################################################################
+#
+# AddDelegate - adds the namespace and corresponding pacakge onto the list
+#               of availbale delegates based on the namespace.
+#
+##############################################################################
+sub AddDelegate {
+  my $self = shift;
+  my (%delegates) = @_;
+
+  $Net::Jabber::DELEGATES{$delegates{namespace}}->{parent} = $delegates{parent};
+  $Net::Jabber::DELEGATES{$delegates{namespace}}->{delegate} = $delegates{delegate};
+}
+
+
+
 ###########################################################################
 #
 # MessageSend - Takes the same hash that Net::Jabber::Message->SetMessage
@@ -858,20 +918,6 @@ sub Subscription {
 
 ###########################################################################
 #
-# SetQueryDelegates - Sets the delegates for the <query/> that you might
-#                     see during the session.
-#
-###########################################################################
-sub SetQueryDelegates {
-  shift;
-  my $self = shift;
-  my $query = new Net::Jabber::Query;
-  $query->SetDelegates(@_);
-}
-
-
-###########################################################################
-#
 # AgentsGet - Sends an empty IQ to the server/transport to request that the
 #             list of supported Agents be sent to them.  Returns a hash
 #             containing the values for the agents.
@@ -902,6 +948,7 @@ sub AgentsGet {
     $agents{$jid}->{service} = $agent->GetService();
     $agents{$jid}->{register} = $agent->GetRegister();
     $agents{$jid}->{search} = $agent->GetSearch();
+    $agents{$jid}->{groupchat} = $agent->GetGroupChat();
     $agents{$jid}->{agents} = $agent->GetAgents();
     $agents{$jid}->{order} = $count++;
   }
@@ -981,7 +1028,7 @@ sub RegisterRequest {
   # Create a Net::Jabber::IQ object to send to the server
   #------------------------------------------------------------------------
   my $IQ = new Net::Jabber::IQ();
-  $IQ->SetIQ(to=>$args{to}) if exists($args{to});
+  $IQ->SetIQ(to=>delete($args{to})) if exists($args{to});
   $IQ->SetIQ(type=>"get");
   my $IQRegister = $IQ->NewQuery("jabber:iq:register");
 
@@ -1017,7 +1064,7 @@ sub RegisterSend {
   # Create a Net::Jabber::IQ object to send to the server
   #------------------------------------------------------------------------
   my $IQ = new Net::Jabber::IQ();
-  $IQ->SetIQ(to=>$args{to}) if exists($args{to});
+  $IQ->SetIQ(to=>delete($args{to})) if exists($args{to});
   $IQ->SetIQ(type=>"set");
   my $IQRegister = $IQ->NewQuery("jabber:iq:register");
   $IQRegister->SetRegister(%args);
@@ -1049,14 +1096,14 @@ sub RosterAdd {
   my $self = shift;
   my %args;
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
-  delete($args{subscription});
 
   my $iq = new Net::Jabber::IQ();
   $iq->SetIQ(type=>"set");
   my $roster = $iq->NewQuery("jabber:iq:roster");
   my $item = $roster->AddItem();
-  $item->SetItem(%args,
-		 subscription=>"to");
+  $item->SetItem(%args);
+
+  $self->{DEBUG}->Log1("RosterAdd: xml(",$iq->GetXML(),")");
   $self->Send($iq);
 }
 
@@ -1078,7 +1125,7 @@ sub RosterRemove {
   $iq->SetIQ(type=>"set");
   my $roster = $iq->NewQuery("jabber:iq:roster");
   my $item = $roster->AddItem();
-  $item->SetItem(@_,
+  $item->SetItem(%args,
 		 subscription=>"remove");
   $self->Send($iq);
 }
@@ -1133,6 +1180,74 @@ sub RosterGet {
 
 ###########################################################################
 #
+# SearchRequest - This is a self contained function to send an iq tag
+#                 an id that requests the target address to send back
+#                 the required fields.  It waits for a reply what the
+#                 same id to come back and tell the caller what the 
+#                 fields are.
+#
+###########################################################################
+sub SearchRequest {
+  shift;
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  #------------------------------------------------------------------------
+  # Create a Net::Jabber::IQ object to send to the server
+  #------------------------------------------------------------------------
+  my $IQ = new Net::Jabber::IQ();
+  $IQ->SetIQ(to=>delete($args{to})) if exists($args{to});
+  $IQ->SetIQ(type=>"get");
+  my $IQSearch = $IQ->NewQuery("jabber:iq:search");
+
+  #------------------------------------------------------------------------
+  # Send the IQ with the next available ID and wait for a reply with that 
+  # id to be received.  Then grab the IQ reply.
+  #------------------------------------------------------------------------
+  $IQ = $self->SendAndReceiveWithID($IQ);
+  
+  #------------------------------------------------------------------------
+  # From the reply IQ determine what fields are required and send a hash
+  # back with the fields and any values that are already defined (like key)
+  #------------------------------------------------------------------------
+  $IQSearch = $IQ->GetQuery();
+  return %{$IQSearch->GetFields()};
+}
+
+
+###########################################################################
+#
+# SearchSend - This is a self contained function to send a search
+#              iq tag with an id.  Then wait for a reply what the same
+#              id to come back and tell the caller what the result was.
+#
+###########################################################################
+sub SearchSend {
+  shift;
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  #------------------------------------------------------------------------
+  # Create a Net::Jabber::IQ object to send to the server
+  #------------------------------------------------------------------------
+  my $IQ = new Net::Jabber::IQ();
+  $IQ->SetIQ(to=>delete($args{to})) if exists($args{to});
+  $IQ->SetIQ(type=>"set");
+  my $IQSearch = $IQ->NewQuery("jabber:iq:search");
+  $IQSearch->SetSearch(%args);
+
+  #------------------------------------------------------------------------
+  # Send the IQ with the next available ID and wait for a reply with that 
+  # id to be received.  Then grab the IQ reply.
+  #------------------------------------------------------------------------
+  $self->Send($IQ);
+}
+
+
+###########################################################################
+#
 # TimeQuery - Sends an iq:time query to either the server or the specified
 #             JID.
 #
@@ -1144,7 +1259,7 @@ sub TimeQuery {
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
   my $iq = new Net::Jabber::IQ();
-  $iq->SetIQ(to=>$args{to}) if exists($args{to});
+  $iq->SetIQ(to=>delete($args{to})) if exists($args{to});
   $iq->SetIQ(type=>'get');
   my $time = $iq->NewQuery("jabber:iq:time");
 
@@ -1164,10 +1279,10 @@ sub TimeSend {
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
   my $iq = new Net::Jabber::IQ();
-  $iq->SetIQ(to=>$args{to},
+  $iq->SetIQ(to=>delete($args{to}),
 	     type=>'result');
   my $time = $iq->NewQuery("jabber:iq:time");
-  $time->SetTime();
+  $time->SetTime(%args);
 
   $self->Send($iq);
 }
@@ -1187,7 +1302,7 @@ sub VersionQuery {
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
   my $iq = new Net::Jabber::IQ();
-  $iq->SetIQ(to=>$args{to}) if exists($args{to});
+  $iq->SetIQ(to=>delete($args{to})) if exists($args{to});
   $iq->SetIQ(type=>'get');
   my $version = $iq->NewQuery("jabber:iq:version");
 
@@ -1213,20 +1328,6 @@ sub VersionSend {
   $version->SetVersion(%args);
 
   $self->Send($iq);
-}
-
-
-###########################################################################
-#
-# SetXDelegates - Sets the delegates for the <x/> that you might see during
-#                 the session.
-#
-###########################################################################
-sub SetXDelegates {
-  shift;
-  my $self = shift;
-  my $x = new Net::Jabber::X;
-  $x->SetDelegates(@_);
 }
 
 

@@ -1,3 +1,16 @@
+1.0d
+====
+  - Fixed bug in namespace handling.  Instead of hardcoding looking for <x/>
+    and <query/> Net::Jabber now searches for any tag that has an xmlns and
+    uses that tag as the query or x.
+  - Added Jabber::X::GC to handle GroupChat X tags.
+  - Added Debug object to make it easier to log debug information.
+  - Fixed bug in JID where GetJID did not return the correct JID if there
+    is an % in the UserID.
+  - Added Key.pm.
+  - Fixed bug in RosterRemove where the JID was not being sent and thus the
+    item not being removed.
+
 1.0c
 ====
   - Fixed bug in Message, Presence, and IQ with the GetJID function changing.

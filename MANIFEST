@@ -7,9 +7,11 @@ examples/client.pl
 examples/transport.pl
 examples/transport_test.pl
 Jabber.pm
+Jabber/Debug.pm
 Jabber/Client.pm
 Jabber/Transport.pm
 Jabber/Protocol.pm
+Jabber/Key.pm
 Jabber/JID.pm
 Jabber/Message.pm
 Jabber/Presence.pm
@@ -25,11 +27,14 @@ Jabber/Query/Oob.pm
 Jabber/Query/Register.pm
 Jabber/Query/Roster.pm
 Jabber/Query/Roster/Item.pm
+Jabber/Query/Search.pm
+Jabber/Query/Search/Item.pm
 Jabber/Query/Time.pm
 Jabber/Query/Version.pm
 Jabber/X.pm
 Jabber/X/AutoUpdate.pm
 Jabber/X/Delay.pm
+Jabber/X/GC.pm
 Jabber/X/Ident.pm
 Jabber/X/Oob.pm
 Jabber/X/Roster.pm

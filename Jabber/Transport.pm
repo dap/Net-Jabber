@@ -49,12 +49,14 @@ Net::Jabber::Transport - Jabber Transport Library
 
 =head2 Basic Functions
 
-    new(debug=>string)       - creates the Transport object.  debug
-        debugfh=>FileHandle)   should be set to the path for the debug
-                               log to be written.  If set to "stdout" 
-                               then the debug will go there.  Also, you
-                               can specify a filehandle that already
-                               exists and use that.
+    new(debuglevel=>0|1|2, - creates the Transport object.  debugfile
+        debugfile=>string)   should be set to the path for the debug
+                             log to be written.  If set to "stdout" 
+                             then the debug will go there.  debuglevel 
+                             controls the amount of debug.  For more
+                             information about the valid setting for
+                             debuglevel and debugfile see 
+                             Net::Jabber::Debug.
 
     Connect(hostname=>string,      - opens a connection to the server
 	    port=>integer,           listedt in the hostname value,
@@ -86,7 +88,6 @@ require 5.003;
 use strict;
 use XML::Stream;
 use IO::Select;
-use FileHandle;
 use vars qw($VERSION $AUTOLOAD);
 
 $VERSION = "1.0";
@@ -95,6 +96,10 @@ use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&
   die("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
 
+use Net::Jabber::Key;
+($Net::Jabber::Key::VERSION < $VERSION) &&
+  die("Net::Jabber::Key $VERSION required--this is only version $Net::Jabber::Key::VERSION");
+
 sub new {
   srand( time() ^ ($$ + ($$ << 15)));
 
@@ -102,54 +107,27 @@ sub new {
   my $self = { };
 
   my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+  while($#_ >= 0) { $args{ lc(pop(@_)) } = pop(@_); }
 
-  $self->{DEBUG} = 0;
-  if (exists($args{debugfh}) && ($args{debugfh} ne "")) {
-    $self->{DEBUGFILE} = $args{debugfh};
-    $self->{DEBUG} = 1;
-  }
-  if (((!exists($args{debugfh})) || 
-       (exists($args{debugfh}) && ($args{debugfh} eq ""))) && 
-      (exists($args{debug}) && ($args{debug} ne ""))) {
-    $self->{DEBUG} = 1;
-    if (lc($args{debug}) eq "stdout") {
-      $self->{DEBUGFILE} = new FileHandle(">&STDOUT");
-      $self->{DEBUGFILE}->autoflush(1);
-    } else {
-      if (-e $args{debug}) {
-	if (-w $args{debug}) {
-	  $self->{DEBUGFILE} = new FileHandle(">$args{debug}");
-	  $self->{DEBUGFILE}->autoflush(1);
-	} else {
-	  print "WARNING: debug file ($args{debug}) is not writable by you\n";
-	  print "         No debug information being saved.\n";
-	  $self->{DEBUG} = 0;
-	}
-      } else {
-	$self->{DEBUGFILE} = new FileHandle(">$args{debug}");
-	if (defined($self->{DEBUGFILE})) {
-	  $self->{DEBUGFILE}->autoflush(1);
-	} else {
-	  print "WARNING: debug file ($args{debug}) does not exist \n";
-	  print "         and is not writable by you.\n";
-	  print "         No debug information being saved.\n";
-	  $self->{DEBUG} = 0;
-	}
-      }
-    }
-  }
+  bless($self, $proto);
 
+  $self->{DELEGATE} = new Net::Jabber::Protocol();
+
+  $self->{DEBUG} = 
+    new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
+			   file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
+			   setdefault=>1,
+			   header=>"NJ::Transport"
+			  );
+  
   $self->{SERVER} = {hostname => "localhost",
 		     port => 5269,
 		     transportname => ""};
 
   $self->{CONNECTED} = 0;
 
-  $self->{STREAM} = new XML::Stream(debugfh=>$self->{DEBUGFILE})
-    if ($self->{DEBUG});
-  $self->{STREAM} = new XML::Stream()
-    if !($self->{DEBUG});
+  $self->{STREAM} = new XML::Stream(debugfh=>$self->{DEBUG}->GetHandle(),
+				    debuglevel=>$self->{DEBUG}->GetLevel());
 
   $self->{VERSION} = $VERSION;
   
@@ -163,9 +141,6 @@ sub new {
     exit(0);
   }
 
-  $self->{DELEGATE} = new Net::Jabber::Protocol();
-
-  bless($self, $proto);
   return $self;
 }
 
@@ -186,19 +161,6 @@ sub AUTOLOAD {
 
 ###########################################################################
 #
-# debug - prints the arguments to the debug log if debug is turned on.
-#
-###########################################################################
-sub debug {
-  my $self = shift;
-  return if ($self->{DEBUG} == 0);
-  my $fh = $self->{DEBUGFILE};
-  print $fh "Transport: @_\n";
-}
-
-
-###########################################################################
-#
 # Connect - Takes a has and opens the connection to the specified server.
 #           Registers CallBack as the main callback for all packets from
 #           the server.
@@ -211,6 +173,8 @@ sub Connect {
   my $self = shift;
   my %args;
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  $self->{DEBUG}->Log1("Connect: hostname($args{hostname}) secret($args{secret}) transportname($args{transportname})");
 
   if (!exists($args{hostname})) {
     $self->SetErrorCode("No hostname specified.");
@@ -242,6 +206,8 @@ sub Connect {
   $self->{NAMESPACE}->SetXMLNS("http://etherx.jabber.org/");
   $self->{NAMESPACE}->SetAttributes(secret=>$self->{SERVER}->{digest});
 
+  $self->{DEBUG}->Log1("Connect: id($self->{SERVER}->{id}) digest($self->{SERVER}->{digest})");
+
   $self->{SESSION} = 
     $self->{STREAM}->
       Connect(hostname=>$self->{SERVER}->{hostname},
@@ -252,6 +218,8 @@ sub Connect {
 	      namespaces=> [ $self->{NAMESPACE} ]
 	     ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
 	           return);
+
+  $self->{DEBUG}->Log1("Connect: connection made");
 
   $self->{STREAM}->OnNode(sub{ $self->CallBack(@_) });
   $self->{CONNECTED} = 1;
@@ -266,9 +234,9 @@ sub Connect {
 ###########################################################################
 sub Disconnect {
   my $self = shift;
-
   $self->{STREAM}->Disconnect() if ($self->{CONNECTED} == 1);
   $self->{CONNECTED} = 0;
+  $self->{DEBUG}->Log1("Disconnect: bye bye");
 }
 
 
@@ -281,6 +249,7 @@ sub Disconnect {
 sub Connected {
   my $self = shift;
 
+  $self->{DEBUG}->Log1("Connected: ($self->{CONNECTED})");
   return $self->{CONNECTED};
 }
 

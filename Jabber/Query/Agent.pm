@@ -49,10 +49,10 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
     $service     = $agent->GetService();
     $register    = $agent->GetRegister();
     $search      = $agent->GetSearch();
+    $groupchat   = $agent->GetGroupChat();
     $agents      = $agent->GetAgents();
 
 =head2 Creation functions
-
 
     $agent->SetAgent(jid=>"users.jabber.org",
 		     name=>"Jabber User Directory",
@@ -70,6 +70,7 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
     $agent->SetService("icq");
     $agent->SetRegister();
     $agent->SetSearch();
+    $agent->SetGroupChat();
     $agent->SetAgents();
 
 =head1 METHODS
@@ -93,6 +94,8 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
 
   GetSearch() - returns a 1 if the agent supports searching, 0 if not.
 
+  GetGroupChat() - returns a 1 if the agent supports groupchat, 0 if not.
+
   GetAgents() - returns a 1 if the agent supports sub-agents, 0 if not.
 
 
@@ -105,7 +108,8 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
            service=>string,       what is used.  If you set the name, and
            register=>string,      then set the search then both will be in
            search=>string,        the <iq/> tag.  For valid settings read the
-           agents=>string)        specific Set functions below.
+           groupchat=>string)     specific Set functions below.
+           agents=>string)
 
   SetJID(string) - sets the jid="..." of the agent.
 
@@ -124,6 +128,10 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
   SetSearch() - if the function is called then a <search/> is
                 is put in the <query/> to signify searching is
                 available.
+
+  SetGroupChat() - if the function is called then a <groupchat/> is
+                   is put in the <query/> to signify groupchat is
+                   available.
 
   SetAgents() - if the function is called then a <agents/> is
                 is put in the <query/> to signify sub-agents are
@@ -251,6 +259,18 @@ sub GetSearch {
 
 ##############################################################################
 #
+# GetGroupChat - returns the namr of the jabber:iq:agent
+#
+##############################################################################
+sub GetGroupChat {
+  my $self = shift;
+  $self = shift if !exists($self->{AGENT});
+  return &Net::Jabber::GetXMLData("existence",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"groupchat","");
+}
+
+
+##############################################################################
+#
 # GetAgents - returns the namr of the jabber:iq:agent
 #
 ##############################################################################
@@ -306,6 +326,7 @@ sub SetAgent {
   $self->SetService($agent{service}) if exists($agent{service});
   $self->SetRegister() if exists($agent{register});
   $self->SetSearch() if exists($agent{search});
+  $self->SetGroupChat() if exists($agent{groupchat});
   $self->SetAgents() if exists($agent{agents});
 }
 
@@ -397,6 +418,18 @@ sub SetSearch {
   my $self = shift;
   $self = shift if !exists($self->{AGENT});
   &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"search","",{});
+}
+
+
+##############################################################################
+#
+# SetGroupChat - sets the groupchat in the jabber:iq:agent
+#
+##############################################################################
+sub SetGroupChat {
+  my $self = shift;
+  $self = shift if !exists($self->{AGENT});
+  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"groupchat","",{});
 }
 
 
