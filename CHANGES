@@ -1,5 +1,10 @@
+1.0c
+====
+  - Fixed bug in Message, Presence, and IQ with the GetJID function changing.
+
 1.0b
 ====
+  - Added Query::AutoUpdate.
   - In Query::Version, a call to SetOS will call POSIX::uname and try to get
     the OS name from there.  (Not sure if this work on Windows and Mac...)
   - Added GetAgents function to Protocol.pm to query a server/transport

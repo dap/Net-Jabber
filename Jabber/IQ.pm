@@ -462,7 +462,7 @@ sub SetTo {
   my $self = shift;
   my ($to) = @_;
   if (ref($to) eq "Net::Jabber::JID") {
-    $to = $to->GetJID();
+    $to = $to->GetJID("full");
   }
   &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{to=>$to});
 }
@@ -477,7 +477,7 @@ sub SetFrom {
   my $self = shift;
   my ($from) = @_;
   if (ref($from) eq "Net::Jabber::JID") {
-    $from = $from->GetJID();
+    $from = $from->GetJID("full");
   }
   &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{from=>$from});
 }
