@@ -24,32 +24,25 @@ package Net::Jabber::X::Roster;
 
 =head1 NAME
 
-Net::Jabber::X::Roster - Jabber IQ Roster Module
+Net::Jabber::X::Roster - Jabber X Roster Module
 
 =head1 SYNOPSIS
 
   Net::Jabber::X::Roster is a companion to the Net::Jabber::X module.
   It provides the user a simple interface to set and retrieve all parts 
-  of a Jabber IQ Roster x.
+  of a Jabber X Roster.
 
 =head1 DESCRIPTION
 
-  To initialize the IQ with a Jabber <iq/> and then access the roster
-  x you must pass it the XML::Parser Tree array from the 
-  Net::Jabber::Client module.  In the callback function for the iq:
+  To initialize the X with a Jabber <x/> and then access the roster
+  query you must pass it the XML::Parser Tree array from the 
+  Net::Jabber::Client module.  In the callback function for the x:
 
     use Net::Jabber;
 
     sub foo {
       my $foo = new Net::Jabber::Foo(@_);
-
-      my @xTags = $foo->GetX("jabber:x:roster");
-
-      my $xTag;
-      foreach $xTag (@xTags) {
-        $xTag->....
-        
-      }
+      my $roster = $foo->GetX();
       .
       .
       .
@@ -57,7 +50,7 @@ Net::Jabber::X::Roster - Jabber IQ Roster Module
 
   You now have access to all of the retrieval functions available.
 
-  To create a new IQ roster to send to the server:
+  To create a new X roster to send to the server:
 
     use Net::Jabber;
 
@@ -78,11 +71,15 @@ Net::Jabber::X::Roster - Jabber IQ Roster Module
 
 =head2 Retrieval functions
 
-    @items  = $roster->GetItems();
+    @items     = $roster->GetItems();
+    @itemTrees = $roster->GetItemTrees();
 
 =head2 Creation functions
 
     $item   = $roster->AddItem();
+    $item   = $roster->AddItem(jid=>"bob\@jabber.org",
+                               name=>"Bob",
+                               groups=>["school","friends"]);
 
 =head1 METHODS
 
@@ -92,13 +89,15 @@ Net::Jabber::X::Roster - Jabber IQ Roster Module
                These can be modified or accessed with the functions
                available to them.
 
+  GetItemTrees() - returns an array of XML::Parser objects that contain
+                   the data for each item.
+
 =head2 Creation functions
 
-  AddItem(XML::Parser tree) - creates a new Net::Jabbber::X::Roster::Item
-                              object and populates it with the tree if one
-                              was passed in.  This returns the pointer to
-                              the <item/> so you can modify it with the
-                              creation functions from that module.
+  AddItem(hash) - creates and returns a new Net::Jabbber::X::Roster::Item
+                  object.  The argument hash is passed to the SetItem 
+                  function.  Check the Net::Jabber::X::Roster::Item
+                  for valid values.
 
 =head1 AUTHOR
 
@@ -116,7 +115,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 use Net::Jabber::X::Roster::Item;
 ($Net::Jabber::X::Roster::Item::VERSION < $VERSION) &&
@@ -158,6 +157,18 @@ sub GetItems {
 
 ##############################################################################
 #
+# GetItemTrees - returns an array of XML::Parser trees of <item/>s.
+#
+##############################################################################
+sub GetItemTrees {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("tree array",$self->{X},"item");
+}
+
+
+##############################################################################
+#
 # AddItem - creates a new Net::Jabber::X::Roster::Item object from the tree
 #           passed to the function if any.  Then it returns a pointer to that
 #           object so you can modify it.
@@ -166,23 +177,11 @@ sub GetItems {
 sub AddItem {
   shift;
   my $self = shift;
-  my (@tree) = @_;
   
-  my $itemObj = new Net::Jabber::X::Roster::Item(@tree);
-  push(@{$self->{ITEMS}},$itemObj);
-  return $itemObj;
-}
-
-
-##############################################################################
-#
-# GetItemTrees - returns an array of XML::Parser trees of <item/>s.
-#
-##############################################################################
-sub GetItemTrees {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("tree array",$self->{X},"item");
+  my $item = new Net::Jabber::X::Roster::Item("item",[{}]);
+  $item->SetItem(@_);
+  push(@{$self->{ITEMS}},$item);
+  return $item;
 }
 
 

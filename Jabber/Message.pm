@@ -316,7 +316,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 sub new {
   my $proto = shift;
@@ -655,6 +655,35 @@ sub AddX {
 
 ##############################################################################
 #
+# RemoveX - removes all xtags that have the specified namespace.
+#
+##############################################################################
+sub RemoveX {
+  my $self = shift;
+  my ($xmlns) = @_;
+  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
+
+  foreach my $i (reverse(1..$#{$self->{MESSAGE}->[1]})) {
+    $self->{DEBUG}->Log2("RemoveX: i($i)");
+    $self->{DEBUG}->Log2("RemoveX: data(",$self->{MESSAGE}->[1]->[$i],")");
+
+    if ((ref($self->{MESSAGE}->[1]->[$i]) eq "") &&
+	($self->{MESSAGE}->[1]->[$i] eq "x") &&
+	(ref($self->{MESSAGE}->[1]->[($i+1)]) eq "ARRAY") &&
+	exists($self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns}) &&
+	$self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns} eq $xmlns) {
+      splice(@{$self->{MESSAGE}->[1]},$i,2);
+    }
+  }
+  foreach my $index (reverse(0..$#{$self->{XTAGS}})) {
+    splice(@{$self->{XTAGS}},$index,1) 
+      if ($self->{XTAGS}->[$index]->GetXMLNS() eq $xmlns);
+  }
+}
+
+
+##############################################################################
+#
 # MergeX - runs through the list of <x/> in the current message and replaces
 #          them with the list of <x/> in the internal list.  If any old <x/>
 #          in the <message/> are left, then they are removed.  If any new <x/>
@@ -683,9 +712,7 @@ sub MergeX {
   $self->{DEBUG}->Log2("MergeX: Check the old tags");
   $self->{DEBUG}->Log2("MergeX: length(",$#{$self->{MESSAGE}->[1]},")");
 
-
-  my $i;
-  foreach $i (1..$#{$self->{MESSAGE}->[1]}) {
+  foreach my $i (1..$#{$self->{MESSAGE}->[1]}) {
     $self->{DEBUG}->Log2("MergeX: i($i)");
     $self->{DEBUG}->Log2("MergeX: data(",$self->{MESSAGE}->[1]->[$i],")");
 

@@ -187,7 +187,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 use Net::Jabber::X::AutoUpdate;
 ($Net::Jabber::X::AutoUpdate::VERSION < $VERSION) &&
@@ -196,6 +196,14 @@ use Net::Jabber::X::AutoUpdate;
 use Net::Jabber::X::Delay;
 ($Net::Jabber::X::Delay::VERSION < $VERSION) &&
   die("Net::Jabber::X::Delay $VERSION required--this is only version $Net::Jabber::X::Delay::VERSION");
+
+use Net::Jabber::X::Encrypted;
+($Net::Jabber::X::Encrypted::VERSION < $VERSION) &&
+  die("Net::Jabber::X::Encrypted $VERSION required--this is only version $Net::Jabber::X::Encrypted::VERSION");
+
+use Net::Jabber::X::Form;
+($Net::Jabber::X::Form::VERSION < $VERSION) &&
+  die("Net::Jabber::X::Form $VERSION required--this is only version $Net::Jabber::X::Form::VERSION");
 
 use Net::Jabber::X::GC;
 ($Net::Jabber::X::GC::VERSION < $VERSION) &&
@@ -212,6 +220,14 @@ use Net::Jabber::X::Oob;
 use Net::Jabber::X::Roster;
 ($Net::Jabber::X::Roster::VERSION < $VERSION) &&
   die("Net::Jabber::X::Roster $VERSION required--this is only version $Net::Jabber::X::Roster::VERSION");
+
+use Net::Jabber::X::Signed;
+($Net::Jabber::X::Signed::VERSION < $VERSION) &&
+  die("Net::Jabber::X::Signed $VERSION required--this is only version $Net::Jabber::X::Signed::VERSION");
+
+use Net::Jabber::X::SXPM;
+($Net::Jabber::X::SXPM::VERSION < $VERSION) &&
+  die("Net::Jabber::X::SXPM $VERSION required--this is only version $Net::Jabber::X::SXPM::VERSION");
 
 sub new {
   my $proto = shift;
@@ -284,7 +300,8 @@ sub GetXMLNS {
 sub GetXML {
   my $self = shift;
   $self->MergeItems() if (exists($self->{ITEMS}));
-  $self->MergeGraphics() if (exists($self->{WHITEBOARD}));
+  $self->MergeMaps() if (exists($self->{MAPS}));
+  $self->MergeFields() if (exists($self->{FIELDS}));
   return &Net::Jabber::BuildXML(@{$self->{X}});
 }
 
@@ -298,7 +315,8 @@ sub GetXML {
 sub GetTree {
   my $self = shift;
   $self->MergeItems() if (exists($self->{ITEMS}));
-  $self->MergeGraphics() if (exists($self->{WHITEBOARD}));
+  $self->MergeMaps() if (exists($self->{MAPS}));
+  $self->MergeFields() if (exists($self->{FIELDS}));
   return @{$self->{X}};
 }
 
@@ -325,7 +343,8 @@ sub SetXMLNS {
 sub debug {
   my $self = shift;
   $self->MergeItems() if (exists($self->{ITEMS}));
-  $self->MergeGraphics() if (exists($self->{WHITEBOARD}));
+  $self->MergeMaps() if (exists($self->{MAPS}));
+  $self->MergeFields() if (exists($self->{FIELDS}));
 
   print "debug X: $self\n";
   &Net::Jabber::printData("debug: \$self->{X}->",$self->{X});

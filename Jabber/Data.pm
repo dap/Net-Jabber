@@ -189,7 +189,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 use Net::Jabber::Data::Auth;
 ($Net::Jabber::Data::Auth::VERSION < $VERSION) &&

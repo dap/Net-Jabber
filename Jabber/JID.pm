@@ -141,7 +141,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 sub new {
   my $proto = shift;

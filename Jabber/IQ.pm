@@ -240,7 +240,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 sub new {
   my $proto = shift;
@@ -266,6 +266,12 @@ sub new {
       if (exists($Net::Jabber::DELEGATES{query}->{$xmlns})) {
 	my @queryTree = $self->GetQueryTree();
 	$self->SetQuery($xmlns,@queryTree) if ($xmlns ne "");
+      }
+      my $xTree;
+      foreach $xTree ($self->GetXTrees()) {
+	my $xmlns = &Net::Jabber::GetXMLData("value",$xTree,"","xmlns");
+	next if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
+	$self->AddX($xmlns,@{$xTree});
       }
     }
   } else {
@@ -340,6 +346,7 @@ sub GetQuery {
 sub GetQueryTree {
   my $self = shift;
   $self->MergeQuery();
+  $self->MergeX();
   return &Net::Jabber::GetXMLData("tree",$self->{IQ},"*");
 }
 
@@ -352,9 +359,45 @@ sub GetQueryTree {
 sub GetQueryXMLNS {
   my $self = shift;
   $self->MergeQuery();
+  $self->MergeX();
   return &Net::Jabber::GetXMLData("value",$self->{IQ},"*","xmlns");
 }
 
+
+##############################################################################
+#
+# GetX - returns an array of Net::Jabber::X objects.  If a namespace is 
+#        requested then only objects from that name space are returned.
+#
+##############################################################################
+sub GetX {
+  my $self = shift;
+  my($xmlns) = @_;
+  my @xTags;
+  my $xTag;
+  foreach $xTag (@{$self->{XTAGS}}) {
+    push(@xTags,$xTag) if (($xmlns eq "") || ($xTag->GetXMLNS() eq $xmlns));
+  }
+  return @xTags;
+}
+
+
+##############################################################################
+#
+# GetXTrees - returns an array of XML::Parser::Tree objects of the <x/> tags
+#
+##############################################################################
+sub GetXTrees {
+  my $self = shift;
+  $self->MergeX();
+  my ($xmlns) = @_;
+  my $xTree;
+  my @xTrees;
+  foreach $xTree (&Net::Jabber::GetXMLData("tree array",$self->{IQ},"*","xmlns",$xmlns)) {
+    push(@xTrees,$xTree);
+  }
+  return @xTrees;
+}
 
 ##############################################################################
 #
@@ -365,6 +408,7 @@ sub GetQueryXMLNS {
 sub GetXML {
   my $self = shift;
   $self->MergeQuery();
+  $self->MergeX();
   return &Net::Jabber::BuildXML(@{$self->{IQ}});
 }
 
@@ -378,6 +422,7 @@ sub GetXML {
 sub GetTree {
   my $self = shift;
   $self->MergeQuery();
+  $self->MergeX();
   return @{$self->{IQ}};
 }
 
@@ -431,36 +476,6 @@ sub SetFrom {
   }
   return unless ($from ne "");
   &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{from=>$from});
-}
-
-
-##############################################################################
-#
-# SetSTo - sets the to attribute in the <iq/>
-#
-##############################################################################
-sub SetSTo {
-  my $self = shift;
-  my ($sto) = @_;
-  if (ref($sto) eq "Net::Jabber::JID") {
-    $sto = $sto->GetJID("full");
-  }
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{sto=>$sto});
-}
-
-
-##############################################################################
-#
-# SetSFrom - sets the from attribute in the <iq/>
-#
-##############################################################################
-sub SetSFrom {
-  my $self = shift;
-  my ($sfrom) = @_;
-  if (ref($sfrom) eq "Net::Jabber::JID") {
-    $sfrom = $sfrom->GetJID("full");
-  }
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{sfrom=>$sfrom});
 }
 
 
@@ -542,6 +557,134 @@ sub MergeQuery {
   }
 
   $self->{DEBUG}->Log2("MergeQuery: end");
+}
+
+
+##############################################################################
+#
+# NewX - calls AddX to create a new Net::Jabber::X object, sets the xmlns and 
+#        returns a pointer to the new object.
+#
+##############################################################################
+sub NewX {
+  my $self = shift;
+  my ($xmlns) = @_;
+  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
+  my $xTag = $self->AddX($xmlns);
+  $xTag->SetXMLNS($xmlns) if $xmlns ne "";
+  return $xTag;
+}
+
+
+##############################################################################
+#
+# AddX - creates a new Net::Jabber::X object, pushes it on the list, and 
+#        returns a pointer to the new object.  This is a private helper 
+#        function. 
+#
+##############################################################################
+sub AddX {
+  my $self = shift;
+  my ($xmlns,@xTree) = @_;
+  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
+  $self->{DEBUG}->Log2("AddX: xmlns($xmlns) xTree(",\@xTree,")");
+  my $xTag;
+  eval("\$xTag = new ".$Net::Jabber::DELEGATES{x}->{$xmlns}->{parent}."(\@xTree);");
+  $self->{DEBUG}->Log2("AddX: xTag(",$xTag,")");
+  push(@{$self->{XTAGS}},$xTag);
+  return $xTag;
+}
+
+
+##############################################################################
+#
+# RemoveX - removes all xtags that have the specified namespace.
+#
+##############################################################################
+sub RemoveX {
+  my $self = shift;
+  my ($xmlns) = @_;
+  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
+
+  foreach my $i (reverse(1..$#{$self->{IQ}->[1]})) {
+    $self->{DEBUG}->Log2("RemoveX: i($i)");
+    $self->{DEBUG}->Log2("RemoveX: data(",$self->{IQ}->[1]->[$i],")");
+
+    if ((ref($self->{IQ}->[1]->[$i]) eq "") &&
+	($self->{IQ}->[1]->[$i] eq "x") &&
+	(ref($self->{IQ}->[1]->[($i+1)]) eq "ARRAY") &&
+	exists($self->{IQ}->[1]->[($i+1)]->[0]->{xmlns}) &&
+	$self->{IQ}->[1]->[($i+1)]->[0]->{xmlns} eq $xmlns) {
+      splice(@{$self->{IQ}->[1]},$i,2);
+    }
+  }
+  foreach my $index (reverse(0..$#{$self->{XTAGS}})) {
+    splice(@{$self->{XTAGS}},$index,1) 
+      if ($self->{XTAGS}->[$index]->GetXMLNS() eq $xmlns);
+  }
+}
+
+
+##############################################################################
+#
+# MergeX - runs through the list of <x/> in the current iq and replaces
+#          them with the list of <x/> in the internal list.  If any old <x/>
+#          in the <iq/> are left, then they are removed.  If any new <x/>
+#          are left in the interanl list, then they are added to the end of
+#          the iq.  This is a private helper function.  It should be 
+#          used any time you need access the full <iq/> so that all of
+#          the <x/> tags are included.  (ie. GetXML, GetTree, debug, etc...)
+#
+##############################################################################
+sub MergeX {
+  my $self = shift;
+
+  &Net::Jabber::printData("old: \$self->{IQ}",$self->{IQ});
+
+  $self->{DEBUG}->Log2("MergeX: start");
+
+  return if !(exists($self->{XTAGS}));
+
+  $self->{DEBUG}->Log2("MergeX: xTags(",$self->{XTAGS},")");
+
+  my $xTag;
+  my @xTags;
+  foreach $xTag (@{$self->{XTAGS}}) {
+    push(@xTags,$xTag);
+  }
+
+  $self->{DEBUG}->Log2("MergeX: xTags(",\@xTags,")");
+  $self->{DEBUG}->Log2("MergeX: Check the old tags");
+  $self->{DEBUG}->Log2("MergeX: length(",$#{$self->{IQ}->[1]},")");
+
+  foreach my $i (1..$#{$self->{IQ}->[1]}) {
+    $self->{DEBUG}->Log2("MergeX: i($i)");
+    $self->{DEBUG}->Log2("MergeX: data(",$self->{IQ}->[1]->[$i],")");
+
+    if ((ref($self->{IQ}->[1]->[($i+1)]) eq "ARRAY") &&
+	exists($self->{IQ}->[1]->[($i+1)]->[0]->{xmlns})) {
+      $self->{DEBUG}->Log2("MergeX: found a namespace xmlns(",$self->{IQ}->[1]->[($i+1)]->[0]->{xmlns},")");
+      next if !exists($Net::Jabber::DELEGATES{x}->{$self->{IQ}->[1]->[($i+1)]->[0]->{xmlns}});
+      $self->{DEBUG}->Log2("MergeX: merge index($i)");
+      my $xTag = pop(@xTags);
+      $self->{DEBUG}->Log2("MergeX: merge xTag($xTag)");
+      my @xTree = $xTag->GetTree();
+      $self->{DEBUG}->Log2("MergeX: merge xTree(",\@xTree,")");
+      $self->{IQ}->[1]->[($i+1)] = $xTree[1];
+    }
+  }
+
+  $self->{DEBUG}->Log2("MergeX: Insert new tags");
+  foreach $xTag (@xTags) {
+    $self->{DEBUG}->Log2("MergeX: new tag");
+    my @xTree = $xTag->GetTree();
+    $self->{IQ}->[1]->[($#{$self->{IQ}->[1]}+1)] = "x";
+    $self->{IQ}->[1]->[($#{$self->{IQ}->[1]}+1)] = $xTree[1];
+  }
+
+  $self->{DEBUG}->Log2("MergeX: end");
+
+  &Net::Jabber::printData("new: \$self->{IQ}",$self->{IQ});
 }
 
 

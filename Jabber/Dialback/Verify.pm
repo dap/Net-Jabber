@@ -20,33 +20,33 @@
 #
 ##############################################################################
 
-package Net::Jabber::Log;
+package Net::Jabber::Dialback::Verify;
 
 =head1 NAME
 
-Net::Jabber::Log - Jabber Log Module
+Net::Jabber::Dialback::Verify - Jabber Dialback Verify Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::Log is a companion to the Net::Jabber module.
-  It provides the user a simple interface to set and retrieve all 
-  parts of a Jabber Log.
+  Net::Jabber::Dialback::Verify is a companion to the Net::Jabber::Dialback 
+  module.  It provides the user a simple interface to set and retrieve all 
+  parts of a Jabber Dialback Verify.
 
 =head1 DESCRIPTION
 
-  To initialize the Log with a Jabber <log/> you must pass it the 
-  XML::Parser Tree array.  For example:
+  To initialize the Verify with a Jabber <log/> you must pass it the 
+  XML::Parse::Tree array.  For example:
 
-    my $log = new Net::Jabber::Log(@tree);
+    my $dialback = new Net::Jabber::Dialback::Verify(@tree);
 
   There has been a change from the old way of handling the callbacks.
-  You no longer have to do the above, a Net::Jabber::Log object is passed
-  to the callback function for the log:
+  You no longer have to do the above, a Net::Jabber::Dialback::Verify 
+  object is passed to the callback function for the dialback:
 
     use Net::Jabber;
 
-    sub log {
-      my ($Log) = @_;
+    sub dialback {
+      my ($Verify) = @_;
       .
       .
       .
@@ -54,11 +54,11 @@ Net::Jabber::Log - Jabber Log Module
 
   You now have access to all of the retrieval functions available.
 
-  To create a new log to send to the server:
+  To create a new dialback to send to the server:
 
     use Net::Jabber;
 
-    $Log = new Net::Jabber::Log();
+    $Verify = new Net::Jabber::Dialback::Verify();
 
   Now you can call the creation functions below to populate the tag before
   sending it.
@@ -68,83 +68,95 @@ Net::Jabber::Log - Jabber Log Module
 
 =head2 Retrieval functions
 
-    $from       = $Log->GetFrom();
-    $fromJID    = $Log->GetFrom("jid");
-    $type       = $Log->GetType();
-    $data       = $Log->GetData();
+    $to         = $Verify->GetTo();
+    $from       = $Verify->GetFrom();
+    $type       = $Verify->GetType();
+    $id         = $Verify->GetID();
+    $data       = $Verify->GetData();
 
-    $str        = $Log->GetXML();
-    @log        = $Log->GetTree();
+    $str        = $Verify->GetXML();
+    @dialback   = $Verify->GetTree();
 
 =head2 Creation functions
 
-    $Log->SetLog(type=>"error",
-		 from=>"users.jabber.org",
-		 data=>"The moon is full... I can't run anymore.");
-    $Log->SetFrom("foo.jabber.org");
-    $Log->SetType("warn");
-    $Log->SetData("I can't find a config file.  Using defaults.");
+    $Verify->SetVerify(from=>"jabber.org",
+		       to=>"jabber.com",
+		       id=>id,
+		       data=>key);
+    $Verify->SetTo("jabber.org");
+    $Verify->SetFrom("jabber.com");
+    $Verify->SetType("valid");
+    $Verify->SetID(id);
+    $Verify->SetData(key);
 
 =head2 Test functions
 
-    $test = $Log->DefinedFrom();
-    $test = $Log->DefinedType();
+    $test = $Verify->DefinedTo();
+    $test = $Verify->DefinedFrom();
+    $test = $Verify->DefinedType();
+    $test = $Verify->DefinedID();
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetFrom()      -  returns either a string with the Jabber Identifier,
-  GetFrom("jid")    or a Net::Jabber::JID object for the person who
-                    sent the <log/>.  To get the JID object set 
-                    the string to "jid", otherwise leave blank for the 
-                    text string.
+  GetTo() -  returns a string with server that the <db:verify/> is being
+             sent to.
 
-  GetType() - returns a string with the type <log/> this is.
+  GetFrom() -  returns a string with server that the <db:verify/> is being
+               sent from.
 
-  GetData() - returns a string with the cdata of the <log/>.
+  GetType() - returns a string with the type <db:verify/> this is.
 
-  GetXML() - returns the XML string that represents the <log/>.
-             This is used by the Send() function in Client.pm to send
-             this object as a Jabber Log.
+  GetID() - returns a string with the id <db:verify/> this is.
 
-  GetTree() - returns an array that contains the <log/> tag
-              in XML::Parser Tree format.
+  GetData() - returns a string with the cdata of the <db:verify/>.
+
+  GetXML() - returns the XML string that represents the <db:verify/>.
+             This is used by the Send() function in Server.pm to send
+             this object as a Jabber Dialback Verify.
+
+  GetTree() - returns an array that contains the <db:verify/> tag
+              in XML::Parser::Tree format.
 
 =head2 Creation functions
 
-  SetLog(from=>string|JID, - set multiple fields in the <log/>
-         type=>string,       at one time.  This is a cumulative
-         data=>string)       and over writing action.  If you set
-                             the "from" attribute twice, the second
-                             setting is what is used.  If you set
-                             the type, and then set the data
-                             then both will be in the <log/>
-                             tag.  For valid settings read the
-                             specific Set functions below.
+  SetVerify(to=>string,   - set multiple fields in the <db:verify/>
+            from=>string,   at one time.  This is a cumulative
+            type=>string,   and over writing action.  If you set
+            id=>string,     the "from" attribute twice, the second
+            data=>string)   setting is what is used.  If you set
+                            the type, and then set the data
+                            then both will be in the <db:verify/>
+                            tag.  For valid settings read the
+                            specific Set functions below.
 
-  SetFrom(string) - sets the from attribute.  You can either pass a string
-  SetFrom(JID)      or a JID object.  They must be valid Jabber 
-                    Identifiers or the server will return an error log.
-                    (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+  SetTo(string) - sets the to attribute.
+
+  SetFrom(string) - sets the from attribute.
 
   SetType(string) - sets the type attribute.  Valid settings are:
 
-                    notice     general logging
-                    warn       warning
-                    alert      critical error (can still run but not 
-                               correctly)
-                    error      fatal error (cannot run anymore)
+                    valid
+                    invalid
 
-  SetData(string) - sets the cdata of the <log/>.
+  SetID(string) - sets the id attribute.
+
+  SetData(string) - sets the cdata of the <db:verify/>.
 
 =head2 Test functions
 
+  DefinedTo() - returns 1 if the to attribute is defined in the 
+                <db:verify/>, 0 otherwise.
+
   DefinedFrom() - returns 1 if the from attribute is defined in the 
-                  <log/>, 0 otherwise.
+                  <db:verify/>, 0 otherwise.
 
   DefinedType() - returns 1 if the type attribute is defined in the 
-                  <log/>, 0 otherwise.
+                  <db:verify/>, 0 otherwise.
+
+  DefinedID() - returns 1 if the id attribute is defined in the 
+                  <db:verify/>, 0 otherwise.
 
 =head1 AUTHOR
 
@@ -175,17 +187,17 @@ sub new {
   bless($self, $proto);
 
   $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
-                                          header=>"NJ::Log");
+                                          header=>"NJ::Dialback::Verify");
 
   if ("@_" ne ("")) {
-    if (ref($_[0]) eq "Net::Jabber::Log") {
+    if (ref($_[0]) eq "Net::Jabber::Dialback::Verify") {
       return $_[0];
     } else {
       my @temp = @_;
-      $self->{LOG} = \@temp;
+      $self->{DBVERIFY} = \@temp;
     }
   } else {
-    $self->{LOG} = [ "log" , [{}]];
+    $self->{DBVERIFY} = [ "db:verify" , [{}]];
   }
 
   return $self;
@@ -204,9 +216,9 @@ sub AUTOLOAD {
   $AUTOLOAD =~ s/^.*:://;
   my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
   $type = "" unless defined($type);
-  my $treeName = "LOG";
+  my $treeName = "DBVERIFY";
   
-  return "log" if ($AUTOLOAD eq "GetTag");
+  return "dialback" if ($AUTOLOAD eq "GetTag");
   return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
   return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
   return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
@@ -217,63 +229,60 @@ sub AUTOLOAD {
 }
 
 
+$FUNCTIONS{get}->{To}   = ["value","","to"];
 $FUNCTIONS{get}->{From} = ["value","","from"];
 $FUNCTIONS{get}->{Type} = ["value","","type"];
+$FUNCTIONS{get}->{ID} = ["value","","id"];
 $FUNCTIONS{get}->{Data} = ["value","",""];
 
 $FUNCTIONS{set}->{Type} = ["single","","","type","*"];
+$FUNCTIONS{set}->{ID} = ["single","","","id","*"];
 $FUNCTIONS{set}->{Data} = ["single","","*","",""];
 
+$FUNCTIONS{defined}->{To}   = ["existence","","to"];
 $FUNCTIONS{defined}->{From} = ["existence","","from"];
 $FUNCTIONS{defined}->{Type} = ["existence","","type"];
+$FUNCTIONS{defined}->{ID} = ["existence","","id"];
 
 
 ##############################################################################
 #
-# GetXML -  returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  $self->MergeX();
-  return &Net::Jabber::BuildXML(@{$self->{LOG}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#              the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;
-  $self->MergeX();
-  return %{$self->{LOG}};
-}
-
-
-##############################################################################
-#
-# SetLog - takes a hash of all of the things you can set on a <log/>
+# SetVerify - takes a hash of all of the things you can set on a <dialback/>
 #              and sets each one.
 #
 ##############################################################################
-sub SetLog {
+sub SetVerify {
   my $self = shift;
-  my %log;
-  while($#_ >= 0) { $log{ lc pop(@_) } = pop(@_); }
+  my %dbverify;
+  while($#_ >= 0) { $dbverify{ lc pop(@_) } = pop(@_); }
 
-  $self->SetFrom($log{from}) if exists($log{from});
-  $self->SetType($log{type}) if exists($log{type});
-  $self->SetData($log{data}) if exists($log{data});
+  $self->SetTo($dbverify{to}) if exists($dbverify{to});
+  $self->SetFrom($dbverify{from}) if exists($dbverify{from});
+  $self->SetType($dbverify{type}) if exists($dbverify{type});
+  $self->SetID($dbverify{id}) if exists($dbverify{id});
+  $self->SetData($dbverify{data}) if exists($dbverify{data});
 }
 
 
 ##############################################################################
 #
-# SetFrom - sets the from attribute in the <log/>
+# SetTo - sets the to attribute in the <db:verify/>
+#
+##############################################################################
+sub SetTo {
+  my $self = shift;
+  my ($to) = @_;
+  if (ref($to) eq "Net::Jabber::JID") {
+    $to = $to->GetJID("full");
+  }
+  return unless ($to ne "");
+  &Net::Jabber::SetXMLData("single",$self->{DBVERIFY},"","",{to=>$to});
+}
+
+
+##############################################################################
+#
+# SetFrom - sets the from attribute in the <db:verify/>
 #
 ##############################################################################
 sub SetFrom {
@@ -283,7 +292,8 @@ sub SetFrom {
     $from = $from->GetJID("full");
   }
   return unless ($from ne "");
-  &Net::Jabber::SetXMLData("single",$self->{LOG},"","",{from=>$from});
+  &Net::Jabber::SetXMLData("single",$self->{DBVERIFY},"","",{from=>$from});
 }
+
 
 1;

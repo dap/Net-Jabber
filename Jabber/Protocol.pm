@@ -157,12 +157,10 @@ Net::Jabber::Protocol - Jabber Protocol Library
 			     password=>"bobrulez",
 			     resource=>"Bob");
 
-    @result = $Con->RestZeroK(password=>"foobar");
-
 =head2 IQ::Register Functions
 
-    %fields = $Con->RegisterRequest();
-    %fields = $Con->RegisterRequest(to=>"transport.jabber.org");
+    %hash   = $Con->RegisterRequest();
+    %hash   = $Con->RegisterRequest(to=>"transport.jabber.org");
 
     @result = $Con->RegisterSend(usersname=>"newuser",
 				 resource=>"New User",
@@ -217,6 +215,20 @@ Net::Jabber::Protocol - Jabber Protocol Library
                       os=>"Perl");
 
 =head2 X Functions
+
+    $Con->SXPMSend(to=>'bob@jabber.org',
+                   type=>'chat',
+                   boardheight=>400,
+                   boardwidth=>400,
+                   map=>{ '#'=>'',
+                          ' '=>'None',
+                          'a'=>'#FFFFFF',
+                          'b'=>'#FF0000',
+                          ...
+                        }
+                   data=>"4 .3 . 2 .2  .3 .4 ",
+                   datawidth=>5
+                  );
 
 =head1 METHODS
 
@@ -426,14 +438,18 @@ Net::Jabber::Protocol - Jabber Protocol Library
                                   The function returns a hash that
                                   contains the required fields.   Here
                                   is an example of the hash:
+	                            
+                                     $hash{old}    - The old way of doing
+                                                     registers.
+                                     $hash{isntructions} - How to fill out
+                                                           the form.
+                                     $hash{form}   - The new dynamic forms
+                                                     that replace the old
+                                                     way of doing things.
 
-	                             $fields{intructions} = "do this..."
-                                     $fields{key} = "some key"
-                                     $fields{username} = ""
-                                     ...
-
-                                  The fields that are present are the
-                                  required fields the server needs.
+                                  In $hash{form}, the fields that are 
+                                  present are the required fields the
+                                  server needs.
 
     RegisterSend(hash) - takes the contents of the hash and passes it
 	                 to the SetRegister function in the module
@@ -541,6 +557,13 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 X Functions
 
+    SXPMSend(to=>string,   - sends the specified sxpm information to the
+             type=>string,   jid in the to with the message type being
+             hash)           set in the type.  See the Net::Jabber::SXPM
+                             module for valid values for the hash.
+                             This function returns the Net::Jabber::Message
+                             object sent to the jid.
+
 =head1 AUTHOR
 
 Revised by Ryan Eatmon in December 1999.
@@ -561,7 +584,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 sub new {
   my $proto = shift;
@@ -619,10 +642,11 @@ sub SetErrorCode {
 sub CallBack {
   shift;
   my $self = shift;
+  my $sid = shift;
   my (@object) = @_;
 
   my $xml = &Net::Jabber::BuildXML(@object);
-  $self->{DEBUG}->Log1("CallBack: received(",$xml,")");
+  $self->{DEBUG}->Log1("CallBack: sid($sid) received($xml)");
   &{$self->{CB}->{receive}}($xml) if exists($self->{CB}->{receive});
   
   my $tag = $object[0];
@@ -639,6 +663,10 @@ sub CallBack {
     if ($tag eq "presence");
   $NJObject = new Net::Jabber::Message(@object) 
     if ($tag eq "message");
+  $NJObject = new Net::Jabber::Dialback::Result(@object) 
+    if ($tag eq "db:result");
+  $NJObject = new Net::Jabber::Dialback::Verify(@object) 
+    if ($tag eq "db:verify");
   
   if ($self->CheckID($tag,$id)) {
     $self->{DEBUG}->Log1("CallBack: found registry entry: tag($tag) id($id)");
@@ -648,7 +676,7 @@ sub CallBack {
     $self->{DEBUG}->Log1("CallBack: no registry entry");  
     if (exists($self->{CB}->{$tag})) {
       $self->{DEBUG}->Log1("CallBack: goto user function($self->{CB}->{$tag})");
-      &{$self->{CB}->{$tag}}($NJObject);
+      &{$self->{CB}->{$tag}}($sid,$NJObject);
     } else {
       $self->{DEBUG}->Log1("CallBack: no defined function.  Dropping packet.");
     }
@@ -683,7 +711,7 @@ sub SetCallBacks {
 #            that long before returning.  This is useful for apps that
 #            need to handle other processing while still waiting for
 #            packets.  If no timeout is listed then the function waits
-#            until a packet is returned.  Either way the function exits 
+#            until a packet is returned.  Either way the function exits
 #            as soon as a packet is returned.
 #
 ###########################################################################
@@ -691,21 +719,26 @@ sub Process {
   shift;
   my $self = shift;
   my ($timeout) = @_;
-  my ($status);
+  my %status;
 
   $self->{DEBUG}->Log1("Process: timeout($timeout)");
 
   if (!defined($timeout) || ($timeout eq "")) {
     while(1) {
-      $status = $self->{STREAM}->Process();
-      $self->{DEBUG}->Log1("Process: status($status)");
-      last if (($status != 0) || ($status eq ""));
+      %status = $self->{STREAM}->Process();
+      $self->{DEBUG}->Log1("Process: status($status{$self->{SESSION}->{id}})");
+      last if ($status{$self->{SESSION}->{id}} != 0);
       select(undef,undef,undef,.25);
     }
-    $self->{DEBUG}->Log1("Process: return($status)");
-    return $status;
+    $self->{DEBUG}->Log1("Process: return($status{$self->{SESSION}->{id}})");
+    return (($status{$self->{SESSION}->{id}} == -1) ?
+	    undef : 
+	    $status{$self->{SESSION}->{id}});
   } else {
-    return $self->{STREAM}->Process($timeout);
+    %status = $self->{STREAM}->Process($timeout);
+    return (($status{$self->{SESSION}->{id}} == -1) ?
+	    undef : 
+	    $status{$self->{SESSION}->{id}});
   }
 }
 
@@ -740,7 +773,7 @@ sub SendXML {
   my($xml) = @_;
   $self->{DEBUG}->Log1("SendXML: sent($xml)");
   &{$self->{CB}->{send}}($xml) if exists($self->{CB}->{send});
-  $self->{STREAM}->Send($xml);
+  $self->{STREAM}->Send($self->{SESSION}->{id},$xml);
 }
 
 
@@ -1142,8 +1175,17 @@ sub PresenceDBResources {
 sub PresenceSend {
   shift;
   my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
   my $presence = new Net::Jabber::Presence();
-  $presence->SetPresence(@_);
+
+  if (exists($args{signature})) {
+    my $xSigned = $presence->NewX("jabber:x:signed");
+    $xSigned->SetSigned(signature=>delete($args{signature}));
+  }
+
+  $presence->SetPresence(%args);
   $self->Send($presence);
   return $presence;
 }
@@ -1370,12 +1412,49 @@ sub RegisterRequest {
     return;
   }
 
+  my %register;
   #------------------------------------------------------------------------
   # From the reply IQ determine what fields are required and send a hash
   # back with the fields and any values that are already defined (like key)
   #------------------------------------------------------------------------
   $IQRegister = $IQ->GetQuery();
-  return %{$IQRegister->GetFields()};
+  $register{old} = $IQRegister->GetFields();
+
+  #---------------------------------------------------------------------------
+  # Get any forms so that we have the option of showing a nive dynamic form
+  # to the user and not just a bunch of fields.
+  #---------------------------------------------------------------------------
+  foreach my $xForm ($IQ->GetX("jabber:x:form")) {
+    $register{instructions} = $xForm->GetInstructions();
+    foreach my $field ($xForm->GetFields()) {
+      my $order = $field->GetOrder();
+      $register{form}->[$order]->{type} = $field->GetType();
+      $register{form}->[$order]->{label} = $field->GetLabel();
+      $register{form}->[$order]->{var} = $field->GetVar();
+      $register{form}->[$order]->{value} = $field->GetValue();
+      my $count = 0;
+      foreach my $option ($field->GetOptions()) {
+	$register{form}->[$order]->{options}->[$count]->{value} = 
+	  $option->GetValue();
+	$register{form}->[$order]->{options}->[$count]->{label} = 
+	  $option->GetLabel();
+	$count++;
+      }
+    }
+  }
+
+  #---------------------------------------------------------------------------
+  # Get any oobs so that we have the option of sending the user to the http
+  # form and not a dynamic one.
+  #---------------------------------------------------------------------------
+  foreach my $xOob ($IQ->GetX("jabber:x:oob")) {
+    $register{oob}->{url} = $xOob->GetURL();
+    $register{oob}->{desc} = $xOob->GetDesc();
+  }
+
+  &Net::Jabber::printData("\$register",\%register);
+
+  return %register;
 }
 
 
@@ -1716,6 +1795,35 @@ sub VersionSend {
   $version->SetVersion(%args);
 
   $self->Send($iq);
+}
+
+
+###########################################################################
+#
+# SXPMSend - sends an x:sxpm packet to the specified jid.
+#
+###########################################################################
+sub SXPMSend {
+  shift;
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  my $message = new Net::Jabber::Message();
+  $message->SetMessage(to=>delete($args{to}),
+		       type=>delete($args{type}));
+  my $xTag = $message->NewX("jabber:x:sxpm");
+  if (exists($args{map})) {
+    my %map = %{delete($args{map})};
+    foreach my $char (keys(%map)) {
+      $xTag->AddMap(char=>$char,
+		    color=>$map{$char});
+    }
+  }
+  $xTag->SetSXPM(%args);
+  
+  $self->Send($message);
+  return $message;
 }
 
 

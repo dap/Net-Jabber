@@ -107,7 +107,7 @@ use XML::Stream 1.06;
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&
@@ -208,7 +208,8 @@ sub Connect {
 sub Disconnect {
   my $self = shift;
 
-  $self->{STREAM}->Disconnect() if ($self->{CONNECTED} == 1);
+  $self->{STREAM}->Disconnect($self->{SESSION}->{id}) 
+    if ($self->{CONNECTED} == 1);
   $self->{CONNECTED} = 0;
   $self->{DEBUG}->Log1("Disconnect: bye bye");
 }

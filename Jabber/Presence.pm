@@ -244,7 +244,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 sub new {
   my $proto = shift;
@@ -502,6 +502,35 @@ sub AddX {
   return $xTag;
 }
   
+
+##############################################################################
+#
+# RemoveX - removes all xtags that have the specified namespace.
+#
+##############################################################################
+sub RemoveX {
+  my $self = shift;
+  my ($xmlns) = @_;
+  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
+
+  foreach my $i (reverse(1..$#{$self->{PRESENCE}->[1]})) {
+    $self->{DEBUG}->Log2("RemoveX: i($i)");
+    $self->{DEBUG}->Log2("RemoveX: data(",$self->{PRESENCE}->[1]->[$i],")");
+
+    if ((ref($self->{PRESENCE}->[1]->[$i]) eq "") &&
+	($self->{PRESENCE}->[1]->[$i] eq "x") &&
+	(ref($self->{PRESENCE}->[1]->[($i+1)]) eq "ARRAY") &&
+	exists($self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns}) &&
+	$self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns} eq $xmlns) {
+      splice(@{$self->{PRESENCE}->[1]},$i,2);
+    }
+  }
+  foreach my $index (reverse(0..$#{$self->{XTAGS}})) {
+    splice(@{$self->{XTAGS}},$index,1) 
+      if ($self->{XTAGS}->[$index]->GetXMLNS() eq $xmlns);
+  }
+}
+
 
 ##############################################################################
 #

@@ -55,7 +55,12 @@ Net::Jabber::Component - Jabber Component Library
 
     $Con = new Net::Jabber::Component();
 
-    $Con->Connect(hostname=>"jabber.org");
+    $Con->Connect(hostname=>"jabber.org",
+                  secret=>"foo");
+
+      or
+
+    $Con->Connect(connectiontype=>"exec");
 
     if ($Con->Connected()) {
       print "We are connected to the server...\n";
@@ -80,15 +85,31 @@ Net::Jabber::Component - Jabber Component Library
                              debuglevel, debugfile, and debugtime see 
                              Net::Jabber::Debug.
 
-    Connect(hostname=>string,      - opens a connection to the server
-	    port=>integer,           listedt in the hostname value,
-	    secret=>string,          on the port listed.  The defaults
-	    componentname=>string)   for the two are localhost and 5222.
-				     The secret is the password needed
-                                     to attach the hostname, and the
-                                     componentname is the name that
-                                     server and clients will know the
-                                     component by.
+    Connect(hostname=>string,       - opens a connection to the server
+	    port=>integer,            based on the value of connectiontype.
+	    secret=>string,           The two valid setings are:
+	    componentname=>string,      accept - TCP/IP remote connection
+	    connectiontype=>string)              (default)
+                                        exec   - STDIN/OUT local connection
+                                      If accept then it connects to the
+                                      server listed in the hostname value,
+                                      on the port listed.  The defaults
+                                      for the two are localhost and 5222.
+                                      The secret is the password needed
+                                      to attach the hostname, and the
+                                      componentname is the name that
+                                      server and clients will know the
+                                      component by (both used for security
+                                      purposes).
+                                      If exec then the module reads from
+                                      STDIN and writes to STDOUT.  The
+                                      server will start the script at run
+                                      time and will restart the script if
+                                      it exits or dies.  No secret is
+                                      needed since this configuration is
+                                      specified by the server admin and so
+                                      it is assumed that they trust your
+                                      script.
 
     Disconnect() - closes the connection to the server.
 
@@ -111,7 +132,7 @@ use XML::Stream 1.06;
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&
@@ -191,11 +212,12 @@ sub Connect {
 
   $self->{DEBUG}->Log1("Connect: type($args{connectiontype})");
 
-  $args{connectiontype} = "tcpip" unless exists($args{connectiontype});
+  $args{connectiontype} = "accept" unless exists($args{connectiontype});
   $self->{CONNECTIONTYPE} = $args{connectiontype};
 
-  if ($args{connectiontype} eq "stdinout") {
-
+  if (($args{connectiontype} eq "exec") ||
+      ($args{connectiontype} eq "stdinout")) {
+    
     $self->{SESSION} = 
       $self->{STREAM}->
 	Connect(connectiontype=>"stdinout",
@@ -204,8 +226,9 @@ sub Connect {
 	       ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
 		     return);
   }
-
-  if ($args{connectiontype} eq "tcpip") {
+  
+  if (($args{connectiontype} eq "accept") || 
+      ($args{connectiontype} eq "tcpip")) {
 
     $self->{DEBUG}->Log1("Connect: hostname($args{hostname}) secret($args{secret}) componentname($args{componentname})");
     
@@ -243,11 +266,12 @@ sub Connect {
       $self->SetErrorCode($self->{STREAM}->GetErrorCode());
       return;
     }
-    
-    $self->{DEBUG}->Log1("Connect: connection made");
   }
 
-  if ($args{connectiontype} eq "tcpip") {
+  $self->{DEBUG}->Log1("Connect: connection made");
+
+  if (($args{connectiontype} eq "accept") ||
+      ($args{connectiontype} eq "tcpip")) {
     $self->Send("<handshake>".Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$args{secret})."</handshake>");
     my @handshake = $self->Process();
     return if ($handshake[0] eq "");
@@ -267,7 +291,7 @@ sub Connect {
 ###########################################################################
 sub Disconnect {
   my $self = shift;
-  $self->{STREAM}->Disconnect() if ($self->{CONNECTED} == 1);
+  $self->{STREAM}->Disconnect($self->{SESSION}->{id}) if ($self->{CONNECTED} == 1);
   $self->{CONNECTED} = 0;
   $self->{DEBUG}->Log1("Disconnect: bye bye");
 }

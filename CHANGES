@@ -1,3 +1,19 @@
+1.0021
+======
+  - Fixed bug in the Process function caused by the XML::Stream
+    changes.
+  - Added in jabber:x:form.
+  - Added in jabber:x:sxpm.
+  - Removed Transport.pm.
+  - Removed the transport examples and created Component examples.
+  - Changed Component.pm to stop using tcpip and stdinout and
+    use the standard accept and exec.
+  - Changed Debug to handle LogN instead of just 0, 1, and 2.
+  - Added RemoveX to Message and Presence.
+  - Added x:signed and x:encrypted.
+  - In the GetXMLData function in Jabber.pm I forgot to add a test
+    for existence of an attribute in the root tag.
+
 1.0020
 ======
   - Added support for jabber:x:replypres.

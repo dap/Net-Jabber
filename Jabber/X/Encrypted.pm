@@ -20,21 +20,21 @@
 #
 ##############################################################################
 
-package Net::Jabber::X::Delay;
+package Net::Jabber::X::Encrypted;
 
 =head1 NAME
 
-Net::Jabber::X::Delay - Jabber X Delay Delegate
+Net::Jabber::X::Encrypted - Jabber X Encrypted Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::X::Delay is a companion to the Net::Jabber::X module.
+  Net::Jabber::X::Encrypted is a companion to the Net::Jabber::X module.
   It provides the user a simple interface to set and retrieve all 
-  parts of a Jabber X Delay.
+  parts of a Jabber X Encrypted.
 
 =head1 DESCRIPTION
 
-  To initialize the Delay with a Jabber <x/> you must pass it the 
+  To initialize the Encrypted with a Jabber <x/> you must pass it the 
   XML::Parser Tree array from the module trying to access the <x/>.  
   In the callback function:
 
@@ -43,7 +43,7 @@ Net::Jabber::X::Delay - Jabber X Delay Delegate
     sub iq {
       my $foo = new Net::Jabber::Foo(@_);
 
-      my @xTags = $foo->GetX("jabber:x:delay");
+      my @xTags = $foo->GetX("jabber:x:encrypted");
 
       my $xTag;
       foreach $xTag (@xTags) {
@@ -57,12 +57,12 @@ Net::Jabber::X::Delay - Jabber X Delay Delegate
 
   You now have access to all of the retrieval functions available.
 
-  To create a new Delay to send to the server:
+  To create a new Encrypted to send to the server:
 
     use Net::Jabber;
 
     $foo = new Net::Jabber::Foo();
-    $xTag = $foo->NewX("jabber:x:delay");
+    $x = $foo->NewX("jabber:x:encrypted");
 
   Now you can call the creation functions below.
 
@@ -71,64 +71,37 @@ Net::Jabber::X::Delay - Jabber X Delay Delegate
 
 =head2 Retrieval functions
 
-    $from      = $xTag->GetFrom();
-    $stamp     = $xTag->GetStamp();
-    $message   = $xTag->GetMessage();
+    $message = $xTag->GetMessage();
 
 =head2 Creation functions
 
-    $xTag->SetDelay(FRom=>"jabber:foo.bar.com",
-	            message=>"Stored offline");
+    $xTag->SetEncrypted(message=>data);
 
-    $xTag->SetFrom("bob@jabber.org");
-    $xTag->SetStamp();
-    $xTag->SetStamp("20000124T10:54:00");
-    $xTag->SetMessage("Stored Offline");
+    $xTag->SetMessage(data);
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetFrom() - returns a string with the Jabber Identifier of the 
-              person who added the delay.
-
-  GetStamp() - returns a string that represents the time stamp of
-               the delay.
-
-  GetMessage() - returns a string with the message that describes
-                 the nature of the delay.
+  GetMessage() - returns a string with the message data.
 
 =head2 Creation functions
 
-  SetDelay(from=>string,    - set multiple fields in the <x/> at one
-           stamp=>string,     time.  This is a cumulative and over
-           message=>string)   writing action.  If you set the "from"
-                              attribute twice, the second setting is
-                              what is used.  If you set the status, and
-                              then set the priority then both will be in
-                              the <x/> tag.  For valid settings read the
-                              specific Set functions below.
+  SetEncrypted(message=>string) - set multiple fields in the <x/> at one
+                                  time.  This is a cumulative and over
+                                  writing action.  If you set the 
+                                  "message" data twice, the second 
+                                  setting is what is used.  If you set the
+                                  message, and then set another field 
+                                  then both will be in the <x/> tag.  For 
+                                  valid settings read the specific Set 
+                                  functions below.
 
-  SetFrom(string) - sets the from attribute of the server adding the
-                    delay.
-
-  SetStamp(string) - sets the timestamp of the delay.  If the string is
-                     left blank then the module adds the current date/time
-                     in the proper format as the stamp.
-
-  SetMessage(string) - sets description of the delay.
- 
-=head2 Test functions
-
-  DefinedFrom() - returns 1 if the from attribute exists in the x, 
-                  0 otherwise.
-
-  DefinedStamp() - returns 1 if the stamp attribute exists in the x, 
-                   0 otherwise.
+  SetMessage(string) - sets the data for the message.
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in December of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -178,49 +151,24 @@ sub AUTOLOAD {
   &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
-$FUNCTIONS{get}->{From}    = ["value","","from"];
-$FUNCTIONS{get}->{Stamp}   = ["value","","stamp"];
 $FUNCTIONS{get}->{Message} = ["value","",""];
 
-$FUNCTIONS{set}->{From}    = ["single","","","from","*"];
 $FUNCTIONS{set}->{Message} = ["single","","*","",""];
 
-$FUNCTIONS{defined}->{From}    = ["existence","","from"];
-$FUNCTIONS{defined}->{Stamp}   = ["existence","","stamp"];
-
 
 ##############################################################################
 #
-# SetDelay - takes a hash of all of the things you can set on a jabber:x:delay #            and sets each one.
+# SetEncrypted - takes a hash of all of the things you can set on a
+#             jabber:x:encrypted and sets each one.
 #
 ##############################################################################
-sub SetDelay {
+sub SetEncrypted {
   shift;
   my $self = shift;
-  my %delay;
-  while($#_ >= 0) { $delay{ lc pop(@_) } = pop(@_); }
+  my %encrypted;
+  while($#_ >= 0) { $encrypted{ lc pop(@_) } = pop(@_); }
 
-  $self->SetFrom($delay{from}) if exists($delay{from});
-  $self->SetStamp($delay{stamp}) if exists($delay{stamp});
-  $self->SetData($delay{data}) if exists($delay{data});
-}
-
-
-##############################################################################
-#
-# SetStamp - sets the stamp attribute in the jabber:x:delay
-#
-##############################################################################
-sub SetStamp {
-  shift;
-  my $self = shift;
-  my ($stamp) = @_;
-  
-  if ($stamp eq "") {
-    my ($sec,$min,$hour,$mday,$mon,$year) = gmtime(time);
-    $stamp = sprintf("%d%02d%02dT%02d:%02d:%02d",($year + 1900),($mon+1),$mday,$hour,$min,$sec);
-  }
-  &Net::Jabber::SetXMLData("single",$self->{X},"","",{stamp=>$stamp});
+  $self->SetMessage($encrypted{message}) if exists($encrypted{message});
 }
 
 

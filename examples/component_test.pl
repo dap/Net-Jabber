@@ -2,8 +2,9 @@
 use Net::Jabber;
 use strict;
 
-if ($#ARGV < 4) {
-  print "\nperl client.pl <server> <port> <username> <password> <resource> \n\n"
+if ($#ARGV < 5) {
+  print "\nperl client.pl <server> <port> <username> <password> <resource>\n";
+  print "                 <componentname>\n\n"
 ;
   exit(0);
 }
@@ -13,12 +14,13 @@ my $port = $ARGV[1];
 my $username = $ARGV[2];
 my $password = $ARGV[3];
 my $resource = $ARGV[4];
+my $component = $ARGV[5];
 
-my $client = new Net::Jabber::Client;
+my $Client = new Net::Jabber::Client;
 
-$client->SetCallBacks(message=>\&messageCB);
+$Client->SetCallBacks(message=>\&messageCB);
 
-my $status = $client->Connect(hostname=>$server,
+my $status = $Client->Connect(hostname=>$server,
 			      port=>$port);
 
 if (!(defined($status))) {
@@ -29,7 +31,7 @@ if (!(defined($status))) {
 
 print "Connected...\n";
 
-my @result = $client->AuthSend(username=>$username,
+my @result = $Client->AuthSend(username=>$username,
 			       password=>$password,
 			       resource=>$resource);
 
@@ -39,15 +41,16 @@ if ($result[0] ne "ok") {
 
 print "Logged in...\n";
 
-$client->MessageSend(to=>"transport.test.foo",
+$Client->MessageSend(to=>$component,
 		     body=>"this is a test... a successful test...");
 
-$client->Process();
+$Client->Process();
 
-$client->Disconnect();
+$Client->Disconnect();
 
 
 sub messageCB {
+  my $sid = shift;
   my $message = new Net::Jabber::Message(@_);
 
   print "The body of the message should read:\n";

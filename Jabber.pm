@@ -72,16 +72,8 @@ Net::Jabber - Jabber Perl Library
   calls a function to handle the tag.  This replaces the Transport
   module as of the new Jabber server v1.1.2.
 
-  Net::Jabber::Transport - *****DEPRECATED***** this package 
-  contains the code needed to write a transport.  A transport 
-  is a program tha handles the communication between a jabber
-  server and some outside program or communications pacakge
-  (IRC, talk, email, etc...) With this module you can write
-  a full transport in just a few lines of Perl.  It uses
-  XML::Stream to communicate with its host server and based
-  on what kind of tag it encounters it calls a function to
-  handle the tag.  This module will cease to exist in the
-  near future due to the shift from Transports to Components.
+  Net::Jabber::Transport - *****REMOVED***** this package no
+  longer exists.
 
   Net::Jabber::Protocol - a collection of high-level functions
   that Client and transport use to make their lives easier.
@@ -171,7 +163,7 @@ if ($] >= 5.006) {
 }
 
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -180,6 +172,10 @@ use Net::Jabber::Debug;
 use Net::Jabber::JID;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
   die("Net::Jabber::JID $VERSION required--this is only version $Net::Jabber::JID::VERSION");
+
+use Net::Jabber::Dialback;
+($Net::Jabber::Dialback::VERSION < $VERSION) &&
+  die("Net::Jabber::Dialback $VERSION required--this is only version $Net::Jabber::Dialback::VERSION");
 
 use Net::Jabber::X;
 ($Net::Jabber::X::VERSION < $VERSION) &&
@@ -217,13 +213,13 @@ use Net::Jabber::Client;
 ($Net::Jabber::Client::VERSION < $VERSION) &&
   die("Net::Jabber::Client $VERSION required--this is only version $Net::Jabber::Client::VERSION");
 
-use Net::Jabber::Transport;
-($Net::Jabber::Transport::VERSION < $VERSION) &&
-  die("Net::Jabber::Transport $VERSION required--this is only version $Net::Jabber::Transport::VERSION");
-
 use Net::Jabber::Component;
 ($Net::Jabber::Component::VERSION < $VERSION) &&
   die("Net::Jabber::Component $VERSION required--this is only version $Net::Jabber::Component::VERSION");
+
+use Net::Jabber::Server;
+($Net::Jabber::Server::VERSION < $VERSION) &&
+  die("Net::Jabber::Server $VERSION required--this is only version $Net::Jabber::Server::VERSION");
 
 
 ##############################################################################
@@ -260,6 +256,10 @@ $DELEGATES{x}->{'jabber:x:autoupdate'}->{parent}   = "Net::Jabber::X";
 $DELEGATES{x}->{'jabber:x:autoupdate'}->{delegate} = "Net::Jabber::X::AutoUpdate";
 $DELEGATES{x}->{'jabber:x:delay'}->{parent}        = "Net::Jabber::X";
 $DELEGATES{x}->{'jabber:x:delay'}->{delegate}      = "Net::Jabber::X::Delay";
+$DELEGATES{x}->{'jabber:x:encrypted'}->{parent}    = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:encrypted'}->{delegate}  = "Net::Jabber::X::Encrypted";
+$DELEGATES{x}->{'jabber:x:form'}->{parent}         = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:form'}->{delegate}       = "Net::Jabber::X::Form";
 $DELEGATES{x}->{'jabber:x:gc'}->{parent}           = "Net::Jabber::X";
 $DELEGATES{x}->{'jabber:x:gc'}->{delegate}         = "Net::Jabber::X::GC";
 #$DELEGATES{x}->{'jabber:x:ident'}->{parent}       = "Net::Jabber::X";
@@ -270,6 +270,10 @@ $DELEGATES{x}->{'jabber:x:replypres'}->{parent}    = "Net::Jabber::X";
 $DELEGATES{x}->{'jabber:x:replypres'}->{delegate}  = "Net::Jabber::X::ReplyPres";
 $DELEGATES{x}->{'jabber:x:roster'}->{parent}       = "Net::Jabber::X";
 $DELEGATES{x}->{'jabber:x:roster'}->{delegate}     = "Net::Jabber::X::Roster";
+$DELEGATES{x}->{'jabber:x:signed'}->{parent}       = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:signed'}->{delegate}     = "Net::Jabber::X::Signed";
+$DELEGATES{x}->{'jabber:x:sxpm'}->{parent}         = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:sxpm'}->{delegate}       = "Net::Jabber::X::SXPM";
 
 $DELEGATES{xdb}->{'jabber:iq:auth'}->{parent}      = "Net::Jabber::Data";
 $DELEGATES{xdb}->{'jabber:iq:auth'}->{delegate}    = "Net::Jabber::Data::Auth";
@@ -286,7 +290,7 @@ sub debug {
   my $treeName = shift;
   
   print "debug ",$treeName,": ",$self,"\n";
-  &Net::Jabber::printData("debug: \$self->{",$treeName,"}->",$self->{$treeName});
+  &Net::Jabber::printData("debug: \$self->{".$treeName."}->",$self->{$treeName});
 }
 
 
@@ -623,6 +627,10 @@ sub GetXMLData {
     if ($type eq "tree") {
       my @tree =  @{$$XMLTree};
       return @tree;
+    }
+
+    if ($type eq "existence") {
+      return 1 if (($attrib ne "") && (exists($$XMLTree[1]->[0]->{$attrib})));
     }
   }
   #---------------------------------------------------------------------------

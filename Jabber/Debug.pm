@@ -61,6 +61,8 @@ Net::Jabber::Debug - Jabber Debug Library
          setdefault=>0|1,     0 - Base level Output (default)
          usedefault=>0|1,     1 - High level API calls
          time=>0|1)           2 - Low level API calls
+                              ...
+                              N - Whatever you want....
                             The file determines where the debug log
                             goes.  You can either specify a path to
                             a file, or "stdout" (the default).  "stdout"
@@ -77,10 +79,10 @@ Net::Jabber::Debug - Jabber Debug Library
                             specifies whether or not to add a timestamp
                             to the beginning of each logged line.
 
-    Log0(array) - Logs the elements of the array at the corresponding
-    Log1(array)   debug level.  If you pass in a reference to an
-    Log2(array)   array or hash then they are printed in a readable
-                  way.
+    LogN(array) - Logs the elements of the array at the corresponding
+                  debug level N.  If you pass in a reference to an
+                  array or hash then they are printed in a readable
+                  way.  (ie... Log0, Log2, Log100, etc...)
 
 =head1 EXAMPLE
 
@@ -121,9 +123,10 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use FileHandle;
-use vars qw($VERSION %HANDLES $DEFAULT $DEFAULTLEVEL);
+use Carp;
+use vars qw($VERSION %HANDLES $DEFAULT $DEFAULTLEVEL $AUTOLOAD);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 sub new {
   my $proto = shift;
@@ -264,34 +267,18 @@ sub Log {
 
 ##############################################################################
 #
-# Log0 - logs the array at debug level 0
+# AUTOLOAD - if a function is called that is not defined then this function
+#            will examine the function name and either give an error or call
+#            the appropriate function.
 #
 ##############################################################################
-sub Log0 {
+sub AUTOLOAD {
   my $self = shift;
-  $self->Log(0,@_);
-}
-
-
-##############################################################################
-#
-# Log1 - logs the array at debug level 1
-#
-##############################################################################
-sub Log1 {
-  my $self = shift;
-  $self->Log(1,@_);
-}
-
-
-##############################################################################
-#
-# Log2 - logs the array at debug level 2
-#
-##############################################################################
-sub Log2 {
-  my $self = shift;
-  $self->Log(2,@_);
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  my ($function) = ($AUTOLOAD =~ /\:\:(.*)$/);
+  croak("$function not defined") if !($function =~ /Log\d+/);
+  my ($level) = ($function =~ /Log(\d+)/);
+  $self->Log($level,@_);
 }
 
 

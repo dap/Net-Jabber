@@ -24,7 +24,7 @@ package Net::Jabber::X::Roster::Item;
 
 =head1 NAME
 
-Net::Jabber::X::Roster::Item - Jabber IQ Roster Item Module
+Net::Jabber::X::Roster::Item - Jabber X Roster Item Module
 
 =head1 SYNOPSIS
 
@@ -64,7 +64,7 @@ Net::Jabber::X::Roster::Item - Jabber IQ Roster Item Module
 
   You now have access to all of the retrieval functions available below.
 
-  To create a new IQ Roster Item to send to the server:
+  To create a new X Roster Item to send to another user:
 
     use Net::Jabber;
 
@@ -147,9 +147,8 @@ Net::Jabber::X::Roster::Item - Jabber IQ Roster Item Module
                    Identifiers or the server will return an error message.
                    (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
 
-  SetName(string) - sets the password for the account you are
-                        trying to connect with.  Leave blank for
-                        an anonymous account.
+  SetName(string) - sets the name to show in the roster instead of the
+                    JID.
 
   SetGroups(array) - sets the group for each group in the array.
 
@@ -170,7 +169,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 sub new {
   my $proto = shift;
@@ -253,7 +252,7 @@ sub SetJID {
   my $self = shift;
   my ($jid) = @_;
   if (ref($jid) eq "Net::Jabber::JID") {
-    $jid = $jid->GetJID();
+    $jid = $jid->GetJID("full");
   }
   &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{jid=>$jid});
 }

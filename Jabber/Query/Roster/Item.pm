@@ -206,7 +206,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0020";
+$VERSION = "1.0021";
 
 sub new {
   my $proto = shift;
@@ -297,7 +297,7 @@ sub SetJID {
   my $self = shift;
   my ($jid) = @_;
   if (ref($jid) eq "Net::Jabber::JID") {
-    $jid = $jid->GetJID();
+    $jid = $jid->GetJID("full");
   }
   &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{jid=>$jid});
 }

@@ -20,24 +20,21 @@
 #
 ##############################################################################
 
-package Net::Jabber::X::GC;
+package Net::Jabber::X::Signed;
 
 =head1 NAME
 
-Net::Jabber::X::GC - Jabber X GroupChat Delegate
+Net::Jabber::X::Signed - Jabber X Signed Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::X::GC is a companion to the Net::Jabber::X module.
+  Net::Jabber::X::Signed is a companion to the Net::Jabber::X module.
   It provides the user a simple interface to set and retrieve all 
-  parts of a Jabber X GroupChat.
- 
-  The main purpose for this module is to handle nick changes from
-  a groupchat server (i.e. IRC, etc...)
+  parts of a Jabber X Signed.
 
 =head1 DESCRIPTION
 
-  To initialize the GC with a Jabber <x/> you must pass it the 
+  To initialize the Signed with a Jabber <x/> you must pass it the 
   XML::Parser Tree array from the module trying to access the <x/>.  
   In the callback function:
 
@@ -46,7 +43,7 @@ Net::Jabber::X::GC - Jabber X GroupChat Delegate
     sub iq {
       my $foo = new Net::Jabber::Foo(@_);
 
-      my @xTags = $foo->GetX("jabber:x:gc");
+      my @xTags = $foo->GetX("jabber:x:signed");
 
       my $xTag;
       foreach $xTag (@xTags) {
@@ -60,12 +57,12 @@ Net::Jabber::X::GC - Jabber X GroupChat Delegate
 
   You now have access to all of the retrieval functions available.
 
-  To create a new GC to send to the server:
+  To create a new Signed to send to the server:
 
     use Net::Jabber;
 
     $foo = new Net::Jabber::Foo();
-    $xTag = $foo->NewX("jabber:x:gc");
+    $x = $foo->NewX("jabber:x:signed");
 
   Now you can call the creation functions below.
 
@@ -74,37 +71,37 @@ Net::Jabber::X::GC - Jabber X GroupChat Delegate
 
 =head2 Retrieval functions
 
-    $nick = $xTag->GetNick();
+    $signature = $xTag->GetSignature();
 
 =head2 Creation functions
 
-    $xTag->SetGC(nick=>"bob");
+    $xTag->SetSigned(signature=>data);
 
-    $xTag->SetNick("bob_");
+    $xTag->SetSignature(data);
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetNick() - returns a string with the Jabber Identifier of the 
-              person who added the gc.
+  GetSignature() - returns a string with the signature data.
 
 =head2 Creation functions
 
-  SetGC(nick=>string) - set multiple fields in the <x/> at one
-                        time.  This is a cumulative and over
-                        writing action.  If you set the "nick"
-                        attribute twice, the second setting is
-                        what is used.  If you set the nick, and
-                        then set another field then both will be in
-                        the <x/> tag.  For valid settings read the
-                        specific Set functions below.
+  SetSigned(signature=>string) - set multiple fields in the <x/> at one
+                                 time.  This is a cumulative and over
+                                 writing action.  If you set the 
+                                 "signature" attribute twice, the second 
+                                 setting is what is used.  If you set the
+                                 signature, and then set another field 
+                                 then both will be in the <x/> tag.  For 
+                                 valid settings read the specific Set 
+                                 functions below.
 
-  SetNick(string) - sets the new nick sent from the server.
+  SetSignature(string) - sets the data for the signature
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in December of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -116,7 +113,7 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
 $VERSION = "1.0021";
 
@@ -135,42 +132,43 @@ sub new {
 
 ##############################################################################
 #
-# GetNick - returns from of the jabber:x:gc
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetNick {
-  shift;
+sub AUTOLOAD {
+  my $parent = shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"nick","");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "X";
+
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
+$FUNCTIONS{get}->{Signature} = ["value","",""];
+
+$FUNCTIONS{set}->{Signature} = ["single","","*","",""];
+
 
 ##############################################################################
 #
-# SetGC - takes a hash of all of the things you can set on a jabber:x:gc
-#         and sets each one.
+# SetSigned - takes a hash of all of the things you can set on a
+#             jabber:x:signed and sets each one.
 #
 ##############################################################################
-sub SetGC {
+sub SetSigned {
   shift;
   my $self = shift;
-  my %gc;
-  while($#_ >= 0) { $gc{ lc pop(@_) } = pop(@_); }
+  my %signed;
+  while($#_ >= 0) { $signed{ lc pop(@_) } = pop(@_); }
 
-  $self->SetNick($gc{nick}) if exists($gc{nick});
-}
-
-
-##############################################################################
-#
-# SetNick - sets the nick field in the jabber:x:gc
-#
-##############################################################################
-sub SetNick {
-  shift;
-  my $self = shift;
-  my ($nick) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{X},"nick","$nick",{});
+  $self->SetSignature($signed{signature}) if exists($signed{signature});
 }
 
 
