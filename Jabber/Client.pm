@@ -36,6 +36,10 @@ Net::Jabber::Client - Jabber Client Library
 
     $Con->Connect(hostname=>"jabber.org");
 
+    if ($Con->Connected()) {
+      print "We are connected to the server...\n";
+    }
+
     #
     # For the list of available function see Net::Jabber::Protocol.
     #
@@ -59,6 +63,9 @@ Net::Jabber::Client - Jabber Client Library
 				localhost and 5222.
 
     Disconnect() - closes the connection to the server.
+
+    Connected() - returns 1 if the Transport is connected to the server,
+                  and 0 if not.
 
 =head1 AUTHOR
 
@@ -127,8 +134,10 @@ sub new {
     }
   }
 
-  $self->{SERVER} = {"hostname" => "127.0.0.1", 
-		     "port" => 5222};
+  $self->{SERVER} = {hostname => "localhost", 
+		     port => 5222};
+
+  $self->{CONNECTED} = 0;
 
   $self->{STREAM} = new XML::Stream(debugfh=>$self->{DEBUGFILE})
     if ($self->{DEBUG});
@@ -195,14 +204,16 @@ sub Connect {
 
   while($#_ >= 0) { $self->{SERVER}{ lc pop(@_) } = pop(@_); }
 
-  $self->{SESSION} = 
+  $self->{SESSION} =
     $self->{STREAM}->
       Connect(hostname=>$self->{SERVER}->{hostname},
 	      port=>$self->{SERVER}->{port},
 	      namespace=>"jabber:client"
-	     ) || return undef;
+	     ) || ($self->SetErrorCode($self->{STREAM}->GetErrorCode()) &&
+		   return);
   
   $self->{STREAM}->OnNode(sub{ $self->CallBack(@_) });
+  $self->{CONNECTED} = 1;
   return 1;
 }
 
@@ -215,7 +226,21 @@ sub Connect {
 sub Disconnect {
   my $self = shift;
 
-  $self->{STREAM}->Disconnect();
+  $self->{STREAM}->Disconnect() if ($self->{CONNECTED} == 1);
+  $self->{CONNECTED} = 0;
+}
+
+
+###########################################################################
+#
+# Connected - returns 1 if the Transport is connected to the server, 0
+#             otherwise.
+#
+###########################################################################
+sub Connected {
+  my $self = shift;
+
+  return $self->{CONNECTED};
 }
 
 

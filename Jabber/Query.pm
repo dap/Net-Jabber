@@ -17,15 +17,16 @@ Net::Jabber::Query - Jabber Query Library
   Query.  For specifics on each module please view the documentation
   for each Net::Jabber::Query::* module.  The available modules are:
 
-    Net::Jabber::Query::Agent     - Simple Client Authentication
-    Net::Jabber::Query::Agents    - Simple Client Authentication
-    Net::Jabber::Query::Auth      - Simple Client Authentication
-    Net::Jabber::Query::Fneg      - Feature Negotiation
-    Net::Jabber::Query::Oob       - Out of Bandwidth File Transfers
-    Net::Jabber::Query::Register  - Registration requests
-    Net::Jabber::Query::Roster    - Buddy List management
-    Net::Jabber::Query::Time      - Client Time
-    Net::Jabber::Query::Version   - Client Version
+    Net::Jabber::Query::Agent      - Agent Namespace
+    Net::Jabber::Query::Agents     - Supported Agents list from server
+    Net::Jabber::Query::Auth       - Simple Client Authentication
+    Net::Jabber::Query::AutoUpdate - Auto-Update for clients
+    Net::Jabber::Query::Fneg       - Feature Negotiation
+    Net::Jabber::Query::Oob        - Out of Bandwidth File Transfers
+    Net::Jabber::Query::Register   - Registration requests
+    Net::Jabber::Query::Roster     - Buddy List management
+    Net::Jabber::Query::Time       - Client Time
+    Net::Jabber::Query::Version    - Client Version
 
   Each of these modules provide Net::Jabber::Query with the functions
   to access the data.  By using delegates and the AUTOLOAD function
@@ -189,6 +190,10 @@ use Net::Jabber::Query::Auth;
 ($Net::Jabber::Query::Auth::VERSION < $VERSION) &&
   die("Net::Jabber::Query::Auth $VERSION required--this is only version $Net::Jabber::Query::Auth::VERSION");
 
+use Net::Jabber::Query::AutoUpdate;
+($Net::Jabber::Query::AutoUpdate::VERSION < $VERSION) &&
+  die("Net::Jabber::Query::AutoUpdate $VERSION required--this is only version $Net::Jabber::Query::AutoUpdate::VERSION");
+
 use Net::Jabber::Query::Fneg;
 ($Net::Jabber::Query::Fneg::VERSION < $VERSION) &&
   die("Net::Jabber::Query::Fneg $VERSION required--this is only version $Net::Jabber::Query::Fneg::VERSION");
@@ -216,6 +221,7 @@ use Net::Jabber::Query::Version;
 $DELEGATES{'jabber:iq:agent'} = "Net::Jabber::Query::Agent";
 $DELEGATES{'jabber:iq:agents'} = "Net::Jabber::Query::Agents";
 $DELEGATES{'jabber:iq:auth'} = "Net::Jabber::Query::Auth";
+$DELEGATES{'jabber:iq:autoupdate'} = "Net::Jabber::Query::AutoUpdate";
 $DELEGATES{'jabber:iq:fneg'} = "Net::Jabber::Query::Fneg";
 $DELEGATES{'jabber:iq:oob'} = "Net::Jabber::Query::Oob";
 $DELEGATES{'jabber:iq:register'} = "Net::Jabber::Query::Register";
@@ -309,6 +315,9 @@ sub GetXMLNS {
 ##############################################################################
 sub GetXML {
   my $self = shift;
+  $self->MergeItems() if (exists($self->{ITEMS}));
+  $self->MergeAgents() if (exists($self->{AGENTS}));
+  $self->MergeReleases() if (exists($self->{RELEASES}));
   return &Net::Jabber::BuildXML(@{$self->{QUERY}});
 }
 
@@ -321,6 +330,9 @@ sub GetXML {
 ##############################################################################
 sub GetTree {
   my $self = shift;
+  $self->MergeItems() if (exists($self->{ITEMS}));
+  $self->MergeAgents() if (exists($self->{AGENTS}));
+  $self->MergeReleases() if (exists($self->{RELEASES}));
   return @{$self->{QUERY}};
 }
 
@@ -347,6 +359,9 @@ sub debug {
   my $self = shift;
 
   print "debug Query: $self\n";
+  $self->MergeItems() if (exists($self->{ITEMS}));
+  $self->MergeAgents() if (exists($self->{AGENTS}));
+  $self->MergeReleases() if (exists($self->{RELEASES}));
   &Net::Jabber::printData("debug: \$self->{QUERY}->",$self->{QUERY});
 }
 

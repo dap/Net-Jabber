@@ -41,26 +41,30 @@ Net::Jabber::Message - Jabber Message Module
 
 =head2 Retrieval functions
 
-    $to       = $Mess->GetTo();
-    $toJID    = $Mess->GetTo("jid");
-    $from     = $Mess->GetFrom();
-    $fromJID  = $Mess->GetFrom("jid");
-    $resource = $Mess->GetResource();
-    $type     = $Mess->GetType();
-    $subject  = $Mess->GetSubject();
-    $body     = $Mess->GetBody();
-    @body     = $Mess->GetBody("full");
-    $thread   = $Mess->GetThread();
-    $priority = $Mess->GetPriority();
-    $error    = $Mess->GetError();
-    $errType  = $Mess->GetErrorType();
-    @xTags    = $Mess->GetX();
-    @xTags    = $Mess->GetX("my:namespace");
-    @xTrees   = $Mess->GetXTrees();
-    @xTrees   = $Mess->GetXTrees("my:namespace");
+    $to         = $Mess->GetTo();
+    $toJID      = $Mess->GetTo("jid");
+    $from       = $Mess->GetFrom();
+    $fromJID    = $Mess->GetFrom("jid");
+    $etherxTo   = $Mess->GetEtherxTo();
+    $etherxFrom = $Mess->GetEtherxFrom();
+    $resource   = $Mess->GetResource();
+    $type       = $Mess->GetType();
+    $subject    = $Mess->GetSubject();
+    $body       = $Mess->GetBody();
+    @body       = $Mess->GetBody("full");
+    $thread     = $Mess->GetThread();
+    $priority   = $Mess->GetPriority();
+    $error      = $Mess->GetError();
+    $errType    = $Mess->GetErrorType();
+    @xTags      = $Mess->GetX();
+    @xTags      = $Mess->GetX("my:namespace");
+    @xTrees     = $Mess->GetXTrees();
+    @xTrees     = $Mess->GetXTrees("my:namespace");
 
-    $str      = $Mess->GetXML();
-    @message  = $Mess->GetTree();
+    $str        = $Mess->GetXML();
+    @message    = $Mess->GetTree();
+
+    $date       = $Mess->GetTimeStamp();
 
 =head2 Creation functions
 
@@ -68,7 +72,11 @@ Net::Jabber::Message - Jabber Message Module
 		      Subject=>"Lunch",
 		      BoDy=>"Let's go grab some lunch!",
 		      priority=>100);
-    $Mess->SetTo("Test User");
+    $Mess->SetTo("test\@jabber.org");
+    $Mess->SetFrom("me\@jabber.org");
+    $Mess->SetEtherxTo("jabber.org");
+    $Mess->SetEtherxFrom("transport.jabber.org");
+    $Mess->SetType("groupchat");
     $Mess->SetSubject("This is a test");
     $Mess->SetBody("This is a test of the emergency broadcast system...");
     $Mess->SetThread("AE912B3");
@@ -82,6 +90,10 @@ Net::Jabber::Message - Jabber Message Module
 
     $X = $Mess->NewX("jabber:x:delay");
     $X = $Mess->NewX("my:namespace");
+
+    $Reply = $Mess->Reply();
+    $Reply = $Mess->Reply(template=>"client");
+    $Reply = $Mess->Reply(template=>"transport");
 
 =head1 METHODS
 
@@ -98,6 +110,14 @@ Net::Jabber::Message - Jabber Message Module
                     sent the <message/>.  To get the JID object set 
                     the string to "jid", otherwise leave blank for the 
                     text string.
+
+  GetEtherxTo(string) - returns the etherx:to attribute.  This is for
+                        Transport writers who need to communicate with
+                        Etherx.
+
+  GetEtherxFrom(string) -  returns the etherx:from attribute.  This is for
+                           Transport writers who need to communicate with
+                           Etherx.
 
   GetResource() - returns a string with the Jabber Resource of the 
                   person who sent the <message/>.
@@ -142,7 +162,12 @@ Net::Jabber::Message - Jabber Message Module
              this object as a Jabber Message.
 
   GetTree() - returns an array that contains the <message/> tag
-                 in XML::Parser Tree format.
+              in XML::Parser Tree format.
+
+  GetTimeStamp() - returns a string that represents the time this message
+                   object was created (and probably received) for sending
+                   to the client.  If there is an <x/> delay tag then that
+                   time is used to show when the message was sent.
 
 =head2 Creation functions
 
@@ -166,11 +191,20 @@ Net::Jabber::Message - Jabber Message Module
                     Identifiers or the server will return an error message.
                     (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
 
+  SetEtherxTo(string) - sets the etherx:to attribute.  This is for
+                        Transport writers who need to communicate with
+                        Etherx.
+
+  SetEtherxFrom(string) -  sets the etherx:from attribute.  This is for
+                           Transport writers who need to communicate with
+                           Etherx.
+
   SetType(string) - sets the type attribute.  Valid settings are:
 
-                    normal         defines a normal message
                     chat           defines a chat style message
+                    error          defines an error message
                     groupchat      defines a chatroom message
+                    normal         defines a normal message (default)
 
   SetSubject(string) - sets the subject of the <message/>.
 
@@ -194,6 +228,35 @@ Net::Jabber::Message - Jabber Message Module
                  a custom namespace, you must define and register that  
                  namespace with the X module.  For more information
                  please read the documentation for Net::Jabber::X.
+
+  Reply(template=>string,       - creates a new Message object and
+        replytransport=>string)   populates the to/from and
+                                  etherxto/etherxfrom fields based
+                                  the value of template.  The following
+                                  templates are available:
+
+                                  client: (default)
+                                       just sets the to/from
+
+                                  transport:
+                                  transport-reply:
+                                       the transport will send the
+                                       reply to the sender
+
+                                  transport-filter:
+                                       the transport will send the
+                                       reply to the address from the
+                                       to.  ie( bob%j.org@transport.j.org
+                                       would send to bob@j.org)
+
+                                  transport-filter-reply:
+                                       the transport will send the
+                                       reply to the address from the
+                                       to.  ie( bob%j.org@transport.j.org
+                                       would send to bob@j.org) and
+                                       set the from to be 
+                                       sender@replytransport.  That
+                                       way a two way filter can occur.
 
 =head1 AUTHOR
 
@@ -219,6 +282,7 @@ sub new {
   my $self = { };
   
   $self->{VERSION} = $VERSION;
+  $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("local");
 
   bless($self, $proto);
 
@@ -298,8 +362,8 @@ sub GetFrom {
 
 ##############################################################################
 #
-# GetTo - returns the Jabber Identifier of the person you are sending the
-#         <message/> to.
+# GetEtherxTo - returns the value of the etherx:to attribute in the 
+#               <message/>.
 #
 ##############################################################################
 sub GetEtherxTo {
@@ -310,8 +374,8 @@ sub GetEtherxTo {
 
 ##############################################################################
 #
-# GetFrom - returns the Jabber Identifier of the person who sent the 
-#           <message/>
+# GetEtherxFrom - returns the value of the etherx:from attribute in the 
+#                 <message/>.
 #
 ##############################################################################
 sub GetEtherxFrom {
@@ -479,6 +543,25 @@ sub GetTree {
 
 ##############################################################################
 #
+# GetTimeStamp - returns a string with the time stamp of when this object
+#                was created.
+#
+##############################################################################
+sub GetTimeStamp {
+  my $self = shift;
+
+  my @xTags = $self->GetX("jabber:x:delay");
+  if ($#xTags >= 0) {
+    my $xTag = $xTags[0];
+    $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("utcdelaylocal",$xTag->GetStamp());
+  }
+
+  return $self->{TIMESTAMP};
+}
+
+
+##############################################################################
+#
 # SetMessage - takes a hash of all of the things you can set on a <message/>
 #              and sets each one.
 #
@@ -493,6 +576,7 @@ sub SetMessage {
   $self->SetFrom($message{from}) if exists($message{from});
   $self->SetEtherxTo($message{etherxto}) if exists($message{etherxto});
   $self->SetEtherxFrom($message{etherxfrom}) if exists($message{etherxfrom});
+  $self->SetType($message{type}) if exists($message{type});
   $self->SetSubject($message{subject}) if exists($message{subject});
   $self->SetBody($message{body}) if exists($message{body});
   $self->SetThread($message{thread}) if exists($message{thread});
@@ -546,7 +630,7 @@ sub SetFrom {
 
 ##############################################################################
 #
-# SetEtherxTo - sets the to attribute in the <message/>
+# SetEtherxTo - sets the etherx:to attribute in the <message/>
 #
 ##############################################################################
 sub SetEtherxTo {
@@ -558,13 +642,25 @@ sub SetEtherxTo {
 
 ##############################################################################
 #
-# SetEtherxFrom - sets the from attribute in the <message/>
+# SetEtherxFrom - sets the etherx:from attribute in the <message/>
 #
 ##############################################################################
 sub SetEtherxFrom {
   my $self = shift;
   my ($etherxfrom) = @_;
   &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{"etherx:from"=>$etherxfrom});
+}
+
+
+##############################################################################
+#
+# SetType - sets the type attribute in the <message/>
+#
+##############################################################################
+sub SetType {
+  my $self = shift;
+  my ($type) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{type=>$type});
 }
 
 
@@ -708,6 +804,71 @@ sub MergeX {
     $self->{MESSAGE}->[1]->[($#{$self->{MESSAGE}->[1]}+1)] = "x";
     $self->{MESSAGE}->[1]->[($#{$self->{MESSAGE}->[1]}+1)] = $xTree[1];
   }
+}
+
+
+##############################################################################
+#
+# Reply - returns a Net::Jabber::Message object with the proper fields
+#         already populated for you.
+#
+##############################################################################
+sub Reply {
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  my $reply = new Net::Jabber::Message();
+
+  $reply->SetThread($self->GetThread()) if ($self->GetThread() ne "");
+  $reply->SetID($self->GetID()) if ($self->GetID() ne "");
+  $reply->SetType($self->GetType()) if ($self->GetType() ne "");
+
+
+  if (exists($args{template})) {
+    if (($args{template} eq "transport") || ($args{template} eq "transport-reply")) {
+      my $fromJID = $self->GetFrom("jid");
+
+      $reply->SetMessage(to=>$self->GetFrom(),
+			 from=>$self->GetTo(),
+			 etherxto=>$fromJID->GetServer(),
+			 etherxfrom=>$self->GetEtherxTo(),
+			);
+    } else {
+      if ($args{template} eq "transport-filter") {
+	my $toJID = $self->GetTo("jid");
+	my $fromJID = $self->GetFrom("jid");
+
+	my $filterToJID = new Net::Jabber::JID($toJID->GetUserID());
+
+	$reply->SetMessage(to=>$filterToJID,
+			   from=>$fromJID,
+			   etherxto=>$filterToJID->Server(),
+			   etherxfrom=>$fromJID->Server());
+      } else {
+	if ($args{template} eq "transport-filter-reply") {
+	  my $toJID = $self->GetTo("jid");
+	  my $fromJID = $self->GetFrom("jid");
+	  
+	  my $filterToJID = new Net::Jabber::JID($toJID->GetUserID());
+	  my $filterFromJID = new Net::Jabber::JID($fromJID->GetUserID()."\%".$fromJID->GetServer()."\@".$args{replytransport});
+	  
+	  $reply->SetMessage(to=>$filterToJID,
+			     from=>$filterFromJID,
+			     etherxto=>$filterToJID->Server(),
+			     etherxfrom=>$self->GetEtherxTo());
+	} else {
+	  $reply->SetMessage(to=>$self->GetFrom(),
+			     from=>$self->GetTo());
+	}	
+      }
+    }
+  } else {
+    $reply->SetMessage(to=>$self->GetFrom(),
+		       from=>$self->GetTo());
+  }
+
+  return $reply;
 }
 
 

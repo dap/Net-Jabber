@@ -35,6 +35,10 @@ Net::Jabber::Transport - Jabber Transport Library
 
     $Con->Connect(hostname=>"jabber.org");
 
+    if ($Con->Connected()) {
+      print "We are connected to the server...\n";
+    }
+
     #
     # For the list of available function see Net::Jabber::Protocol.
     #
@@ -63,6 +67,9 @@ Net::Jabber::Transport - Jabber Transport Library
                                      transport by.
 
     Disconnect() - closes the connection to the server.
+
+    Connected() - returns 1 if the Transport is connected to the server,
+                  and 0 if not.
 
 =head1 AUTHOR
 
@@ -133,9 +140,11 @@ sub new {
     }
   }
 
-  $self->{SERVER} = {hostname => "127.0.0.1", 
+  $self->{SERVER} = {hostname => "localhost",
 		     port => 5269,
 		     transportname => ""};
+
+  $self->{CONNECTED} = 0;
 
   $self->{STREAM} = new XML::Stream(debugfh=>$self->{DEBUGFILE})
     if ($self->{DEBUG});
@@ -204,18 +213,18 @@ sub Connect {
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
   if (!exists($args{hostname})) {
-    print "ERROR: no hostname specified.\n";
-    exit(0);
+    $self->SetErrorCode("No hostname specified.");
+    return;
   }
 
   if (!exists($args{secret})) {
-    print "ERROR: no secret specified.\n";
-    exit(0);
+    $self->SetErrorCode("No secret specified.");
+    return;
   }
 
   if (!exists($args{transportname})) {
-    print "ERROR: no transport name specified.\n";
-    exit(0);
+    $self->SetErrorCode("No transport name specified.");
+    return;
   }
 
   $self->{SERVER}->{hostname} = delete($args{hostname});
@@ -241,9 +250,11 @@ sub Connect {
 	      id=>$self->{SERVER}->{id},
 	      namespace=>"jabber:server",
 	      namespaces=> [ $self->{NAMESPACE} ]
-	     ) || return undef;
-  
+	     ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
+	           return);
+
   $self->{STREAM}->OnNode(sub{ $self->CallBack(@_) });
+  $self->{CONNECTED} = 1;
   return 1;
 }
 
@@ -256,7 +267,21 @@ sub Connect {
 sub Disconnect {
   my $self = shift;
 
-  $self->{STREAM}->Disconnect();
+  $self->{STREAM}->Disconnect() if ($self->{CONNECTED} == 1);
+  $self->{CONNECTED} = 0;
+}
+
+
+###########################################################################
+#
+# Connected - returns 1 if the Transport is connected to the server, 0
+#             otherwise.
+#
+###########################################################################
+sub Connected {
+  my $self = shift;
+
+  return $self->{CONNECTED};
 }
 
 

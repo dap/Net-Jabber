@@ -65,6 +65,9 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $misc     = $register->GetMisc();
     $text     = $register->GetText();
     $key      = $register->GetKey();
+    $remove   = $register->GetRemove();
+
+    %fields = $register->GetFields();
 
 =head2 Client Creation functions
 
@@ -86,6 +89,7 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $register->SetMisc('...');
     $register->SetText('...');
     $register->SetKey('...');
+    $register->SetRemove();
 
 =head2 Server Creation functions
 
@@ -111,6 +115,7 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $register->SetMisc();
     $register->SetText();
     $register->SetKey();
+    $register->SetRemove();
 
 =head2 Test functions
 
@@ -128,6 +133,7 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
     $test = $register->DefinedMisc();
     $test = $register->DefinedText();
     $test = $register->DefinedKey();
+    $test = $register->DefinedRemove();
 
 =head1 METHODS
 
@@ -163,6 +169,12 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
 
   GetKey() -  returns a string with the key in the <query/>.
 
+  GetRemove() -  returns a string with the remove in the <query/>.
+
+  GetFields() -  returns a hash with the keys being the fields
+                 contained in the <query/> and the values the
+                 contents of the tags.
+
 =head2 Creation functions
 
   SetRegister(instructions=>string, - set multiple fields in the <iq/>
@@ -179,7 +191,8 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
               date=>string,
               misc=>string,
               text=>string,
-              key=>string)
+              key=>string,
+              remove=>string)
  
   SetUsername(string) - sets the username for the account you are
                         trying to create.  Set string to "" to send
@@ -233,9 +246,12 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
                     trying to create.  Set string to "" to send
                     <text/> for instructions.
 
-  SetKey(string) - sets the key for the account you are
-                   trying to create.  Set string to "" to send
-                   <key/> for instructions.
+  SetKey(string) - sets the key for the server/transport you are trying 
+                   to regsiter to.
+
+  SetRemove() - sets the remove for the account you are
+                trying to create so that the account will
+                be removed from the server/transport.
 
 =head2 Test functions
 
@@ -280,6 +296,9 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
 
   DefinedKey() - returns 1 if there is a <key/> in the query,
                  0 if not.
+
+  DefinedRemove() - returns 1 if there is a <remove/> in the query,
+                    0 if not.
 
 =head1 AUTHOR
 
@@ -494,6 +513,51 @@ sub GetKey {
 
 ##############################################################################
 #
+# GetRemove - returns the remove in the <query/>.
+#
+##############################################################################
+sub GetRemove {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"remove");
+}
+
+
+##############################################################################
+#
+# GetFields - returns a hash that contains the fields and values that in the
+#             <query/>.
+#
+##############################################################################
+sub GetFields {
+  shift;
+  my $self = shift;
+
+  my %fields;
+
+  $fields{instructions} = $self->GetInstructions() if ($self->DefinedInstructions() == 1);
+  $fields{username} = $self->GetUsername() if ($self->DefinedUsername() == 1);
+  $fields{password} = $self->GetPassword() if ($self->DefinedPassword() == 1);
+  $fields{name} = $self->GetName() if ($self->DefinedName() == 1);
+  $fields{email} = $self->GetEmail() if ($self->DefinedEmail() == 1);
+  $fields{address} = $self->GetAddress() if ($self->DefinedAddress() == 1);
+  $fields{city} = $self->GetCity() if ($self->DefinedCity() == 1);
+  $fields{state} = $self->GetState() if ($self->DefinedState() == 1);
+  $fields{zip} = $self->GetZip() if ($self->DefinedZip() == 1);
+  $fields{phone} = $self->GetPhone() if ($self->DefinedPhone() == 1);
+  $fields{url} = $self->GetURL() if ($self->DefinedURL() == 1);
+  $fields{date} = $self->GetDate() if ($self->DefinedDate() == 1);
+  $fields{misc} = $self->GetMisc() if ($self->DefinedMisc() == 1);
+  $fields{text} = $self->GetText() if ($self->DefinedText() == 1);
+  $fields{key} = $self->GetKey() if ($self->DefinedKey() == 1);
+  $fields{remove} = $self->GetRemove() if ($self->DefinedRemove() == 1);
+
+  return \%fields;
+}
+
+
+##############################################################################
+#
 # SetRegister - takes a hash of all of the things you can set on an register
 #               <query/> and sets each one.
 #
@@ -520,6 +584,7 @@ sub SetRegister {
   $self->SetMisc($register{misc}) if exists($register{misc});
   $self->SetText($register{text}) if exists($register{text});
   $self->SetKey($register{key}) if exists($register{key});
+  $self->SetRemove($register{remove}) if exists($register{remove});
 }
 
 
@@ -720,6 +785,31 @@ sub SetKey {
 
 ##############################################################################
 #
+# SetRemove - sets the remove of the account you want to connect with.
+#
+##############################################################################
+sub SetRemove {
+  shift;
+  my $self = shift;
+  my ($remove) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{QUERY},"remove",$remove,{});
+}
+
+
+##############################################################################
+#
+# DefinedInstructions - returns the instructions in the <query/>.
+#
+##############################################################################
+sub DefinedInstructions {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"instructions");
+}
+
+
+##############################################################################
+#
 # DefinedUsername - returns the username in the <query/>.
 #
 ##############################################################################
@@ -883,6 +973,18 @@ sub DefinedKey {
   shift;
   my $self = shift;
   return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"key");
+}
+
+
+##############################################################################
+#
+# DefinedRemove - returns the remove in the <query/>.
+#
+##############################################################################
+sub DefinedRemove {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"remove");
 }
 
 

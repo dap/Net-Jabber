@@ -55,17 +55,19 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
 =head2 Retrieval functions
 
-    $to        = $IQ->GetTo();
-    $toJID     = $IQ->GetTo("jid");
-    $from      = $IQ->GetFrom();
-    $fromJID   = $IQ->GetFrom("jid");
-    $id        = $IQ->GetID();
-    $type      = $IQ->GetType();
-    $error     = $IQ->GetError();
-    $errorType = $IQ->GetErrorType();
+    $to         = $IQ->GetTo();
+    $toJID      = $IQ->GetTo("jid");
+    $from       = $IQ->GetFrom();
+    $fromJID    = $IQ->GetFrom("jid");
+    $etherxTo   = $IQ->GetEtherxTo();
+    $etherxFrom = $IQ->GetEtherxFrom();
+    $id         = $IQ->GetID();
+    $type       = $IQ->GetType();
+    $error      = $IQ->GetError();
+    $errorType  = $IQ->GetErrorType();
 
-    $queryTag  = $IQ->GetQuery();
-    $qureyTree = $IQ->GetQueryTree();
+    $queryTag   = $IQ->GetQuery();
+    $qureyTree  = $IQ->GetQueryTree();
 
     $str       = $IQ->GetXML();
     @iq        = $IQ->GetTree();
@@ -77,6 +79,9 @@ Net::Jabber::IQ - Jabber Info/Query Library
 	       query=>"info");
 
     $IQ->SetTo("bob@jabber.org");
+    $IQ->SetFrom("me\@jabber.org");
+    $IQ->SetEtherxTo("jabber.org");
+    $IQ->SetEtherxFrom("transport.jabber.org");
     $IQ->SetType("set");
 
     $IQ->SetIQ(to=>"bob\@jabber.org",
@@ -87,6 +92,10 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
     $IQObject = $IQ->NewQuery("jabber:iq:auth");
     $IQObject = $IQ->NewQuery("jabber:iq:roster");
+
+    $iqReply = $IQ->Reply();
+    $iqReply = $IQ->Reply("client");
+    $iqReply = $IQ->Reply("transport");
 
 =head1 METHODS
 
@@ -103,6 +112,14 @@ Net::Jabber::IQ - Jabber Info/Query Library
                     sent the <iq/>.  To get the JID object set 
                     the string to "jid", otherwise leave blank for the 
                     text string.
+
+  GetEtherxTo(string) - returns the etherx:to attribute.  This is for
+                        Transport writers who need to communicate with
+                        Etherx.
+
+  GetEtherxFrom(string) -  returns the etherx:from attribute.  This is for
+                           Transport writers who need to communicate with
+                           Etherx.
 
   GetType() - returns a string with the type <iq/> this is.
 
@@ -136,9 +153,23 @@ Net::Jabber::IQ - Jabber Info/Query Library
                              the <iq/> tag.  For valid settings read the
                              specific Set functions below.
 
-  SetTo(string) - sets the to attribute.  Must be a valid Jabber Identifier 
-                  or the server will return an error message.
+  SetTo(string) - sets the to attribute.  You can either pass a string
+  SetTo(JID)      or a JID object.  They must be a valid Jabber 
+                  Identifiers or the server will return an error message.
                   (ie.  jabber:bob@jabber.org, etc...)
+
+  SetFrom(string) - sets the from attribute.  You can either pass a string
+  SetFrom(JID)      or a JID object.  They must be a valid Jabber 
+                    Identifiers or the server will return an error message.
+                    (ie.  jabber:bob@jabber.org, etc...)
+
+  SetEtherxTo(string) - sets the etherx:to attribute.  This is for
+                        Transport writers who need to communicate with
+                        Etherx.
+
+  SetEtherxFrom(string) -  sets the etherx:from attribute.  This is for
+                           Transport writers who need to communicate with
+                           Etherx.
 
   SetType(string) - sets the type attribute.  Valid settings are:
 
@@ -157,6 +188,20 @@ Net::Jabber::IQ - Jabber Info/Query Library
                      Net::Jabber::Query.  NOTE: Jabber does not support
                      custom IQs at the time of this writing.  This was just
                      including in case they do at some point.
+
+  Reply(template=>string, - creates a new IQ object and populates
+        type=>string)       the to/from and etherxto/etherxfrom fields
+                            based the value of template.  The following
+                            templates are available:
+
+                            client: (default)
+                                 just sets the to/from
+
+                            transport:
+                                 the transport will send the
+                                 reply to the sender
+
+                            The type will be set in the <iq/>.
 
 =head1 AUTHOR
 
@@ -217,7 +262,13 @@ sub GetTag {
 ##############################################################################
 sub GetTo {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"","to");
+  my ($type) = @_;
+  my $to = &Net::Jabber::GetXMLData("value",$self->{IQ},"","to");
+  if ($type eq "jid") {
+    return new Net::Jabber::JID($to);
+  } else {
+    return $to;
+  }
 }
 
 
@@ -229,7 +280,37 @@ sub GetTo {
 ##############################################################################
 sub GetFrom {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"","from");
+  my ($type) = @_;
+  my $from = &Net::Jabber::GetXMLData("value",$self->{IQ},"","from");
+  if ($type eq "jid") {
+    return new Net::Jabber::JID($from);
+  } else {
+    return $from;
+  }
+}
+
+
+##############################################################################
+#
+# GetEtherxTo - returns the value of the etherx:to attribute in the 
+#               <iq/>.
+#
+##############################################################################
+sub GetEtherxTo {
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{IQ},"","etherx:to");
+}
+
+
+##############################################################################
+#
+# GetEtherxFrom - returns the value of the etherx:from attribute in the 
+#                 <iq/>.
+#
+##############################################################################
+sub GetEtherxFrom {
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{IQ},"","etherx:from");
 }
 
 
@@ -351,6 +432,8 @@ sub SetIQ {
   $self->SetID($iq{id}) if exists($iq{id});
   $self->SetTo($iq{to}) if exists($iq{to});
   $self->SetFrom($iq{from}) if exists($iq{from});
+  $self->SetEtherxTo($iq{etherxto}) if exists($iq{etherxto});
+  $self->SetEtherxFrom($iq{etherxfrom}) if exists($iq{etherxfrom});
   $self->SetType($iq{type}) if exists($iq{type});
   $self->SetErrorCode($iq{errorcode}) if exists($iq{errorcode});
   $self->SetErrorType($iq{errortype}) if exists($iq{errortype});
@@ -397,6 +480,30 @@ sub SetFrom {
     $from = $from->GetJID();
   }
   &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{from=>$from});
+}
+
+
+##############################################################################
+#
+# SetEtherxTo - sets the etherx:to attribute in the <iq/>
+#
+##############################################################################
+sub SetEtherxTo {
+  my $self = shift;
+  my ($etherxto) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{"etherx:to"=>$etherxto});
+}
+
+
+##############################################################################
+#
+# SetEtherxFrom - sets the etherx:from attribute in the <iq/>
+#
+##############################################################################
+sub SetEtherxFrom {
+  my $self = shift;
+  my ($etherxfrom) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{"etherx:from"=>$etherxfrom});
 }
 
 
@@ -509,6 +616,47 @@ sub MergeQuery {
     $self->{IQ}->[1]->[($#{$self->{IQ}->[1]}+1)] = "query";
     $self->{IQ}->[1]->[($#{$self->{IQ}->[1]}+1)] = $queryTree[1];
   }
+}
+
+
+##############################################################################
+#
+# Reply - returns a Net::Jabber::IQ object with the proper fields
+#         already populated for you.
+#
+##############################################################################
+sub Reply {
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  my $reply = new Net::Jabber::IQ();
+
+  $reply->SetID($self->GetID()) if ($self->GetID() ne "");
+  $reply->SetType(exists($args{type}) ? $args{type} : "result");
+
+  my $selfQuery = $self->GetQuery();
+  $reply->NewQuery($selfQuery->GetXMLNS());
+
+  if (exists($args{template})) {
+    if ($args{template} eq "transport") {
+      my $fromJID = $self->GetFrom("jid");
+      
+      $reply->SetIQ(to=>$self->GetFrom(),
+		    from=>$self->GetTo(),
+		    etherxto=>$fromJID->GetServer(),
+		    etherxfrom=>$self->GetEtherxTo(),
+		   );
+    } else {
+      $reply->SetIQ(to=>$self->GetFrom(),
+		    from=>$self->GetTo());
+    }	
+  } else {
+    $reply->SetIQ(to=>$self->GetFrom(),
+		  from=>$self->GetTo());
+  }
+
+  return $reply;
 }
 
 

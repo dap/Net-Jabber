@@ -107,18 +107,18 @@ Net::Jabber::X::Roster::Item - Jabber IQ Roster Item Module
 
 =head2 Creation functions
 
-  SetItem(jid=>string|JID,      - set multiple fields in the <item/>
-          name=>string,           at one time.  This is a cumulative
-          subscription=>string,   and overwriting action.  If you
-          ask=>string,            set the "ask" twice, the second
-          groups=>array)          setting is what is used.  If you set
-                                  the password, and then set the
-                                  resource then both will be in the
-                                  <item/> tag.  For valid settings
-                                  read the specific Set functions below.
-                                  Note: group does not behave in this
-                                  manner.  For each group setting a
-                                  new <group/> tag will be created.
+  SetItem(jid=>string|JID, - set multiple fields in the <item/>
+          name=>string,      at one time.  This is a cumulative
+          groups=>array)     and overwriting action.  If you
+                             set the "name" twice, the second
+                             setting is what is used.  If you set
+                             the name, and then set the
+                             jid then both will be in the
+                             <item/> tag.  For valid settings
+                             read the specific Set functions below.
+                             Note: groups does not behave in this
+                             manner.  For each group setting a
+                             new <group/> tag will be created.
 
   SetJID(string) - sets the Jabber Identifier.  You can either pass a
   SetJID(JID)      string or a JID object.  They must be valid Jabber 

@@ -35,18 +35,21 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
     use Net::Jabber;
 
-    $Con = new Net::Jabber::Client();    # From Net::Jabber::Client
-    $Con->Connect(name=>"jabber.org");   #
+    $Con = new Net::Jabber::Client();            # From Net::Jabber::Client
+    $status = $Con->Connect(name=>"jabber.org"); #
 
       or
 
-    $Con = new Net::Jabber::Transport(); #
-    $Con->Connect(name=>"jabber.org",    # From Net::Jabber::Transport
-		  secret=>"bob");        #
+    $Con = new Net::Jabber::Transport();         #
+    $status = $Con->Connect(name=>"jabber.org",  # From Net::Jabber::Transport
+			    secret=>"bob");      #
 
 
     $Con->SetCallBacks(message=>\&messageCallBack,
 		       iq=>\&handleTheIQTag);
+
+    $error = $Con->GetErrorCode();
+    $Con->SetErrorCode("Timeout limit reached");
 
     $Con->Process();
     $Con->Process(5);
@@ -81,20 +84,25 @@ Net::Jabber::Protocol - Jabber Protocol Library
 =head2 Subscription Functions
 
     $Con->Subscription(type=>"subscribe",
-		       jid=>"bob@jabber.org");
+		       to=>"bob@jabber.org");
 
     $Con->Subscription(type=>"unsubscribe",
-		       jid=>"bob@jabber.org");
+		       to=>"bob@jabber.org");
 
     $Con->Subscription(type=>"subscribed",
-		       jid=>"bob@jabber.org");
+		       to=>"bob@jabber.org");
 
     $Con->Subscription(type=>"unsubscribed",
-		       jid=>"bob@jabber.org");
+		       to=>"bob@jabber.org");
 
 =head2 IQ  Functions
 
     $Con->SetQueryDelegates("com:bar:foo"=>"Foo::Bar");
+
+=head2 IQ::Agents Functions
+
+    %agents = $Con->AgentsGet();
+    %agents = $Con->AgentsGet(to=>"transport.jabber.org");
 
 =head2 IQ::Auth Functions
 
@@ -113,9 +121,14 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 IQ::Register Functions
 
+    %fields = $Con->RegisterRequest();
+    %fields = $Con->RegisterRequest(to=>"transport.jabber.org");
+
     @result = $Con->RegisterSend(usersname=>"newuser",
 				 resource=>"New User",
-				 password=>"imanewbie");
+				 password=>"imanewbie",
+                                 email=>"newguy@new.com",
+                                 key=>"some key");
 
 =head2 IQ::Resource Functions
 
@@ -123,8 +136,10 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 IQ::Roster Functions
 
+    %roster = $Con->RosterParse($iq);
     %roster = $Con->RosterGet();
-    $Con->RosterAdd(jid=>"bob@jabber.org");
+    $Con->RosterAdd(jid=>"bob\@jabber.org",
+		    name=>"Bob");
     $Con->RosterRemove(jid=>"bob@jabber.org");
 
 
@@ -152,6 +167,13 @@ Net::Jabber::Protocol - Jabber Protocol Library
 =head1 METHODS
 
 =head2 Basic Functions
+
+    GetErrorCode() - returns a string that will hopefully contain some
+                     useful information about why a function returned
+                     an undef to you.
+
+    SetErrorCode(string) - set a useful error message before you return
+                           an undef to the caller.
 
     SetCallBacks(message=>function,  - sets the callback functions for
                  presence=>function,   the top level tags listed.  The
@@ -227,22 +249,51 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 Subscription Functions
 
-    Subscription(type=>string, - sends a Presence to the server to tell it
-                 jid=>string)    to perform the subscription in type to the
-                                 you to the specified JID.  The allowed
-                                 types are:
+    Subscription(hash) - taks the hash and passes it to SetPresence in
+                         Net::Jabber::Presence (refer there for valid
+                         settings).  Then it sends the subscription to
+                         server.
 
-                                 subscribe    - subscribe to JID's presence
-                                 unsubscribe  - unsubscribe from JID's presence
-                                 subscribed   - response to a subscribe
-                                 unsubscribed - response to an unsubscribe
-                                 
+                         The valid types of subscription are:
+
+                           subscribe    - subscribe to JID's presence
+                           unsubscribe  - unsubscribe from JID's presence
+                           subscribed   - response to a subscribe
+                           unsubscribed - response to an unsubscribe
+
 =head2 IQ Functions
 
     SetQueryDelegates(hash) - the hash gets sent to the 
                               Net::Jabber::Query::SetDelegates function.
                               For more information about this function,
                               read the manpage for Net::Jabber::Query.
+
+=head2 IQ::Agents Functions
+
+    AgentsGet(to=>string, - takes all of the information and
+    AgentsGet()             builds a Net::Jabber::IQ::Agents packet.
+                            It then sends that packet either to the
+                            server, or to the specified transport,
+                            with an ID and waits for that ID to return.
+                            Then it looks in the resulting packet and 
+                            builds a hash that contains the values
+                            of the agent list.  The hash is layed out
+                            like this:  (NOTE: the jid is the key to
+                            distinguish the various agents)
+
+                              $hash{<JID>}->{order} = 4
+                                          ->{name} = "ICQ Transport"
+                                          ->{transport} = "ICQ #"
+                                          ->{description} = "ICQ...blah..."
+                                          ->{service} = "icq"
+                                          ->{register} = 1
+                                          ->{search} = 1
+                                        etc...
+
+                            The order field determines the order that
+                            it came from the server in... in case you
+                            care.  For more info on the valid fields 
+                            see the Net::Jabber::Query::Agent module.
 
 =head2 IQ::Auth Functions
 
@@ -273,21 +324,31 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 IQ::Register Functions
 
-    RegisterSend(username=>string, - takes all of the information and
-                 password=>string,   builds a Net::Jabber::IQ::Register
-                 resource=>string)   packet.  It then sends that packet
-                                     to the server with an ID and waits
-                                     for that ID to return.  Then it
-                                     looks in resulting packet and
-                                     determines if registration was
-                                     successful for not.  The array
-                                     returned from RegisterSend looks
-                                     like this:
-                                       [ type , message ]
-                                     If type is "ok" then registration
-                                     was successful, otherwise message
-                                     contains a little more detail about the
-                                     error.
+    RegisterRequest(to=>string) - send an <iq/> request to the specified
+    RegisterRequest()             server/transport, if not specified it
+                                  sends to the current active server.
+                                  The function returns a hash that
+                                  contains the required fields.   Here
+                                  is an example of the hash:
+
+	                             $fields{intructions} = "do this..."
+                                     $fields{key} = "some key"
+                                     $fields{username} = ""
+                                     ...
+
+                                  The fields that are present are the
+                                  required fields the server needs.
+
+    RegisterSend(hash) - takes the contents of the hash and passes it
+	                 to the SetRegister function in the module
+                         Net::Jabber::Query::Register.  This function
+	                 returns an array that looks like this:
+  
+                            [ type , message ]
+
+                         If type is "ok" then registration was 
+                         successful, otherwise message contains a 
+                         little more detail about the error.
 
 =head2 IQ::Resource Functions
 
@@ -295,11 +356,8 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 IQ::Roster Functions
 
-    RosterGet() - sends an empty Net::Jabber::IQ::Roster tag to the
-                  server so the server will send the Roster to the
-                  client.  Then it takes the result and puts it into
-                  the following data structure which it returns to
-                  to the caller:
+    RosterParse(IQ object) - returns a hash that contains the roster
+                             parsed into the following data structure:
 
                   $roster{'bob@jabber.org'}->{name}         
                                       - Name you stored in the roster
@@ -315,12 +373,22 @@ Net::Jabber::Protocol - Jabber Protocol Library
 		  $roster{'bob@jabber.org'}->{groups}
                                       - Array of groups that 
                                         bob@jabber.org is in
-			  
-    RosterAdd(jid=>string) - sends a packet asking that the jid be
-                             added to the user's roster.
 
-    RosterRemove(jid=>string) - sends a packet asking that the jid be
-                             removed from the user's roster.
+    RosterGet() - sends an empty Net::Jabber::IQ::Roster tag to the
+                  server so the server will send the Roster to the
+                  client.  Returns the above hash from RosterParse.
+			  
+    RosterAdd(hash) - sends a packet asking that the jid be
+                      added to the roster.  The hash format
+	              is defined in the SetItem function
+                      in the Net::Jabber::Query::Roster::Item
+                      module.
+
+    RosterRemove(hash) - sends a packet asking that the jid be
+                         removed from the roster.  The hash
+	                 format is defined in the SetItem function
+                         in the Net::Jabber::Query::Roster::Item
+                         module.
 
 =head2 IQ::Time Functions
 
@@ -388,6 +456,33 @@ sub new {
   
   bless($self, $proto);
   return $self;
+}
+
+
+##############################################################################
+#
+# GetErrorCode - if you are returned an undef, you can call this function
+#                and hopefully learn more information about the problem.
+#
+##############################################################################
+sub GetErrorCode {
+  shift;
+  my $self = shift;
+  return ($self->{ERRORCODE} ne "") ? $self->{ERRORCODE} : $!;
+}
+
+
+##############################################################################
+#
+# SetErrorCode - sets the error code so that the caller can find out more
+#                information about the problem
+#
+##############################################################################
+sub SetErrorCode {
+  shift;
+  my $self = shift;
+  my ($errorcode) = @_;
+  $self->{ERRORCODE} = $errorcode;
 }
 
 
@@ -721,6 +816,7 @@ sub PresenceSend {
   shift;
   my $self = shift;
   my $presence = new Net::Jabber::Presence();
+  $presence->SetPresence(@_);
   $self->Send($presence);
 }
 
@@ -733,9 +829,13 @@ sub PresenceSend {
 sub PresenceProbe {
   shift;
   my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+  delete($args{type});
 
   my $presence = new Net::Jabber::Presence();
-  $presence->SetPresence(type=>"probe");
+  $presence->SetPresence(type=>"probe",
+			 %args);
   $self->Send($presence);
 }
 
@@ -749,23 +849,9 @@ sub PresenceProbe {
 sub Subscription {
   shift;
   my $self = shift;
-  my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
-  
-  if (($args{type} ne "subscribe") && ($args{type} ne "unsubscribe") &&
-      ($args{type} ne "subscribed") && ($args{type} ne "unsubscribed")) {
-    print STDERR "ERROR: Subscription must take one of the following types:\n";
-    print STDERR "         subscribe, unsubscribe, subscribed, unsubscribed\n";
-    exit(0);
-  }
-  if ($args{jid} eq "") {
-    print STDERR "ERROR: You must specify a Jabber ID for the Subscription\n";
-    exit(0);
-  }
 
   my $presence = new Net::Jabber::Presence();
-  $presence->SetPresence(type=>$args{type},
-			 to=>$args{jid});
+  $presence->SetPresence(@_);
   $self->Send($presence);
 }
 
@@ -786,6 +872,46 @@ sub SetQueryDelegates {
 
 ###########################################################################
 #
+# AgentsGet - Sends an empty IQ to the server/transport to request that the
+#             list of supported Agents be sent to them.  Returns a hash
+#             containing the values for the agents.
+#
+###########################################################################
+sub AgentsGet {
+  shift;
+  my $self = shift;
+
+  my $iq = new Net::Jabber::IQ;
+  $iq->SetIQ(@_);
+  $iq->SetIQ(type=>"get");
+  my $query = $iq->NewQuery("jabber:iq:agents");
+
+  $iq = $self->SendAndReceiveWithID($iq);
+
+  $query = $iq->GetQuery();
+  my @agents = $query->GetAgents();
+
+  my %agents;
+  my $agent;
+  my $count = 0;
+  foreach $agent (@agents) {
+    my $jid = $agent->GetJID();
+    $agents{$jid}->{name} = $agent->GetName();
+    $agents{$jid}->{description} = $agent->GetDescription();
+    $agents{$jid}->{transport} = $agent->GetTransport();
+    $agents{$jid}->{service} = $agent->GetService();
+    $agents{$jid}->{register} = $agent->GetRegister();
+    $agents{$jid}->{search} = $agent->GetSearch();
+    $agents{$jid}->{agents} = $agent->GetAgents();
+    $agents{$jid}->{order} = $count++;
+  }
+
+  return %agents;
+}
+
+
+###########################################################################
+#
 # AuthSend - This is a self contained function to send a login iq tag with
 #            an id.  Then wait for a reply what the same id to come back 
 #            and tell the caller what the result was.
@@ -794,7 +920,6 @@ sub SetQueryDelegates {
 sub AuthSend {
   shift;
   my $self = shift;
-
   my %args;
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
@@ -817,7 +942,7 @@ sub AuthSend {
   #------------------------------------------------------------------------
   # Create a Net::Jabber::IQ object to send to the server
   #------------------------------------------------------------------------
-  my $IQLogin = new Net::Jabber::IQ;
+  my $IQLogin = new Net::Jabber::IQ();
   my $IQAuth = $IQLogin->NewQuery("jabber:iq:auth");
   $IQAuth->SetAuth(%args);
 
@@ -839,6 +964,44 @@ sub AuthSend {
 
 ###########################################################################
 #
+# RegisterRequest - This is a self contained function to send an iq tag
+#                   an id that requests the target address to send back
+#                   the required fields.  It waits for a reply what the
+#                   same id to come back and tell the caller what the 
+#                   fields are.
+#
+###########################################################################
+sub RegisterRequest {
+  shift;
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  #------------------------------------------------------------------------
+  # Create a Net::Jabber::IQ object to send to the server
+  #------------------------------------------------------------------------
+  my $IQ = new Net::Jabber::IQ();
+  $IQ->SetIQ(to=>$args{to}) if exists($args{to});
+  $IQ->SetIQ(type=>"get");
+  my $IQRegister = $IQ->NewQuery("jabber:iq:register");
+
+  #------------------------------------------------------------------------
+  # Send the IQ with the next available ID and wait for a reply with that 
+  # id to be received.  Then grab the IQ reply.
+  #------------------------------------------------------------------------
+  $IQ = $self->SendAndReceiveWithID($IQ);
+  
+  #------------------------------------------------------------------------
+  # From the reply IQ determine what fields are required and send a hash
+  # back with the fields and any values that are already defined (like key)
+  #------------------------------------------------------------------------
+  $IQRegister = $IQ->GetQuery();
+  return %{$IQRegister->GetFields()};
+}
+
+
+###########################################################################
+#
 # RegisterSend - This is a self contained function to send a registration
 #                iq tag with an id.  Then wait for a reply what the same
 #                id to come back and tell the caller what the result was.
@@ -847,14 +1010,17 @@ sub AuthSend {
 sub RegisterSend {
   shift;
   my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
   #------------------------------------------------------------------------
   # Create a Net::Jabber::IQ object to send to the server
   #------------------------------------------------------------------------
-  my $IQ = new Net::Jabber::IQ;
+  my $IQ = new Net::Jabber::IQ();
+  $IQ->SetIQ(to=>$args{to}) if exists($args{to});
   $IQ->SetIQ(type=>"set");
   my $IQRegister = $IQ->NewQuery("jabber:iq:register");
-  $IQRegister->SetRegister(@_);
+  $IQRegister->SetRegister(%args);
 
   #------------------------------------------------------------------------
   # Send the IQ with the next available ID and wait for a reply with that 
@@ -881,11 +1047,15 @@ sub RegisterSend {
 sub RosterAdd {
   shift;
   my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+  delete($args{subscription});
 
-  my $iq = new Net::Jabber::IQ;
+  my $iq = new Net::Jabber::IQ();
+  $iq->SetIQ(type=>"set");
   my $roster = $iq->NewQuery("jabber:iq:roster");
   my $item = $roster->AddItem();
-  $item->SetItem(@_,
+  $item->SetItem(%args,
 		 subscription=>"to");
   $self->Send($iq);
 }
@@ -900,8 +1070,12 @@ sub RosterAdd {
 sub RosterRemove {
   shift;
   my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+  delete($args{subscription});
 
-  my $iq = new Net::Jabber::IQ;
+  my $iq = new Net::Jabber::IQ();
+  $iq->SetIQ(type=>"set");
   my $roster = $iq->NewQuery("jabber:iq:roster");
   my $item = $roster->AddItem();
   $item->SetItem(@_,
@@ -912,21 +1086,15 @@ sub RosterRemove {
 
 ###########################################################################
 #
-# RosterGet - Sends an empty IQ to the server to request that the user's
-#             Roster be sent to them.
+# RosterParse - Returns a hash of roster items.
 #
 ###########################################################################
-sub RosterGet {
+sub RosterParse {
   shift;
   my $self = shift;
+  my($iq) = @_;
 
-  my $iq = new Net::Jabber::IQ;
-  $iq->SetIQ(type=>"get");
-  my $query = $iq->NewQuery("jabber:iq:roster");
-
-  $iq = $self->SendAndReceiveWithID($iq);
-
-  $query = $iq->GetQuery();
+  my $query = $iq->GetQuery();
   my @items = $query->GetItems();
 
   my %roster;
@@ -940,6 +1108,26 @@ sub RosterGet {
   }
 
   return %roster;
+}
+
+
+###########################################################################
+#
+# RosterGet - Sends an empty IQ to the server to request that the user's
+#             Roster be sent to them.  Returns a hash of roster items.
+#
+###########################################################################
+sub RosterGet {
+  shift;
+  my $self = shift;
+
+  my $iq = new Net::Jabber::IQ;
+  $iq->SetIQ(type=>"get");
+  my $query = $iq->NewQuery("jabber:iq:roster");
+
+  $iq = $self->SendAndReceiveWithID($iq);
+
+  return $self->RosterParse($iq);
 }
 
 

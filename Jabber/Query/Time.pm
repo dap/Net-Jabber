@@ -255,10 +255,7 @@ sub SetDisplay {
   $self->{TIME} = time if ($self->{TIME} eq "");
 
   if ($display eq "") {
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday) = localtime($self->{TIME});
-    $wday = ('Sun','Mon','Tue','Wed','Thu','Fri','Sat')[$wday];
-    $mon = ('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')[$mon];
-    $display = sprintf("%3s %3s %02d, %d %02d:%02d:%02d",$wday,$mon,$mday,($year + 1900),$hour,$min,$sec);
+    $display = &Net::Jabber::GetTimeStamp("local",$self->{TIME});
   }
 
   &Net::Jabber::SetXMLData("single",$self->{QUERY},"display",$display,{});

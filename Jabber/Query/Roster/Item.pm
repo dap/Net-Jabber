@@ -135,13 +135,11 @@ Net::Jabber::Query::Roster::Item - Jabber IQ Roster Item Module
                    Identifiers or the server will return an error message.
                    (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
 
-  SetName(string) - sets the password for the account you are
-                    trying to connect with.  Leave blank for
-                    an anonymous account.
+  SetName(string) - sets the name this roster item should show in the
+                    roster.
 
-  SetSubscription(string) - sets the resource for the account you are
-                            trying to connect with.  Leave blank for
-                            an anonymous account.
+  SetSubscription(string) - sets the subscription that this roster item
+                            has.
 
   SetAsk(string) - sets the ask for the <item/>.
 
@@ -244,7 +242,13 @@ sub GetAsk {
 sub GetGroups {
   my $self = shift;
 
-  return &Net::Jabber::GetXMLData("value array",$self->{ITEM},"group");
+  my @groups = &Net::Jabber::GetXMLData("value array",$self->{ITEM},"group");
+  my $index;
+  foreach $index (0..$#groups) {
+    splice(@groups,$index,1) if ($groups[$index] eq "");
+  }
+  print "$#groups (@groups)\n";
+  return @groups;
 }
 
 

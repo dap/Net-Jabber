@@ -124,6 +124,7 @@ it under the same terms as Perl itself.
 
 require 5.003;
 use strict;
+use Time::Local;
 use Carp;
 use vars qw($VERSION %DELEGATES);
 
@@ -512,6 +513,34 @@ sub printData {
   if (ref($data) eq "") {
     print $preString," = \"",$data,"\"\n";
   }
+}
+
+
+
+sub GetTimeStamp {
+  my($type,$time) = @_;
+
+  return "" if (($type ne "local") && ($type ne "utc") && !($type =~ /^(local|utc)delay(local|utc)$/));
+
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday);
+  if ($type =~ /utcdelay/) {
+    ($year,$mon,$mday,$hour,$min,$sec) = ($time =~ /^(\d\d\d\d)(\d\d)(\d\d)T(\d\d)\:(\d\d)\:(\d\d)$/);
+    $mon--;
+    ($type) = ($type =~ /^utcdelay(.*)$/);
+    $time = timegm($sec,$min,$hour,$mday,$mon,$year);
+  }
+  if ($type =~ /localdelay/) {
+    ($year,$mon,$mday,$hour,$min,$sec) = ($time =~ /^(\d\d\d\d)(\d\d)(\d\d)T(\d\d)\:(\d\d)\:(\d\d)$/);
+    $mon--;
+    ($type) = ($type =~ /^localdelay(.*)$/);
+    $time = timelocal($sec,$min,$hour,$mday,$mon,$year);
+  }
+
+  ($sec,$min,$hour,$mday,$mon,$year,$wday) = localtime(((defined($time) && ($time ne "")) ? $time : time)) if ($type eq "local");
+  ($sec,$min,$hour,$mday,$mon,$year,$wday) = gmtime(((defined($time) && ($time ne "")) ? $time : time)) if ($type eq "utc");
+  $wday = ('Sun','Mon','Tue','Wed','Thu','Fri','Sat')[$wday];
+  $mon = ('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')[$mon];
+  return sprintf("%3s %3s %02d, %d %02d:%02d:%02d",$wday,$mon,$mday,($year + 1900),$hour,$min,$sec);
 }
 
 1;

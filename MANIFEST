@@ -18,6 +18,8 @@ Jabber/Query.pm
 Jabber/Query/Agent.pm
 Jabber/Query/Agents.pm
 Jabber/Query/Auth.pm
+Jabber/Query/AutoUpdate.pm
+Jabber/Query/AutoUpdate/Release.pm
 Jabber/Query/Fneg.pm
 Jabber/Query/Oob.pm
 Jabber/Query/Register.pm
@@ -26,6 +28,7 @@ Jabber/Query/Roster/Item.pm
 Jabber/Query/Time.pm
 Jabber/Query/Version.pm
 Jabber/X.pm
+Jabber/X/AutoUpdate.pm
 Jabber/X/Delay.pm
 Jabber/X/Ident.pm
 Jabber/X/Oob.pm

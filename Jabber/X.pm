@@ -17,10 +17,11 @@ Net::Jabber::X - Jabber X Module
   X.  For specifics on each module please view the documentation
   for each Net::Jabber::X::* module.  The available modules are:
 
-    Net::Jabber::X::Delay     - Message Routing and Delay Information
-    Net::Jabber::X::Ident     - Rich Identification
-    Net::Jabber::X::Oob       - Out Of Band File Transfers
-    Net::Jabber::X::Roster    - Roster Items for embedding in messages
+    Net::Jabber::X::AutoUpdate - Auto Update information
+    Net::Jabber::X::Delay      - Message Routing and Delay Information
+    Net::Jabber::X::Ident      - Rich Identification
+    Net::Jabber::X::Oob        - Out Of Band File Transfers
+    Net::Jabber::X::Roster     - Roster Items for embedding in messages
 
   Each of these modules provide Net::Jabber::X with the functions
   to access the data.  By using delegates and the AUTOLOAD function
@@ -176,6 +177,10 @@ use vars qw($VERSION $AUTOLOAD %DELEGATES);
 
 $VERSION = "1.0";
 
+use Net::Jabber::X::AutoUpdate;
+($Net::Jabber::X::AutoUpdate::VERSION < $VERSION) &&
+  die("Net::Jabber::X::AutoUpdate $VERSION required--this is only version $Net::Jabber::X::AutoUpdate::VERSION");
+
 use Net::Jabber::X::Delay;
 ($Net::Jabber::X::Delay::VERSION < $VERSION) &&
   die("Net::Jabber::X::Delay $VERSION required--this is only version $Net::Jabber::X::Delay::VERSION");
@@ -192,6 +197,7 @@ use Net::Jabber::X::Roster;
 ($Net::Jabber::X::Roster::VERSION < $VERSION) &&
   die("Net::Jabber::X::Roster $VERSION required--this is only version $Net::Jabber::X::Roster::VERSION");
 
+$DELEGATES{'jabber:x:autoupdate'} = "Net::Jabber::X::AutoUpdate";
 $DELEGATES{'jabber:x:delay'} = "Net::Jabber::X::Delay";
 #$DELEGATES{'jabber:x:ident'} = "Net::Jabber::X::Ident";
 $DELEGATES{'jabber:x:oob'}   = "Net::Jabber::X::Oob";

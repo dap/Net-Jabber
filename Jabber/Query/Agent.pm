@@ -49,6 +49,7 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
     $service     = $agent->GetService();
     $register    = $agent->GetRegister();
     $search      = $agent->GetSearch();
+    $agents      = $agent->GetAgents();
 
 =head2 Creation functions
 
@@ -69,6 +70,7 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
     $agent->SetService("icq");
     $agent->SetRegister();
     $agent->SetSearch();
+    $agent->SetAgents();
 
 =head1 METHODS
 
@@ -91,6 +93,8 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
 
   GetSearch() - returns a 1 if the agent supports searching, 0 if not.
 
+  GetAgents() - returns a 1 if the agent supports sub-agents, 0 if not.
+
 
 =head2 Creation functions
 
@@ -100,8 +104,8 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
            transport=>string,     attribute twice, the second setting is
            service=>string,       what is used.  If you set the name, and
            register=>string,      then set the search then both will be in
-           search=>string)        the <iq/> tag.  For valid settings read the
-                                  specific Set functions below.
+           search=>string,        the <iq/> tag.  For valid settings read the
+           agents=>string)        specific Set functions below.
 
   SetJID(string) - sets the jid="..." of the agent.
 
@@ -119,6 +123,10 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
 
   SetSearch() - if the function is called then a <search/> is
                 is put in the <query/> to signify searching is
+                available.
+
+  SetAgents() - if the function is called then a <agents/> is
+                is put in the <query/> to signify sub-agents are
                 available.
 
 =head1 AUTHOR
@@ -165,7 +173,7 @@ sub new {
 sub GetJID {
   my $self = shift;
   $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("value",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"jid","");
+  return &Net::Jabber::GetXMLData("value",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"","jid");
 }
 
 
@@ -243,12 +251,25 @@ sub GetSearch {
 
 ##############################################################################
 #
+# GetAgents - returns the namr of the jabber:iq:agent
+#
+##############################################################################
+sub GetAgents {
+  my $self = shift;
+  $self = shift if !exists($self->{AGENT});
+  return &Net::Jabber::GetXMLData("existence",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"agents","");
+}
+
+
+##############################################################################
+#
 # GetXML - returns the XML string that represents the data in the XML::Parser
 #          Tree.
 #
 ##############################################################################
 sub GetXML {
   my $self = shift;
+  $self = shift if !exists($self->{AGENT});
   return &Net::Jabber::BuildXML(@{$self->{AGENT}});
 }
 
@@ -260,7 +281,8 @@ sub GetXML {
 #
 ##############################################################################
 sub GetTree {
-  my $self = shift;  
+  my $self = shift;
+  $self = shift if !exists($self->{AGENT});
   return @{$self->{AGENT}};
 }
 
@@ -283,7 +305,8 @@ sub SetAgent {
   $self->SetTransport($agent{transport}) if exists($agent{transport});
   $self->SetService($agent{service}) if exists($agent{service});
   $self->SetRegister() if exists($agent{register});
-  $self->SetService() if exists($agent{service});
+  $self->SetSearch() if exists($agent{search});
+  $self->SetAgents() if exists($agent{agents});
 }
 
 
@@ -296,7 +319,7 @@ sub SetJID {
   my $self = shift;
   $self = shift if !exists($self->{AGENT});
   my ($jid) = @_;
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"jid",$jid,{});
+  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"","",{jid=>$jid});
 }
 
 
@@ -379,11 +402,24 @@ sub SetSearch {
 
 ##############################################################################
 #
+# SetAgents - sets the agents in the jabber:iq:agent
+#
+##############################################################################
+sub SetAgents {
+  my $self = shift;
+  $self = shift if !exists($self->{AGENT});
+  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"agents","",{});
+}
+
+
+##############################################################################
+#
 # debug - prints out the XML::Parser Tree in a readable format for debugging
 #
 ##############################################################################
 sub debug {
   my $self = shift;
+  $self = shift if !exists($self->{AGENT});
 
   print "debug AGENT: $self\n";
   &Net::Jabber::printData("debug: \$self->{AGENT}->",$self->{AGENT});

@@ -41,24 +41,26 @@ Net::Jabber::Presence - Jabber Presence Module
 
 =head2 Retrieval functions
 
-    $to       = $Pres->GetTo();
-    $toJID    = $Pres->GetTo("jid");
-    $from     = $Pres->GetFrom();
-    $fromJID  = $Pres->GetFrom("jid");
-    $type     = $Pres->GetType();
-    $status   = $Pres->GetStatus();
-    $priority = $Pres->GetPriority();
-    $meta     = $Pres->GetMeta();
-    $icon     = $Pres->GetIcon();
-    $show     = $Pres->GetShow();
-    $loc      = $Pres->GetLoc();
-    @xTags    = $Pres->GetX();
-    @xTags    = $Pres->GetX("my:namespace");
-    @xTrees   = $Pres->GetXTrees();
-    @xTrees   = $Pres->GetXTrees("my:namespace");
+    $to         = $Pres->GetTo();
+    $toJID      = $Pres->GetTo("jid");
+    $from       = $Pres->GetFrom();
+    $fromJID    = $Pres->GetFrom("jid");
+    $etherxTo   = $Pres->GetEtherxTo();
+    $etherxFrom = $Pres->GetEtherxFrom();
+    $type       = $Pres->GetType();
+    $status     = $Pres->GetStatus();
+    $priority   = $Pres->GetPriority();
+    $meta       = $Pres->GetMeta();
+    $icon       = $Pres->GetIcon();
+    $show       = $Pres->GetShow();
+    $loc        = $Pres->GetLoc();
+    @xTags      = $Pres->GetX();
+    @xTags      = $Pres->GetX("my:namespace");
+    @xTrees     = $Pres->GetXTrees();
+    @xTrees     = $Pres->GetXTrees("my:namespace");
 
-    $str      = $Pres->GetXML();
-    @presence = $Pres->GetTree();
+    $str        = $Pres->GetXML();
+    @presence   = $Pres->GetTree();
 
 =head2 Creation functions
 
@@ -66,6 +68,9 @@ Net::Jabber::Presence - Jabber Presence Module
 		       StatuS=>"Open for Business",
 		       iCoN=>"normal");
     $Pres->SetTo("bob\@jabber.org");
+    $Pres->SetFrom("jojo\@jabber.org");
+    $Pres->SetEtherxTo("jabber.org");
+    $Pres->SetEtherxFrom("transport.jabber.org");
     $Pres->SetType("unavailable");
     $Pres->SetStatus("Taking a nap");
     $Pres->SetPriority(10);
@@ -76,6 +81,11 @@ Net::Jabber::Presence - Jabber Presence Module
 
     $X = $Pres->NewX("jabber:x:delay");
     $X = $Pres->NewX("my:namespace");
+
+    $Reply = $Pres->Reply();
+    $Reply = $Pres->Reply(template=>"client");
+    $Reply = $Pres->Reply(template=>"transport",
+                          type=>"subscribed");
 
 =head1 METHODS
 
@@ -92,6 +102,14 @@ Net::Jabber::Presence - Jabber Presence Module
                     sent the <presence/>.  To get the JID object set 
                     the string to "jid", otherwise leave blank for the 
                     text string.
+
+  GetEtherxTo(string) - returns the etherx:to attribute.  This is for
+                        Transport writers who need to communicate with
+                        Etherx.
+
+  GetEtherxFrom(string) -  returns the etherx:from attribute.  This is for
+                           Transport writers who need to communicate with
+                           Etherx.
 
   GetType() - returns a string with the type <presence/> this is.
 
@@ -131,6 +149,12 @@ Net::Jabber::Presence - Jabber Presence Module
 
 =head2 Creation functions
 
+
+#
+# todo: add etherxto and from to the list...
+#
+
+
   SetPresence(to=>string|JID     - set multiple fields in the <presence/>
               from=>string|JID,    at one time.  This is a cumulative
               type=>string,        and over writing action.  If you set
@@ -150,6 +174,14 @@ Net::Jabber::Presence - Jabber Presence Module
   SetFrom(JID)      or a JID object.  They must be valid Jabber 
                     Identifiers or the server will return an error message.
                     (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+
+  SetEtherxTo(string) - sets the etherx:to attribute.  This is for
+                        Transport writers who need to communicate with
+                        Etherx.
+
+  SetEtherxFrom(string) -  sets the etherx:from attribute.  This is for
+                           Transport writers who need to communicate with
+                           Etherx.
 
   SetType(string) - sets the type attribute.  Valid settings are:
 
@@ -186,6 +218,22 @@ Net::Jabber::Presence - Jabber Presence Module
                  a custom namespace, you must define and register that  
                  namespace with the X module.  For more information
                  please read the documentation for Net::Jabber::X.
+
+  Reply(template=>string, - creates a new Presence object and
+        type=>string)       populates the to/from and
+                            etherxto/etherxfrom fields based
+                            the value of template.  The following
+                            templates are available:
+
+                            client: (default)
+                                 just sets the to/from
+
+                            transport:
+                            transport-reply:
+                                 the transport will send the
+                                 reply to the sender
+
+                            The type will be set in the <presence/>.
 
 =head1 AUTHOR
 
@@ -286,6 +334,30 @@ sub GetFrom {
   } else {
     return $from;
   }
+}
+
+
+##############################################################################
+#
+# GetEtherxTo - returns the value of the etherx:to attribute in the 
+#               <presence/>.
+#
+##############################################################################
+sub GetEtherxTo {
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","etherx:to");
+}
+
+
+##############################################################################
+#
+# GetEtherxFrom - returns the value of the etherx:from attribute in the 
+#                 <presence/>.
+#
+##############################################################################
+sub GetEtherxFrom {
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","etherx:from");
 }
 
 
@@ -442,6 +514,8 @@ sub SetPresence {
   $self->SetID($presence{id}) if exists($presence{id});
   $self->SetTo($presence{to}) if exists($presence{to});
   $self->SetFrom($presence{from}) if exists($presence{from});
+  $self->SetEtherxTo($presence{etherxto}) if exists($presence{etherxto});
+  $self->SetEtherxFrom($presence{etherxfrom}) if exists($presence{etherxfrom});
   $self->SetType($presence{type}) if exists($presence{type});
   $self->SetStatus($presence{status}) if exists($presence{status});
   $self->SetPriority($presence{priority}) if exists($presence{priority});
@@ -491,6 +565,30 @@ sub SetFrom {
     $from = $from->GetJID();
   }
   &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{from=>$from});
+}
+
+
+##############################################################################
+#
+# SetEtherxTo - sets the etherx:to attribute in the <presence/>
+#
+##############################################################################
+sub SetEtherxTo {
+  my $self = shift;
+  my ($etherxto) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{"etherx:to"=>$etherxto});
+}
+
+
+##############################################################################
+#
+# SetEtherxFrom - sets the etherx:from attribute in the <presence/>
+#
+##############################################################################
+sub SetEtherxFrom {
+  my $self = shift;
+  my ($etherxfrom) = @_;
+  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{"etherx:from"=>$etherxfrom});
 }
 
 
@@ -645,6 +743,44 @@ sub MergeX {
     $self->{PRESENCE}->[1]->[($#{$self->{PRESENCE}->[1]}+1)] = "x";
     $self->{PRESENCE}->[1]->[($#{$self->{PRESENCE}->[1]}+1)] = $xTree[1];
   }
+}
+
+
+##############################################################################
+#
+# Reply - returns a Net::Jabber::Presence object with the proper fields
+#         already populated for you.
+#
+##############################################################################
+sub Reply {
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  my $reply = new Net::Jabber::Presence();
+
+  $reply->SetID($self->GetID()) if ($self->GetID() ne "");
+  $reply->SetType(exists($args{type}) ? $args{type} : "");
+
+  if (exists($args{template})) {
+    if ($args{template} eq "transport") {
+      my $fromJID = $self->GetFrom("jid");
+      
+      $reply->SetPresence(to=>$self->GetFrom(),
+			  from=>$self->GetTo(),
+			  etherxto=>$fromJID->GetServer(),
+			  etherxfrom=>$self->GetEtherxTo(),
+			 );
+    } else {
+      $reply->SetPresence(to=>$self->GetFrom(),
+			  from=>$self->GetTo());
+    }
+  } else {
+    $reply->SetPresence(to=>$self->GetFrom(),
+			from=>$self->GetTo());
+  }
+
+  return $reply;
 }
 
 

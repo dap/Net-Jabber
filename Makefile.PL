@@ -18,6 +18,8 @@ WriteMakefile(
 			      'Jabber/Query/Agent.pm' => '$(INST_LIBDIR)/Jabber/Query/Agent.pm',
 			      'Jabber/Query/Agents.pm' => '$(INST_LIBDIR)/Jabber/Query/Agents.pm',
 			      'Jabber/Query/Auth.pm' => '$(INST_LIBDIR)/Jabber/Query/Auth.pm',
+			      'Jabber/Query/AutoUpdate.pm' => '$(INST_LIBDIR)/Jabber/Query/AutoUpdate.pm',
+			      'Jabber/Query/AutoUpdate/Release.pm' => '$(INST_LIBDIR)/Jabber/Query/AutoUpdate/Release.pm',
 			      'Jabber/Query/Fneg.pm' => '$(INST_LIBDIR)/Jabber/Query/Fneg.pm',
 			      'Jabber/Query/Oob.pm' => '$(INST_LIBDIR)/Jabber/Query/Oob.pm',
 			      'Jabber/Query/Register.pm' => '$(INST_LIBDIR)/Jabber/Query/Register.pm',
@@ -26,6 +28,7 @@ WriteMakefile(
 			      'Jabber/Query/Time.pm' => '$(INST_LIBDIR)/Jabber/Query/Time.pm',
 			      'Jabber/Query/Version.pm' => '$(INST_LIBDIR)/Jabber/Query/Version.pm',
 			      'Jabber/X.pm' => '$(INST_LIBDIR)/Jabber/X.pm',
+			      'Jabber/X/AutoUpdate.pm' => '$(INST_LIBDIR)/Jabber/X/AutoUpdate.pm',
 			      'Jabber/X/Delay.pm' => '$(INST_LIBDIR)/Jabber/X/Delay.pm',
 			      'Jabber/X/Ident.pm' => '$(INST_LIBDIR)/Jabber/X/Ident.pm',
 			      'Jabber/X/Oob.pm' => '$(INST_LIBDIR)/Jabber/X/Oob.pm',
@@ -33,8 +36,8 @@ WriteMakefile(
 			      'Jabber/X/Roster/Item.pm' => '$(INST_LIBDIR)/Jabber/X/Roster/Item.pm',
 			     },
 	      'PREREQ_PM' => {
-			      'XML::Stream' => 0
+			      'XML::Stream' => 1.0
 			     },
-	      'VERSION' => '0.8.1',
+	      'VERSION' => '1.0',
 	      'dist' => { 'COMPRESS' => 'gzip --best' }
 	     );

@@ -46,11 +46,12 @@ Net::Jabber::Query::Agents - Jabber Query Agents Module
 
 =head2 Retrieval functions
 
-    @agents = $agents->GetAgents();
+    @agents      = $agents->GetAgents();
+    @agentTreess = $agents->GetAgentTrees();
 
 =head2 Creation functions
 
-
+    $agent = $agents->NewAgent();
     $agent = $agents->NewAgent(jid=>"icq.jabber.org",
 			       name=>"ICQ Transport",
 			       description=>"This is the ICQ Transport",
@@ -58,33 +59,24 @@ Net::Jabber::Query::Agents - Jabber Query Agents Module
 			       service=>"icq",
 			       register=>"",
 			       search=>"");
-    $agent = $agents->NewAgent();
-
-    $agent->SetXXXXX()
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetAgents() - returns an array of jabber:iq:agent objects.  For
-                more info on this object see the docs for 
-                Net::Jabber::Query::Agent.
+  GetAgents() - returns an array of Net::Jabber::Query::Agent
+                objects.  For more info on this object see the
+                docs for Net::Jabber::Query::Agent.
+
+  GetAgentTrees() - returns an array of XML::Parser objects that
+                    contain the data for each agent.
 
 =head2 Creation functions
 
-  NewAgent(jid=>string,         - creates a new jabber:iq:agent object
-           name=>string,          and sets multiple fields in the <iq/> 
-           description=>string,   at one time.  This is a cumulative and
-           transport=>string,     over writing action.  If you set the
-           service=>string,       "jid" attribute twice, the second
-           register=>string,      setting is what is used.  If you set
-           search=>string)        the name, and then set the search
-                                  then both will be in the <iq/> tag. 
-                                  For valid settings read the specific
-                                  Set functions in Net::Jabber::Query::Agent.
-                                  This function returns a new JID object
-                                  that you can call the SetXXX functions
-                                  on directly if you want.
+  NewAgent(hash) - creates and returns a new Net::Jabber::Query::Agent
+                   object.  The argument hash is passed to the SetAgent
+                   function.  Check the Net::Jabber::Query::Agent 
+                   man page for the valid values.
 
 =head1 AUTHOR
 
@@ -127,29 +119,67 @@ sub GetAgents {
   shift;
   my $self = shift;
 
-  my @agentArrays = &Net::Jabber::GetXMLData("tree array",$self->{QUERY},"agent","");
-  my @agents;
-  my $agent;
-  foreach $agent (@agentArrays) {
-    push(@agents,new Net::Jabber::Query::Agent(@{$agent}));
+  if (!(exists($self->{AGENTS}))) {
+    my $agentTree;
+    foreach $agentTree ($self->GetAgentTrees()) {
+      my $agent = new Net::Jabber::Query::Agent(@{$agentTree});
+      push(@{$self->{AGENTS}},$agent);
+    }
   }
 
-  return @agents;
+  return (exists($self->{AGENTS}) ? @{$self->{AGENTS}} : ());
 }
 
 
 ##############################################################################
 #
-# NewAgent - returns a Net::Jabber::Query::Agent object.
+# GetAgentTrees - returns an array of XML::Parser trees of <agent/>s.
 #
 ##############################################################################
-sub NewAgent {
+sub GetAgentTrees {
+  shift;
+  my $self = shift;
+  return &Net::Jabber::GetXMLData("tree array",$self->{QUERY},"agent","","");
+}
+
+
+##############################################################################
+#
+# AddAgent - returns a Net::Jabber::Query::Agent object afte pushing it onto
+#            the AGENTS list.
+#
+##############################################################################
+sub AddAgent {
   shift;
   my $self = shift;
 
-  my $agent = new Net::Jabber::Query::Agent(["item",[{}]]);
+  my $agent = new Net::Jabber::Query::Agent("agent",[{}]);
   $agent->SetAgent(@_);
+  push(@{$self->{AGENTS}},$agent);
   return $agent;
+}
+
+
+##############################################################################
+#
+# MergeAgents - takes the <agents/>s in the Net::Jabber::Query::Agent objects
+#               and pulls the data out and merges it into the <query/>.
+#               This is a private helper function.  It should be used any time
+#               you need to access the full <query/> so that the <item/>s are
+#               included.  (ie. GetXML, GetTree, debug, etc...)
+#
+##############################################################################
+sub MergeAgents {
+  shift;
+  my $self = shift;
+  my @tree;
+  my $count = 1;
+  my $agent;
+  foreach $agent (@{$self->{AGENTS}}) {
+    @tree = $agent->GetTree();
+    $self->{QUERY}->[1]->[$count++] = "agent";
+    $self->{QUERY}->[1]->[$count++] = ($agent->GetTree())[1];
+  }
 }
 
 

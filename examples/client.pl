@@ -21,7 +21,7 @@ $SIG{INT} = \&Stop;
 
 my $Connection = new Net::Jabber::Client;
 
-my $status = $Connection->Connect("name" => $server,
+my $status = $Connection->Connect("hostname" => $server,
 				  "port" => $port);
 
 if (!(defined($status))) {
@@ -95,7 +95,8 @@ sub InIQ
   my $iq = new Net::Jabber::IQ(@_);
   my $from = $iq->GetFrom();
   my $type = $iq->GetType();
-  my $xmlns = $iq->GetXMLNS();
+  my $query = $iq->GetQuery();
+  my $xmlns = $query->GetXMLNS();
   print "===\n";
   print "IQ\n";
   print "  From $from\n";

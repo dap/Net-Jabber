@@ -104,7 +104,7 @@ it under the same terms as Perl itself.
 
 require 5.003;
 use strict;
-use Carp;
+use POSIX;
 use vars qw($VERSION);
 
 $VERSION = "1.0";
@@ -172,7 +172,7 @@ sub SetVersion {
   
   $self->SetName($version{name}) if exists($version{name});
   $self->SetVer($version{ver}) if exists($version{ver});
-  $self->SetOS($version{os}) if exists($version{os});
+  $self->SetOS($version{os});
 }
 
 
@@ -211,6 +211,10 @@ sub SetOS {
   shift;
   my $self = shift;
   my ($os) = @_;
+  if ($os eq "") {
+    my @uname = &POSIX::uname();
+    $os = $uname[0];
+  }
   &Net::Jabber::SetXMLData("single",$self->{QUERY},"os",$os,{});
 }
 

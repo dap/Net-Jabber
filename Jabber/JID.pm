@@ -45,7 +45,8 @@ Net::Jabber::JID - Jabber JID Module
     $server   = $JID->GetServer();
     $resource = $JID->GetResource();
 
-    $jid      = $JID->GetJID();
+    $JID      = $JID->GetJID();
+    $fullJID  = $JID->GetJID("full");
 
 =head2 Creation functions
 
@@ -64,13 +65,18 @@ Net::Jabber::JID - Jabber JID Module
 =head2 Retrieval functions
 
   GetUserID() - returns a string with the Jabber userid of the JID.
+                If the string is an address (bob%jabber.org) then
+                the function will return it as an address 
+                (bob@jabber.org).
 
   GetServer() - returns a string with the Jabber server of the JID.
 
   GetResource() - returns a string with the Jabber resource of the JID. 
 
-  GetJID() - returns a istring that represents the JID as it should be
-             sent to the server.
+  GetJID()       - returns a string that represents the JID stored
+  GetJID("full")   within.  If the "full" string is specified, then
+                   you get the full JID, including Resource, which
+                   should be used to send to the server.
 
 =head2 Creation functions
 
@@ -87,7 +93,9 @@ Net::Jabber::JID - Jabber JID Module
 
   SetUserID(string) - sets the userid.  Must be a valid userid or the
                       server will complain if you try to use this JID
-                      to talk to the server.
+                      to talk to the server.  If the string is an 
+                      address then it will be converted to the %
+                      form suitable for using as a Jabber User ID.
 
   SetServer(string) - sets the server.  Must be a valid host on the 
                       network or the server will not be able to talk
@@ -142,9 +150,15 @@ sub new {
 ##############################################################################
 sub ParseJID {
   my $self = shift;
-  ($self->{USERID}) = ($self->{JID} =~ /^([^\@]+)\@[^\/]+\/?.*$/);
-  ($self->{SERVER}) = ($self->{JID} =~ /^[^\@]+\@([^\/]+)\/?.*$/);
-  ($self->{RESOURCE}) = ($self->{JID} =~ /^[^\@]+\@[^\/]+\/?(.*)$/);
+  if ($self->{JID} =~ /\@/) {
+    ($self->{USERID}) = ($self->{JID} =~ /^([^\@]+)\@[^\/]+\/?.*$/);
+    ($self->{SERVER}) = ($self->{JID} =~ /^[^\@]+\@([^\/]+)\/?.*$/);
+    ($self->{RESOURCE}) = ($self->{JID} =~ /^[^\@]+\@[^\/]+\/?(.*)$/);
+  } else {
+    $self->{USERID} = "";
+    ($self->{SERVER}) = ($self->{JID} =~ /^([^\/]+)\/?.*$/);
+    ($self->{RESOURCE}) = ($self->{JID} =~ /^[^\/]+\/?(.*)$/);
+  }
 }
 
 
@@ -168,7 +182,9 @@ sub BuildJID {
 ##############################################################################
 sub GetUserID {
   my $self = shift;
-  return $self->{USERID};
+  my $userid = $self->{USERID};
+  $userid =~ s/\%/\@/;
+  return $userid;
 }
 
 
@@ -201,7 +217,9 @@ sub GetResource {
 ##############################################################################
 sub GetJID {
   my $self = shift;
-  return $self->{JID};
+  my ($type) = @_;
+  return $self->{JID} if ($type eq "full");
+  return $self->GetUserID()."\@".$self->GetServer();
 }
 
 
@@ -236,6 +254,7 @@ sub SetJID {
 sub SetUserID {
   my $self = shift;
   my ($userid) = @_;
+  $userid =~ s/\@/\%/;
   $self->{USERID} = $userid;
   $self->BuildJID();
 }

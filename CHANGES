@@ -1,5 +1,24 @@
+1.0b
+====
+  - In Query::Version, a call to SetOS will call POSIX::uname and try to get
+    the OS name from there.  (Not sure if this work on Windows and Mac...)
+  - Added GetAgents function to Protocol.pm to query a server/transport
+    and get the list of supported agents.
+  - Fixed bug in Query where the sub lists (items from roster and agents from
+    agents) were not being pulled back into <query/>.
+  - Fixed bug in Agent were the GetJID and SetJID were operating on the wrong
+    value.
+  - Fixed bug in Agents where the new agent objects were not being created
+    properly.
+  - Fixed bug in examples/client where it called a function from Query without
+    getting the query from the iq.
+  - Added function Reply to IQ and Presence objects as well.
+  - Added function Reply to Message objects.  It takes a string, and based
+    on that string it sets the proper values for to/from/etherx:to/etherx:from,
+    thread, type, and id.
+
 1.0a
-======
+====
   - Added better example files in examples/.
   - Wrote Transport.pm, it too uses Protocol.pm through delegates.
   - Client.pm now uses delegates to pull in the functiosn from Protocol.pm.
@@ -44,7 +63,7 @@
     namespace.
   - Created IQ/Auth.pm to give authentication support.
   - Created IQ/Roster.pm and IQ/Roster/Item.pm to provide Roster support.
-  - Created IQ/Reegister.pm to give registration support.  (Still experimental)
+  - Created IQ/Register.pm to give registration support.  (Still experimental)
   - Created Presence.pm to provide support for presence tags.
   - Changed internal data structure to XML::Parser::Tree.  This made
     integration with XML::Stream a snap.
