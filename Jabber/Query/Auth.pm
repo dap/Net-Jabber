@@ -66,6 +66,13 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
     $auth->SetDigest('');
     $auth->SetResource('Bob the Great');
 
+=head2 Test functions
+
+    $test = $auth->DefinedUsername();
+    $test = $auth->DefinedPassword();
+    $test = $auth->DefinedDigest();
+    $test = $auth->DefinedResource();
+
 =head1 METHODS
 
 =head2 Retrieval functions
@@ -105,9 +112,24 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
                         trying to connect with.  Leave blank for
                         an anonymous account.
 
+=head2 Test functions
+
+  DefinedUsername() - returns 1 if <username/> exists in the <iq/>,
+                      0 otherwise.
+
+  DefinedPassword() - returns 1 if <password/> exists in the <iq/>,
+                      0 otherwise.
+
+  DefinedDigest() - returns 1 if <digest/> exists in the <iq/>,
+                    0 otherwise.
+
+  DefinedResource() - returns 1 if <resource/> exists in the <iq/>,
+                      0 otherwise.
+
+
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in July of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -119,9 +141,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -138,50 +160,40 @@ sub new {
 
 ##############################################################################
 #
-# GetUsername - returns the username in the <query/>.
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetUsername {
-  shift;
+sub AUTOLOAD {
+  my $parent = shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"username");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "QUERY";
+
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
 
-##############################################################################
-#
-# GetPassword - returns the password in the <query/>.
-#
-##############################################################################
-sub GetPassword {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"password");
-}
+$FUNCTIONS{get}->{Username} = ["value","username",""];
+$FUNCTIONS{get}->{Password} = ["value","password",""];
+$FUNCTIONS{get}->{Resource} = ["value","resource",""];
+$FUNCTIONS{get}->{Digest}   = ["value","digest",""];
 
+$FUNCTIONS{set}->{Username} = ["single","username","*","",""];
+$FUNCTIONS{set}->{Password} = ["single","password","*","",""];
+$FUNCTIONS{set}->{Resource} = ["single","resource","*","",""];
+$FUNCTIONS{set}->{Digest}   = ["single","digest","*","",""];
 
-##############################################################################
-#
-# GetDigest - returns the SHA1 digest in the <query/>.
-#
-##############################################################################
-sub GetDigest {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"digest");
-}
-
-
-##############################################################################
-#
-# GetResource - returns the resource in the <query/>.
-#
-##############################################################################
-sub GetResource {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"resource");
-}
+$FUNCTIONS{defined}->{Username} = ["existence","username",""];
+$FUNCTIONS{defined}->{Password} = ["existence","password",""];
+$FUNCTIONS{defined}->{Resource} = ["existence","resource",""];
+$FUNCTIONS{defined}->{Digest}   = ["existence","digest",""];
 
 
 ##############################################################################
@@ -203,57 +215,5 @@ sub SetAuth {
   $self->SetResource("Anonymous") if !exists($auth{resource});
 }
 
-
-##############################################################################
-#
-# SetUsername - sets the username of the account you want to connect with.
-#
-##############################################################################
-sub SetUsername {
-  shift;
-  my $self = shift;
-  my ($username) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"username",$username,{});
-}
-
-
-##############################################################################
-#
-# SetPassword - sets the password of the account you want to connect with.
-#
-##############################################################################
-sub SetPassword {
-  shift;
-  my $self = shift;
-  my ($password) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"password",$password,{});
-}
-
-
-##############################################################################
-#
-# SetDigest - sets the SHA-1 digest of the password of the account you want
-#             to connect with.
-#
-##############################################################################
-sub SetDigest {
-  shift;
-  my $self = shift;
-  my ($digest) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"digest",$digest,{});
-}
-
-
-##############################################################################
-#
-# SetResource - sets the resource of the account you want to connect with.
-#
-##############################################################################
-sub SetResource {
-  shift;
-  my $self = shift;
-  my ($resource) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"resource",$resource,{});
-}
 
 1;

@@ -146,9 +146,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -172,66 +172,37 @@ sub new {
 
 ##############################################################################
 #
-# GetJID - returns the JID of the <item/>
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetJID {
+sub AUTOLOAD {
   my $self = shift;
-  my ($type) = @_;
-  my $jid = &Net::Jabber::GetXMLData("value",$self->{ITEM},"","jid");
-  if ($type eq "jid") {
-    return new Net::Jabber::JID($jid);
-  } else {
-    return $jid;
-  }
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "ITEM";
+  
+  return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
+  return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
+  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
+  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
 }
 
 
-##############################################################################
-#
-# GetName - returns the name of the <item/>
-#
-##############################################################################
-sub GetName {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"","name");
-}
+$FUNCTIONS{get}->{JID}          = ["value","","jid"];
+$FUNCTIONS{get}->{Name}         = ["value","","name"];
+$FUNCTIONS{get}->{Groups}       = ["value array","group",""];
 
+$FUNCTIONS{set}->{Name}         = ["single","","","name","*"];
 
-##############################################################################
-#
-# GetGroups - returns an array of the groups of the <item/>
-#
-##############################################################################
-sub GetGroups {
-  my $self = shift;
-
-  return &Net::Jabber::GetXMLData("value array",$self->{ITEM},"group");
-}
-
-
-##############################################################################
-#
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  return &Net::Jabber::BuildXML(@{$self->{ITEM}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#           the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;  
-  return @{$self->{ITEM}};
-}
+$FUNCTIONS{defined}->{JID}          = ["existence","","jid"];
+$FUNCTIONS{defined}->{Name}         = ["existence","","name"];
+$FUNCTIONS{defined}->{Group}        = ["existence","group",""];
 
 
 ##############################################################################
@@ -268,18 +239,6 @@ sub SetJID {
 
 ##############################################################################
 #
-# SetName - sets the name of the <item/>
-#
-##############################################################################
-sub SetName {
-  my $self = shift;
-  my ($name) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{name=>$name});
-}
-
-
-##############################################################################
-#
 # SetGroups - sets the groups of the <item/>
 #
 ##############################################################################
@@ -293,17 +252,5 @@ sub SetGroups {
   }
 }
 
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug ITEM: $self\n";
-  &Net::Jabber::printData("debug: \$self->{ITEM}->",$self->{ITEM});
-}
 
 1;

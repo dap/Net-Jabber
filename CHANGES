@@ -1,3 +1,42 @@
+1.0017
+======
+  - Deprecating Transport.pm.  It will cease to exist in the near
+    future in favor of the Component.pm module and Jabber Server
+    Components.
+  - Fixed support for the new connection profile found in the new
+    Jabber server.  (You cannot use this to connect a Transport
+    to a server before 1.1.2).
+  - Fixed bug in JID.pm where changing a JID that did not have a UserID
+    part, but previously had a value in the Server would goof up.
+  - Fixed bug in AuthSend where the type='set' attribute was not being
+    set for the <iq/>.
+  - Fixed bug where an unkown namespace in an IQ would cause an error.
+
+1.0016
+======
+  - Converted the rest of the functions to the AUTOLOAD method.
+  - PresenceSend in Protocol.pm now returns the presence object that it
+    sent.
+  - Changed GetJID in JID to not return the @ when the JID dues not have
+    a userid.
+  - Moved Perl requirement to 5.005.
+  - Moved XML::Stream requirement to 1.06 to support the timestamp and a
+    bug fix.
+  - Added timestamp support to Debug.pm.
+  - Added digest control to AuthSend.
+
+1.0015
+======
+  - Fixed bug with EscapeXML and the XML::Parser.
+  - Converted the Query namespaces to the new AUTOLOAD method.
+  - Fixed bug in the Search.pm file where it would trounce the 
+    XML::Parser::Tree.
+
+1.0014
+======
+  - Fixed bug in the Search namespaces that would cause duplicates to be
+    placed in the query if multiple calls to MergeItems were made.
+
 1.0013
 ======
   - Removed some leftover print statements that would cause confusing output

@@ -10,6 +10,7 @@ WriteMakefile(
 			      'Jabber/Debug.pm' => '$(INST_LIBDIR)/Jabber/Debug.pm',
 			      'Jabber/Client.pm' => '$(INST_LIBDIR)/Jabber/Client.pm',
 			      'Jabber/Transport.pm' => '$(INST_LIBDIR)/Jabber/Transport.pm',
+			      'Jabber/Component.pm' => '$(INST_LIBDIR)/Jabber/Component.pm',
 			      'Jabber/Protocol.pm' => '$(INST_LIBDIR)/Jabber/Protocol.pm',
 			      'Jabber/JID.pm' => '$(INST_LIBDIR)/Jabber/JID.pm',
 			      'Jabber/Key.pm' => '$(INST_LIBDIR)/Jabber/Key.pm',
@@ -45,6 +46,6 @@ WriteMakefile(
 	      'PREREQ_PM' => {
 			      'XML::Stream' => 1.05
 			     },
-	      'VERSION' => '1.0013',
+	      'VERSION' => '1.0017',
 	      'dist' => { 'COMPRESS' => 'gzip --best' }
 	     );

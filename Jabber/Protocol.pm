@@ -45,7 +45,9 @@ Net::Jabber::Protocol - Jabber Protocol Library
 			    secret=>"bob");      #
 
 
-    $Con->SetCallBacks(message=>\&messageCallBack,
+    $Con->SetCallBacks(send=>\&sendCallBack,
+		       receive=>\&receiveCallBack,
+		       message=>\&messageCallBack,
 		       iq=>\&handleTheIQTag);
 
     $error = $Con->GetErrorCode();
@@ -129,7 +131,8 @@ Net::Jabber::Protocol - Jabber Protocol Library
     @result = $Con->AuthSend();
     @result = $Con->AuthSend(username=>"bob",
 			     password=>"bobrulez",
-			     resource=>"Bob");
+			     resource=>"Bob",
+			     digest=>1);
 
 =head2 IQ::Fneg Functions
 
@@ -207,9 +210,9 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
     SetCallBacks(message=>function,  - sets the callback functions for
                  presence=>function,   the top level tags listed.  The
-		 iq=>function)         available tags to look for are
-                                       <message/>, <presence/>, and
-                                       <iq/>.  If a packet is received
+		 iq=>function,         available tags to look for are
+                 send=>function,       <message/>, <presence/>, and
+                 receive=>function)    <iq/>.  If a packet is received
                                        with an ID then it is not sent
                                        to these functions, instead it
                                        is inserted into a LIST and can
@@ -361,9 +364,9 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
     AuthSend(username=>string, - takes all of the information and
              password=>string,   builds a Net::Jabber::IQ::Auth packet.
-             resource=>string)   It then sends that packet to the
-    AuthSend()                   server with an ID and waits for that
-                                 ID to return.  Then it looks in
+             resource=>string,   It then sends that packet to the
+             digest=>0|1)        server with an ID and waits for that
+    AuthSend()                   ID to return.  Then it looks in
                                  resulting packet and determines if
                                  authentication was successful for not.
                                  If no hash is passed then it tries
@@ -527,7 +530,7 @@ it under the same terms as Perl itself.
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -587,8 +590,10 @@ sub CallBack {
   my $self = shift;
   my (@object) = @_;
 
-  $self->{DEBUG}->Log1("CallBack: received(",&Net::Jabber::BuildXML(@object),")");
-
+  my $xml = &Net::Jabber::BuildXML(@object);
+  $self->{DEBUG}->Log1("CallBack: received(",$xml,")");
+  &{$self->{CB}->{receive}}($xml) if exists($self->{CB}->{receive});
+  
   my $tag = $object[0];
   my $id = "";
   $id = $object[1]->[0]->{id} if (exists($object[1]->[0]->{id}));
@@ -700,6 +705,7 @@ sub SendXML {
   my $self = shift;
   my($xml) = @_;
   $self->{DEBUG}->Log1("SendXML: sent($xml)");
+  &{$self->{CB}->{send}}($xml) if exists($self->{CB}->{send});
   $self->{STREAM}->Send($xml);
 }
 
@@ -1078,6 +1084,7 @@ sub PresenceSend {
   my $presence = new Net::Jabber::Presence();
   $presence->SetPresence(@_);
   $self->Send($presence);
+  return $presence;
 }
 
 
@@ -1146,10 +1153,10 @@ sub AgentsGet {
     $agents{$jid}->{description} = $agent->GetDescription();
     $agents{$jid}->{transport} = $agent->GetTransport();
     $agents{$jid}->{service} = $agent->GetService();
-    $agents{$jid}->{register} = $agent->GetRegister();
-    $agents{$jid}->{search} = $agent->GetSearch();
-    $agents{$jid}->{groupchat} = $agent->GetGroupChat();
-    $agents{$jid}->{agents} = $agent->GetAgents();
+    $agents{$jid}->{register} = $agent->DefinedRegister();
+    $agents{$jid}->{search} = $agent->DefinedSearch();
+    $agents{$jid}->{groupchat} = $agent->DefinedGroupChat();
+    $agents{$jid}->{agents} = $agent->DefinedAgents();
     $agents{$jid}->{order} = $count++;
   }
 
@@ -1178,8 +1185,12 @@ sub AuthSend {
   # Note: Concat the Session ID and the password and then digest that
   # string to get the server to accept the digest.
   #------------------------------------------------------------------------
-  if ($self->{DIGEST} == 1) {
-    if (exists($args{password})) {
+  if (exists($args{digest})) {
+    my $digestUse = $args{digest};
+    delete($args{digest});
+    if (($digestUse == 1) && 
+	($self->{DIGEST} == 1) && 
+	(exists($args{password}))) {
       my $password = delete($args{password});
       my $digest = Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$password);
       $args{digest} = $digest;
@@ -1190,6 +1201,7 @@ sub AuthSend {
   # Create a Net::Jabber::IQ object to send to the server
   #------------------------------------------------------------------------
   my $IQLogin = new Net::Jabber::IQ();
+  $IQLogin->SetIQ(type=>"set");
   my $IQAuth = $IQLogin->NewQuery("jabber:iq:auth");
   $IQAuth->SetAuth(%args);
 

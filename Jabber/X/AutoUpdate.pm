@@ -90,9 +90,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -109,14 +109,29 @@ sub new {
 
 ##############################################################################
 #
-# GetJID - returns the JID of the agent that is going to handle the update
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetJID {
-  shift;
+sub AUTOLOAD {
+  my $parent = shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"","");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "X";
+
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
+
+$FUNCTIONS{get}->{JID} = ["value","",""];
+
+$FUNCTIONS{set}->{JID} = ["single","","*","",""];
+
 
 ##############################################################################
 #
@@ -131,19 +146,6 @@ sub SetX {
   while($#_ >= 0) { $x{ lc pop(@_) } = pop(@_); }
 
   $self->SetJID($x{jid}) if exists($x{jid});
-}
-
-
-##############################################################################
-#
-# SetJID - sets the cdata of the jabber:x:autoupdate
-#
-##############################################################################
-sub SetJID {
-  shift;
-  my $self = shift;
-  my ($jid) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{X},"","$jid",{});
 }
 
 

@@ -50,12 +50,12 @@ Net::Jabber::Transport - Jabber Transport Library
 =head2 Basic Functions
 
     new(debuglevel=>0|1|2, - creates the Transport object.  debugfile
-        debugfile=>string)   should be set to the path for the debug
-                             log to be written.  If set to "stdout" 
+        debugfile=>string,   should be set to the path for the debug
+        debugtime=>0|1)      log to be written.  If set to "stdout" 
                              then the debug will go there.  debuglevel 
                              controls the amount of debug.  For more
                              information about the valid setting for
-                             debuglevel and debugfile see 
+                             debuglevel, debugfile, and debugtime see 
                              Net::Jabber::Debug.
 
     Connect(hostname=>string,      - opens a connection to the server
@@ -84,13 +84,12 @@ it under the same terms as Perl itself.
 
 =cut
 
-require 5.003;
 use strict;
-use XML::Stream 1.05;
+use XML::Stream 1.06;
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&
@@ -116,6 +115,7 @@ sub new {
   $self->{DEBUG} = 
     new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
 			   file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
+			   time=>exists($args{debugtime}) ? $args{debugtime} : 0,
 			   setdefault=>1,
 			   header=>"NJ::Transport"
 			  );
@@ -127,7 +127,8 @@ sub new {
   $self->{CONNECTED} = 0;
 
   $self->{STREAM} = new XML::Stream(debugfh=>$self->{DEBUG}->GetHandle(),
-				    debuglevel=>$self->{DEBUG}->GetLevel());
+				    debuglevel=>$self->{DEBUG}->GetLevel(),
+				    debugtime=>$self->{DEBUG}->GetTime());
 
   $self->{VERSION} = $VERSION;
   

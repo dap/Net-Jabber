@@ -73,6 +73,18 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
     $agent->SetGroupChat();
     $agent->SetAgents();
 
+=head2 Test functions
+ 
+    $test = $agent->DefinedJID();
+    $test = $agent->DefinedName();
+    $test = $agent->DefinedDescription();
+    $test = $agent->DefinedTransport();
+    $test = $agent->DefinedService();
+    $test = $agent->DefinedRegister();
+    $test = $agent->DefinedSearch();
+    $test = $agent->DefinedGroupChat();
+    $test = $agent->DefinedAgents();
+
 =head1 METHODS
 
 =head2 Retrieval functions
@@ -137,9 +149,38 @@ Net::Jabber::Query::Agent - Jabber Query Agent Module
                 is put in the <query/> to signify sub-agents are
                 available.
 
+=head2 Test functions
+ 
+  DefinedJID() - returns 1 if jid is in the parrent tag, 
+                 0 otherwise.
+
+  DefinedName() - returns 1 if <name/> is in the parent tag, 
+                  0 otherwise.
+
+  DefinedDescription() - returns 1 if <description/> is in the parent tag,
+                         0 otherwise.
+
+  DefinedTransport() - returns 1 if <transport/> is in the parent tag, 
+                       0 otherwise.
+
+  DefinedService() - returns 1 if <service/> is in the parent tag, 
+                     0 otherwise.
+
+  DefinedRegister() - returns 1 if <register/> is in the parent tag, 
+                      0 otherwise.
+
+  DefinedSearch() - returns 1 if <search/> is in the parent tag, 
+                    0 otherwise.
+
+  DefinedGroupChat() - returns 1 if <groupchat/> is in the parent tag, 
+                       0 otherwise.
+
+  DefinedAgents() - returns 1 if <agents/> is in the parent tag, 
+                    0 otherwise.
+
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in July of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -151,9 +192,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -175,136 +216,60 @@ sub new {
 
 ##############################################################################
 #
-# GetJID - returns the jabber id of the jabber:iq:agent
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetJID {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("value",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"","jid");
+sub AUTOLOAD {
+  my $parent = shift;
+  my $self = (exists($parent->{AGENT}) ? $parent : shift );
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = (exists($parent->{AGENT}) ? "AGENT" : "QUERY");
+  
+  return &Net::Jabber::MissingFunction($parent,$AUTOLOAD)
+    if (($treeName eq "QUERY") && ($value eq "JID"));
+  return &Net::Jabber::BuildXML(@{$parent->{AGENT}}) if ($AUTOLOAD eq "GetXML");
+  return @{$parent->{AGENT}} if ($AUTOLOAD eq "GetTree");
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  return &Net::Jabber::debug($parent,$treeName) if ($AUTOLOAD eq "debug");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
 
-##############################################################################
-#
-# GetName - returns the name of the jabber:iq:agent
-#
-##############################################################################
-sub GetName {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("value",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"name","");
-}
+$FUNCTIONS{get}->{JID}         = ["value","","jid"];
+$FUNCTIONS{get}->{Name}        = ["value","name",""];
+$FUNCTIONS{get}->{Description} = ["value","description",""];
+$FUNCTIONS{get}->{Transport}   = ["value","transport",""];
+$FUNCTIONS{get}->{Service}     = ["value","service",""];
+$FUNCTIONS{get}->{Register}    = ["value","register",""];
+$FUNCTIONS{get}->{Search}      = ["value","search",""];
+$FUNCTIONS{get}->{GroupChat}   = ["value","groupchat",""];
+$FUNCTIONS{get}->{Agents}      = ["value","agents",""];
 
+$FUNCTIONS{set}->{JID}         = ["single","","","jid","*"];
+$FUNCTIONS{set}->{Name}        = ["single","name","*","",""];
+$FUNCTIONS{set}->{Description} = ["single","description","*","",""];
+$FUNCTIONS{set}->{Transport}   = ["single","transport","*","",""];
+$FUNCTIONS{set}->{Service}     = ["single","service","*","",""];
+$FUNCTIONS{set}->{Register}    = ["single","register","*","",""];
+$FUNCTIONS{set}->{Search}      = ["single","search","*","",""];
+$FUNCTIONS{set}->{GroupChat}   = ["single","groupchat","*","",""];
+$FUNCTIONS{set}->{Agents}      = ["single","agents","*","",""];
 
-##############################################################################
-#
-# GetDescription - returns the description of the jabber:iq:agent
-#
-##############################################################################
-sub GetDescription {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("value",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"description","");
-}
-
-
-##############################################################################
-#
-# GetTransport - returns the namr of the jabber:iq:agent
-#
-##############################################################################
-sub GetTransport {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("value",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"transport","");
-}
-
-
-##############################################################################
-#
-# GetService - returns the namr of the jabber:iq:agent
-#
-##############################################################################
-sub GetService {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("value",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"service","");
-}
-
-
-##############################################################################
-#
-# GetRegister - returns the namr of the jabber:iq:agent
-#
-##############################################################################
-sub GetRegister {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("existence",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"register","");
-}
-
-
-##############################################################################
-#
-# GetSearch - returns the namr of the jabber:iq:agent
-#
-##############################################################################
-sub GetSearch {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("existence",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"search","");
-}
-
-
-##############################################################################
-#
-# GetGroupChat - returns the namr of the jabber:iq:agent
-#
-##############################################################################
-sub GetGroupChat {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("existence",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"groupchat","");
-}
-
-
-##############################################################################
-#
-# GetAgents - returns the namr of the jabber:iq:agent
-#
-##############################################################################
-sub GetAgents {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::GetXMLData("existence",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"agents","");
-}
-
-
-##############################################################################
-#
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return &Net::Jabber::BuildXML(@{$self->{AGENT}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#           the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  return @{$self->{AGENT}};
-}
+$FUNCTIONS{defined}->{JID}         = ["existence","","jid"];
+$FUNCTIONS{defined}->{Name}        = ["existence","name",""];
+$FUNCTIONS{defined}->{Description} = ["existence","description",""];
+$FUNCTIONS{defined}->{Transport}   = ["existence","transport",""];
+$FUNCTIONS{defined}->{Service}     = ["existence","service",""];
+$FUNCTIONS{defined}->{Register}    = ["existence","register",""];
+$FUNCTIONS{defined}->{Search}      = ["existence","search",""];
+$FUNCTIONS{defined}->{GroupChat}   = ["existence","groupchat",""];
+$FUNCTIONS{defined}->{Agents}      = ["existence","agents",""];
 
 
 ##############################################################################
@@ -330,132 +295,5 @@ sub SetAgent {
   $self->SetAgents() if exists($agent{agents});
 }
 
-
-##############################################################################
-#
-# SetJID - sets the jid in the jabber:iq:agent
-#
-##############################################################################
-sub SetJID {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  my ($jid) = @_;
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"","",{jid=>$jid});
-}
-
-
-##############################################################################
-#
-# SetName - sets the name in the jabber:iq:agent
-#
-##############################################################################
-sub SetName {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  my ($name) = @_;
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"name",$name,{});
-}
-
-
-##############################################################################
-#
-# SetDescription - sets the description in the jabber:iq:agent
-#
-##############################################################################
-sub SetDescription {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  my ($description) = @_;
-  
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"description",$description,{});
-}
-
-
-##############################################################################
-#
-# SetTransport - sets the transport in the jabber:iq:agent
-#
-##############################################################################
-sub SetTransport {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  my ($transport) = @_;
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"transport",$transport,{});
-}
-
-
-##############################################################################
-#
-# SetService - sets the service in the jabber:iq:agent
-#
-##############################################################################
-sub SetService {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  my ($service) = @_;
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"service",$service,{});
-}
-
-
-##############################################################################
-#
-# SetRegister - sets the register in the jabber:iq:agent
-#
-##############################################################################
-sub SetRegister {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"register","",{});
-}
-
-
-##############################################################################
-#
-# SetSearch - sets the search in the jabber:iq:agent
-#
-##############################################################################
-sub SetSearch {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"search","",{});
-}
-
-
-##############################################################################
-#
-# SetGroupChat - sets the groupchat in the jabber:iq:agent
-#
-##############################################################################
-sub SetGroupChat {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"groupchat","",{});
-}
-
-
-##############################################################################
-#
-# SetAgents - sets the agents in the jabber:iq:agent
-#
-##############################################################################
-sub SetAgents {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-  &Net::Jabber::SetXMLData("single",(!exists($self->{AGENT}) ? $self->{QUERY} : $self->{AGENT}),"agents","",{});
-}
-
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-  $self = shift if !exists($self->{AGENT});
-
-  print "debug AGENT: $self\n";
-  &Net::Jabber::printData("debug: \$self->{AGENT}->",$self->{AGENT});
-}
 
 1;

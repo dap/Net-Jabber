@@ -77,6 +77,14 @@ Net::Jabber::Query::Roster::Item - Jabber IQ Roster Item Module
     $item->SetAsk('both');
     $item->SetGroups(['friends','school']);
 
+=head2 Test functions
+
+    $test = $item->DefinedJID();
+    $test = $item->DefinedName();
+    $test = $item->DefinedSubscription();
+    $test = $item->DefinedAsk();
+    $test = $item->DefinedGroup();
+
 =head1 METHODS
 
 =head2 Retrieval functions
@@ -145,10 +153,24 @@ Net::Jabber::Query::Roster::Item - Jabber IQ Roster Item Module
 
   SetGroups(array) - sets the group for each group in the array.
 
+=head2 Test functions
+
+  DefinedJID() - returns 1 if jid is defined in the <item/>, 0 otherwise.
+
+  DefinedName() - returns 1 if name is defined in the <item/>, 0 otherwise.
+
+  DefinedSubscription() - returns 1 if subscription is defined in the 
+                          <item/>, 0 otherwise.
+
+  DefinedAsk() - returns 1 if ask is defined in the <item/>, 0 otherwise.
+
+  DefinedGroup() - returns 1 if there is a <group/> tag in the <item/>, 
+                   0 otherwise.
+
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in July of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -160,9 +182,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -186,94 +208,43 @@ sub new {
 
 ##############################################################################
 #
-# GetJID - returns the JID of the <item/>
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetJID {
+sub AUTOLOAD {
   my $self = shift;
-  my ($type) = @_;
-  my $jid = &Net::Jabber::GetXMLData("value",$self->{ITEM},"","jid");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
   $type = "" unless defined($type);
-  if ($type eq "jid") {
-    return new Net::Jabber::JID($jid);
-  } else {
-    return $jid;
-  }
+  my $treeName = "ITEM";
+  
+  return &Net::Jabber::BuildXML(@{$self->{ITEM}}) if ($AUTOLOAD eq "GetXML");
+  return @{$self->{ITEM}} if ($AUTOLOAD eq "GetTree");
+  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
+  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
 }
 
 
-##############################################################################
-#
-# GetName - returns the name of the <item/>
-#
-##############################################################################
-sub GetName {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"","name");
-}
+$FUNCTIONS{get}->{JID}          = ["value","","jid"];
+$FUNCTIONS{get}->{Name}         = ["value","","name"];
+$FUNCTIONS{get}->{Subscription} = ["value","","subscription"];
+$FUNCTIONS{get}->{Ask}          = ["value","","ask"];
+$FUNCTIONS{get}->{Groups}       = ["value array","group",""];
 
+$FUNCTIONS{set}->{Name}         = ["single","","","name","*"];
+$FUNCTIONS{set}->{Subscription} = ["single","","","subscription","*"];
+$FUNCTIONS{set}->{Ask}          = ["single","","","ask","*"];
 
-##############################################################################
-#
-# GetSubscription - returns the subscription of the <item/>
-#
-##############################################################################
-sub GetSubscription {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"","subscription");
-}
-
-
-##############################################################################
-#
-# GetAsk - returns the ask of the <item/>
-#
-##############################################################################
-sub GetAsk {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"","ask");
-}
-
-
-##############################################################################
-#
-# GetGroups - returns an array of the groups of the <item/>
-#
-##############################################################################
-sub GetGroups {
-  my $self = shift;
-
-  my @groups = &Net::Jabber::GetXMLData("value array",$self->{ITEM},"group");
-  my $index;
-  foreach $index (0..$#groups) {
-    splice(@groups,$index,1) if ($groups[$index] eq "");
-  }
-  return @groups;
-}
-
-
-##############################################################################
-#
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  return &Net::Jabber::BuildXML(@{$self->{ITEM}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#           the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;  
-  return @{$self->{ITEM}};
-}
+$FUNCTIONS{defined}->{JID}          = ["existence","","jid"];
+$FUNCTIONS{defined}->{Name}         = ["existence","","name"];
+$FUNCTIONS{defined}->{Subscription} = ["existence","","subscription"];
+$FUNCTIONS{defined}->{Ask}          = ["existence","","ask"];
+$FUNCTIONS{defined}->{Group}        = ["existence","group",""];
 
 
 ##############################################################################
@@ -309,43 +280,6 @@ sub SetJID {
   &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{jid=>$jid});
 }
 
-
-##############################################################################
-#
-# SetName - sets the name of the <item/>
-#
-##############################################################################
-sub SetName {
-  my $self = shift;
-  my ($name) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{name=>$name});
-}
-
-
-##############################################################################
-#
-# SetSubscription - sets the subscription of the <item/>
-#
-##############################################################################
-sub SetSubscription {
-  my $self = shift;
-  my ($subscription) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{subscription=>$subscription});
-}
-
-
-##############################################################################
-#
-# SetAsk - sets the ask of the <item/>
-#
-##############################################################################
-sub SetAsk {
-  my $self = shift;
-  my ($ask) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{ask=>$ask});
-}
-
-
 ##############################################################################
 #
 # SetGroups - sets the groups of the <item/>
@@ -361,17 +295,5 @@ sub SetGroups {
   }
 }
 
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug ITEM: $self\n";
-  &Net::Jabber::printData("debug: \$self->{ITEM}->",$self->{ITEM});
-}
 
 1;

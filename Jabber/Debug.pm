@@ -37,8 +37,8 @@ Net::Jabber::Debug - Jabber Debug Library
          file=>string,      determines the maximum level of debug
          header=>string,    messages to log:
          setdefault=>0|1,     0 - Base level Output (default)
-         usedefault=>0|1)     1 - High level API calls
-                              2 - Low level API calls
+         usedefault=>0|1,     1 - High level API calls
+         time=>0|1)           2 - Low level API calls
                             The file determines where the debug log
                             goes.  You can either specify a path to
                             a file, or "stdout" (the default).  "stdout"
@@ -51,7 +51,9 @@ Net::Jabber::Debug - Jabber Debug Library
                             setdefault saves the current filehandle
                             and makes it available for other Debug
                             objects to use.  To use the default set
-                            usedefault to 1.
+                            usedefault to 1.  The time parameter
+                            specifies whether or not to add a timestamp
+                            to the beginning of each logged line.
 
     Log0(array) - Logs the elements of the array at the corresponding
     Log1(array)   debug level.  If you pass in a reference to an
@@ -99,7 +101,7 @@ use strict;
 use FileHandle;
 use vars qw($VERSION %HANDLES $DEFAULT $DEFAULTLEVEL);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -128,12 +130,16 @@ sub Init {
 
   delete($args{file}) if (lc($args{file}) eq "stdout");
 
+  $args{time} = 0 if !exists($args{time});
   $args{setdefault} = 0 if !exists($args{setdefault});
   $args{usedefault} = 0 if !exists($args{usedefault});
   
+  $self->{TIME} = $args{time};
+
   if (($args{usedefault} == 1) && ($Net::Jabber::Debug::DEFAULT ne "")) {
     $args{setdefault} = 0;
 
+    $self->{TIME} = $Net::Jabber::Debug::DEFAULTTIME;
     $self->{LEVEL} = $Net::Jabber::Debug::DEFAULTLEVEL;
     $self->{HANDLE} = $Net::Jabber::Debug::DEFAULT;
 
@@ -141,11 +147,11 @@ sub Init {
     $self->{LEVEL} = 0;
     $self->{LEVEL} = $args{level} if exists($args{level});
     
-    $self->{HANDLE} = new FileHandle(">&STDOUT");
+    $self->{HANDLE} = new FileHandle(">&STDERR");
     $self->{HANDLE}->autoflush(1);
     if (exists($args{file})) {
       if (exists($Net::Jabber::Debug::HANDLES{$args{file}})) {
-	$self->{HANDLE} = $Net::Jabber::Debug::HANDLES{$args{file}};
+	$self->{HANDLE} = $Ne::Jabber::Debug::HANDLES{$args{file}};
 	$self->{HANDLE}->autoflush(1);
       } else {
 	if (-e $args{file}) {
@@ -183,6 +189,7 @@ sub Init {
   if ($args{setdefault} == 1) {
     $Net::Jabber::Debug::DEFAULT = $self->{HANDLE};
     $Net::Jabber::Debug::DEFAULTLEVEL = $self->{LEVEL};
+    $Net::Jabber::Debug::DEFAULTTIME = $self->{TIME};
   } 
 
   $self->{HEADER} = "Debug";
@@ -204,7 +211,11 @@ sub Log {
 
   my $fh = $self->{HANDLE};
 
-  my $string = $self->{HEADER}.":";
+  my $string = "";
+
+  $string .= "[".&Net::Jabber::GetTimeStamp("local",time,"short")."] "
+    if ($self->{TIME} == 1);
+  $string .= $self->{HEADER}.":";
 
   my $arg;
   foreach $arg (@args) {
@@ -281,6 +292,17 @@ sub GetHandle {
 sub GetLevel {
   my $self = shift;
   return $self->{LEVEL};
+}
+
+
+##############################################################################
+#
+# GetTime - returns the debug time used by this object.
+#
+##############################################################################
+sub GetTime {
+  my $self = shift;
+  return $self->{TIME};
 }
 
 

@@ -193,9 +193,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -219,97 +219,53 @@ sub new {
 
 ##############################################################################
 #
-# GetJID - returns the JID of the <item/>
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetJID {
+sub AUTOLOAD {
   my $self = shift;
-  my ($type) = @_;
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
   $type = "" unless defined($type);
-  my $jid = &Net::Jabber::GetXMLData("value",$self->{ITEM},"","jid");
-  if ($type eq "jid") {
-    return new Net::Jabber::JID($jid);
-  } else {
-    return $jid;
-  }
+  my $treeName = "ITEM";
+
+  return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
+  return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
+  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
+  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
 }
 
+$FUNCTIONS{get}->{JID}    = ["value","","jid"];
+$FUNCTIONS{get}->{Name}   = ["value","name",""];
+$FUNCTIONS{get}->{First}  = ["value","first",""];
+$FUNCTIONS{get}->{Given}  = ["value","given",""];
+$FUNCTIONS{get}->{Last}   = ["value","last",""];
+$FUNCTIONS{get}->{Family} = ["value","family",""];
+$FUNCTIONS{get}->{Nick}   = ["value","nick",""];
+$FUNCTIONS{get}->{Email}  = ["value","email",""];
 
-##############################################################################
-#
-# GetName - returns the name of the <item/>
-#
-##############################################################################
-sub GetName {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"name","");
-}
+$FUNCTIONS{set}->{JID}    = ["single","","","jid","*"];
+$FUNCTIONS{set}->{Name}   = ["single","name","*","",""];
+$FUNCTIONS{set}->{First}  = ["single","first","*","",""];
+$FUNCTIONS{set}->{Given}  = ["single","given","*","",""];
+$FUNCTIONS{set}->{Last}   = ["single","last","*","",""];
+$FUNCTIONS{set}->{Family} = ["single","family","*","",""];
+$FUNCTIONS{set}->{Nick}   = ["single","nick","*","",""];
+$FUNCTIONS{set}->{Email}  = ["single","email","*","",""];
 
-
-##############################################################################
-#
-# GetFirst - returns the first of the <item/>
-#
-##############################################################################
-sub GetFirst {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"first","");
-}
-
-
-##############################################################################
-#
-# GetGiven - returns the given of the <item/>
-#
-##############################################################################
-sub GetGiven {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"given","");
-}
-
-
-##############################################################################
-#
-# GetLast - returns the last of the <item/>
-#
-##############################################################################
-sub GetLast {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"last","");
-}
-
-
-##############################################################################
-#
-# GetFamily - returns the family of the <item/>
-#
-##############################################################################
-sub GetFamily {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"family","");
-}
-
-
-##############################################################################
-#
-# GetNick - returns the nick of the <item/>
-#
-##############################################################################
-sub GetNick {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"nick","");
-}
-
-
-##############################################################################
-#
-# GetEmail - returns the email of the <item/>
-#
-##############################################################################
-sub GetEmail {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{ITEM},"email","");
-}
+$FUNCTIONS{defined}->{JID}    = ["existence","","jid"];
+$FUNCTIONS{defined}->{Name}   = ["existence","name",""];
+$FUNCTIONS{defined}->{First}  = ["existence","first",""];
+$FUNCTIONS{defined}->{Given}  = ["existence","given",""];
+$FUNCTIONS{defined}->{Last}   = ["existence","last",""];
+$FUNCTIONS{defined}->{Family} = ["existence","family",""];
+$FUNCTIONS{defined}->{Nick}   = ["existence","nick",""];
+$FUNCTIONS{defined}->{Email}  = ["existence","email",""];
 
 
 ##############################################################################
@@ -335,30 +291,6 @@ sub GetResult {
 
 ##############################################################################
 #
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  return &Net::Jabber::BuildXML(@{$self->{ITEM}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#           the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;  
-  return @{$self->{ITEM}};
-}
-
-
-##############################################################################
-#
 # SetItem - takes a hash of all of the things you can set on an item <query/>
 #           and sets each one.
 #
@@ -378,193 +310,5 @@ sub SetItem {
   $self->SetEmail($item{email}) if exists($item{email});
 }
 
-
-##############################################################################
-#
-# SetJID - sets the JID of the <item/>
-#
-##############################################################################
-sub SetJID {
-  my $self = shift;
-  my ($jid) = @_;
-  if (ref($jid) eq "Net::Jabber::JID") {
-    $jid = $jid->GetJID();
-  }
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"","",{jid=>$jid});
-}
-
-
-##############################################################################
-#
-# SetName - sets the name of the <item/>
-#
-##############################################################################
-sub SetName {
-  my $self = shift;
-  my ($name) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"name","$name",{});
-}
-
-
-##############################################################################
-#
-# SetFirst - sets the first of the <item/>
-#
-##############################################################################
-sub SetFirst {
-  my $self = shift;
-  my ($first) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"first","$first",{});
-}
-
-
-##############################################################################
-#
-# SetGiven - sets the given of the <item/>
-#
-##############################################################################
-sub SetGiven {
-  my $self = shift;
-  my ($given) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"given","$given",{});
-}
-
-
-##############################################################################
-#
-# SetLast - sets the last of the <item/>
-#
-##############################################################################
-sub SetLast {
-  my $self = shift;
-  my ($last) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"last","$last",{});
-}
-
-
-##############################################################################
-#
-# SetFamily - sets the family of the <item/>
-#
-##############################################################################
-sub SetFamily {
-  my $self = shift;
-  my ($family) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"family","$family",{});
-}
-
-
-##############################################################################
-#
-# SetNick - sets the nick of the <item/>
-#
-##############################################################################
-sub SetNick {
-  my $self = shift;
-  my ($nick) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"nick","$nick",{});
-}
-
-
-##############################################################################
-#
-# SetEmail - sets the email of the <item/>
-#
-##############################################################################
-sub SetEmail {
-  my $self = shift;
-  my ($email) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{ITEM},"email","$email",{});
-}
-
-
-##############################################################################
-#
-# DefinedName - returns the name of the <item/>
-#
-##############################################################################
-sub DefinedName {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{ITEM},"name","");
-}
-
-
-##############################################################################
-#
-# DefinedFirst - returns the first of the <item/>
-#
-##############################################################################
-sub DefinedFirst {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{ITEM},"first","");
-}
-
-
-##############################################################################
-#
-# DefinedGiven - returns the given of the <item/>
-#
-##############################################################################
-sub DefinedGiven {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{ITEM},"given","");
-}
-
-
-##############################################################################
-#
-# DefinedLast - returns the last of the <item/>
-#
-##############################################################################
-sub DefinedLast {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{ITEM},"last","");
-}
-
-
-##############################################################################
-#
-# DefinedFamily - returns the family of the <item/>
-#
-##############################################################################
-sub DefinedFamily {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{ITEM},"family","");
-}
-
-
-##############################################################################
-#
-# DefinedNick - returns the nick of the <item/>
-#
-##############################################################################
-sub DefinedNick {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{ITEM},"nick","");
-}
-
-
-##############################################################################
-#
-# DefinedEmail - returns the email of the <item/>
-#
-##############################################################################
-sub DefinedEmail {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{ITEM},"email","");
-}
-
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug ITEM: $self\n";
-  &Net::Jabber::printData("debug: \$self->{ITEM}->",$self->{ITEM});
-}
 
 1;

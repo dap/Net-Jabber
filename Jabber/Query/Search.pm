@@ -168,8 +168,8 @@ Net::Jabber::Query::Search - Jabber IQ Search Module
                                    {field2} = "value2";
                                    {field3} = "value3";
 
-  GetTruncated() - returns a string that contains the value of truncated in 
-                   the search query.
+  GetTruncated() - returns 1 if <truncated/> exists in the search query,
+                   0 otherwise.
 
 =head2 Creation functions
 
@@ -255,9 +255,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 use Net::Jabber::Query::Search::Item;
 ($Net::Jabber::Query::Search::Item::VERSION < $VERSION) &&
@@ -278,110 +278,57 @@ sub new {
 
 ##############################################################################
 #
-# GetInstructions - returns the instructions of the <query/>
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetInstructions {
-  shift;
+sub AUTOLOAD {
+  my $parent = shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"instructions","");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "QUERY";
+
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
+$FUNCTIONS{get}->{Instructions} = ["value","instructions",""];
+$FUNCTIONS{get}->{Key}          = ["value","key",""];
+$FUNCTIONS{get}->{Name}         = ["value","name",""];
+$FUNCTIONS{get}->{First}        = ["value","first",""];
+$FUNCTIONS{get}->{Given}        = ["value","given",""];
+$FUNCTIONS{get}->{Last}         = ["value","last",""];
+$FUNCTIONS{get}->{Family}       = ["value","family",""];
+$FUNCTIONS{get}->{Nick}         = ["value","nick",""];
+$FUNCTIONS{get}->{Email}        = ["value","email",""];
+$FUNCTIONS{get}->{Truncated}    = ["existence","truncated",""];
 
-##############################################################################
-#
-# GetKey - returns the key of the <query/>
-#
-##############################################################################
-sub GetKey {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"key","");
-}
+$FUNCTIONS{set}->{Instructions} = ["single","instructions","*","",""];
+$FUNCTIONS{set}->{Key}          = ["single","key","*","",""];
+$FUNCTIONS{set}->{Name}         = ["single","name","*","",""];
+$FUNCTIONS{set}->{First}        = ["single","first","*","",""];
+$FUNCTIONS{set}->{Given}        = ["single","given","*","",""];
+$FUNCTIONS{set}->{Last}         = ["single","last","*","",""];
+$FUNCTIONS{set}->{Family}       = ["single","family","*","",""];
+$FUNCTIONS{set}->{Nick}         = ["single","nick","*","",""];
+$FUNCTIONS{set}->{Email}        = ["single","email","*","",""];
+$FUNCTIONS{set}->{Truncated}    = ["single","truncated","*","",""];
 
-
-##############################################################################
-#
-# GetName - returns the name of the <query/>
-#
-##############################################################################
-sub GetName {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"name","");
-}
-
-
-##############################################################################
-#
-# GetFirst - returns the first of the <query/>
-#
-##############################################################################
-sub GetFirst {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"first","");
-}
-
-
-##############################################################################
-#
-# GetGiven - returns the given of the <query/>
-#
-##############################################################################
-sub GetGiven {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"given","");
-}
-
-
-##############################################################################
-#
-# GetLast - returns the last of the <query/>
-#
-##############################################################################
-sub GetLast {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"last","");
-}
-
-
-##############################################################################
-#
-# GetFamily - returns the family of the <query/>
-#
-##############################################################################
-sub GetFamily {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"family","");
-}
-
-
-##############################################################################
-#
-# GetNick - returns the nick of the <query/>
-#
-##############################################################################
-sub GetNick {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"nick","");
-}
-
-
-##############################################################################
-#
-# GetEmail - returns the email of the <query/>
-#
-##############################################################################
-sub GetEmail {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"email","");
-}
+$FUNCTIONS{defined}->{Instructions} = ["existence","instructions",""];
+$FUNCTIONS{defined}->{Key}          = ["existence","key",""];
+$FUNCTIONS{defined}->{Name}         = ["existence","name",""];
+$FUNCTIONS{defined}->{First}        = ["existence","first",""];
+$FUNCTIONS{defined}->{Given}        = ["existence","given",""];
+$FUNCTIONS{defined}->{Last}         = ["existence","last",""];
+$FUNCTIONS{defined}->{Family}       = ["existence","family",""];
+$FUNCTIONS{defined}->{Nick}         = ["existence","nick",""];
+$FUNCTIONS{defined}->{Email}        = ["existence","email",""];
+$FUNCTIONS{defined}->{Truncated}    = ["existence","truncated",""];
 
 
 ##############################################################################
@@ -464,18 +411,6 @@ sub GetResults {
 
 ##############################################################################
 #
-# GetTruncated - returns the truncated of the <query/>
-#
-##############################################################################
-sub GetTruncated {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"truncated","");
-}
-
-
-##############################################################################
-#
 # SetSearch - takes a hash of all of the things you can set on a search query
 #             and sets each one.
 #
@@ -496,138 +431,6 @@ sub SetSearch {
   $self->SetNick($search{nick}) if exists($search{nick});
   $self->SetEmail($search{email}) if exists($search{email});
   $self->SetTruncated($search{truncated}) if exists($search{truncated});
-}
-
-
-##############################################################################
-#
-# SetInstructions - sets the instructions of the <query/>
-#
-##############################################################################
-sub SetInstructions {
-  shift;
-  my $self = shift;
-  my ($instructions) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"instructions","$instructions",{});
-}
-
-
-##############################################################################
-#
-# SetKey - sets the key of the <query/>
-#
-##############################################################################
-sub SetKey {
-  shift;
-  my $self = shift;
-  my ($key) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"key","$key",{});
-}
-
-
-##############################################################################
-#
-# SetName - sets the name of the <query/>
-#
-##############################################################################
-sub SetName {
-  shift;
-  my $self = shift;
-  my ($name) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"name","$name",{});
-}
-
-
-##############################################################################
-#
-# SetFirst - sets the first of the <query/>
-#
-##############################################################################
-sub SetFirst {
-  shift;
-  my $self = shift;
-  my ($first) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"first","$first",{});
-}
-
-
-##############################################################################
-#
-# SetGiven - sets the given of the <query/>
-#
-##############################################################################
-sub SetGiven {
-  shift;
-  my $self = shift;
-  my ($given) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"given","$given",{});
-}
-
-
-##############################################################################
-#
-# SetLast - sets the last of the <query/>
-#
-##############################################################################
-sub SetLast {
-  shift;
-  my $self = shift;
-  my ($last) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"last","$last",{});
-}
-
-
-##############################################################################
-#
-# SetFamily - sets the family of the <query/>
-#
-##############################################################################
-sub SetFamily {
-  shift;
-  my $self = shift;
-  my ($family) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"family","$family",{});
-}
-
-
-##############################################################################
-#
-# SetNick - sets the nick of the <query/>
-#
-##############################################################################
-sub SetNick {
-  shift;
-  my $self = shift;
-  my ($nick) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"nick","$nick",{});
-}
-
-
-##############################################################################
-#
-# SetEmail - sets the email of the <query/>
-#
-##############################################################################
-sub SetEmail {
-  shift;
-  my $self = shift;
-  my ($email) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"email","$email",{});
-}
-
-
-##############################################################################
-#
-# SetTruncated - sets the truncated of the <query/>
-#
-##############################################################################
-sub SetTruncated {
-  print "SetTruncated:  \n";
-
-  shift;
-  my $self = shift;
-  my ($truncated) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"truncated","$truncated",{});
 }
 
 
@@ -661,138 +464,18 @@ sub AddItem {
 sub MergeItems {
   shift;
   my $self = shift;
-  my (@tree);
   my $count = 1;
-  my ($item);
+  my $item;
   foreach $item (@{$self->{ITEMS}}) {
-    while (($self->{QUERY}->[1]->[($count+1)] ne "item") &&
-	   ($self->{QUERY}->[1]->[($count+1)] ne "")) {
-      $count += 2;
+    while ((ref($self->{QUERY}->[1]->[$count]) ne "") ||
+	   ((ref($self->{QUERY}->[1]->[$count]) eq "") &&
+	    ($self->{QUERY}->[1]->[$count] ne "item") &&
+	    ($self->{QUERY}->[1]->[$count] ne ""))) {
+      $count += 1;
     }
-    @tree = $item->GetTree();
     $self->{QUERY}->[1]->[$count++] = "item";
     $self->{QUERY}->[1]->[$count++] = ($item->GetTree())[1];
   }
-}
-
-
-##############################################################################
-#
-# DefinedInstructions - returns the instructions in the <query/>.
-#
-##############################################################################
-sub DefinedInstructions {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"instructions");
-}
-
-
-##############################################################################
-#
-# DefinedKey - returns the key in the <query/>.
-#
-##############################################################################
-sub DefinedKey {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"key");
-}
-
-
-##############################################################################
-#
-# DefinedName - returns the name in the <query/>.
-#
-##############################################################################
-sub DefinedName {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"name");
-}
-
-
-##############################################################################
-#
-# DefinedFirst - returns the first in the <query/>.
-#
-##############################################################################
-sub DefinedFirst {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"first");
-}
-
-
-##############################################################################
-#
-# DefinedGiven - returns the given in the <query/>.
-#
-##############################################################################
-sub DefinedGiven {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"given");
-}
-
-
-##############################################################################
-#
-# DefinedLast - returns the last in the <query/>.
-#
-##############################################################################
-sub DefinedLast {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"last");
-}
-
-
-##############################################################################
-#
-# DefinedFamily - returns the family in the <query/>.
-#
-##############################################################################
-sub DefinedFamily {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"family");
-}
-
-
-##############################################################################
-#
-# DefinedNick - returns the nick in the <query/>.
-#
-##############################################################################
-sub DefinedNick {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"nick");
-}
-
-
-##############################################################################
-#
-# DefinedEmail - returns the email in the <query/>.
-#
-##############################################################################
-sub DefinedEmail {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"email");
-}
-
-
-##############################################################################
-#
-# DefinedTruncated - returns the truncated in the <query/>.
-#
-##############################################################################
-sub DefinedTruncated {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"truncated");
 }
 
 

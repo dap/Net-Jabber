@@ -63,6 +63,12 @@ Net::Jabber::Query::Time - Jabber IQ Time Module
     $time->SetTZ('CST');
     $time->SetDisplay('2000/04/19 01:50 PM');
 
+=head2 Test functions
+
+    $test = $time->DefinedUTC();
+    $test = $time->DefinedTZ();
+    $test = $time->DefinedDisplay();
+
 =head1 METHODS
 
 =head2 Retrieval functions
@@ -103,6 +109,16 @@ Net::Jabber::Query::Time - Jabber IQ Time Module
   SetDisplay(string) - sets the string to display as the local time in
                        UTC format in the remote client.
 
+=head2 Test functions
+
+  DefinedUTC() - returns 1 if <utc/> exists in the query, 0 otherwise.
+
+  DefinedTZ() - returns 1 if <tz/> exists in the query, 0 otherwise.
+
+  DefinedDisplay() - returns 1 if <display/> exists in the query,
+                     0 otherwise.
+
+
 =head1 AUTHOR
 
 By Ryan Eatmon in May of 2000 for http://jabber.org..
@@ -117,9 +133,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -143,38 +159,32 @@ sub new {
 
 ##############################################################################
 #
-# GetUTC - returns the utc in the <query/>.
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetUTC {
-  shift;
+sub AUTOLOAD {
+  my $parent = shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"utc");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "QUERY";
+
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
+$FUNCTIONS{get}->{UTC}     = ["value","utc",""];
+$FUNCTIONS{get}->{TZ}      = ["value","tz",""];
+$FUNCTIONS{get}->{Display} = ["value","display",""];
 
-##############################################################################
-#
-# GetTZ - returns the timezone in the <query/>.
-#
-##############################################################################
-sub GetTZ {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"tz");
-}
-
-
-##############################################################################
-#
-# GetDisplay - returns the display in the <query/>.
-#
-##############################################################################
-sub GetDisplay {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"display");
-}
+$FUNCTIONS{defined}->{UTC}     = ["existence","utc",""];
+$FUNCTIONS{defined}->{TZ}      = ["existence","tz",""];
+$FUNCTIONS{defined}->{Display} = ["existence","display",""];
 
 
 ##############################################################################

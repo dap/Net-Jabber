@@ -165,7 +165,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 use Net::Jabber::X::AutoUpdate;
 ($Net::Jabber::X::AutoUpdate::VERSION < $VERSION) &&
@@ -261,6 +261,8 @@ sub GetXMLNS {
 ##############################################################################
 sub GetXML {
   my $self = shift;
+  $self->MergeItems() if (exists($self->{ITEMS}));
+  $self->MergeGraphics() if (exists($self->{WHITEBOARD}));
   return &Net::Jabber::BuildXML(@{$self->{X}});
 }
 
@@ -273,6 +275,8 @@ sub GetXML {
 ##############################################################################
 sub GetTree {
   my $self = shift;
+  $self->MergeItems() if (exists($self->{ITEMS}));
+  $self->MergeGraphics() if (exists($self->{WHITEBOARD}));
   return @{$self->{X}};
 }
 
@@ -298,6 +302,8 @@ sub SetXMLNS {
 ##############################################################################
 sub debug {
   my $self = shift;
+  $self->MergeItems() if (exists($self->{ITEMS}));
+  $self->MergeGraphics() if (exists($self->{WHITEBOARD}));
 
   print "debug X: $self\n";
   &Net::Jabber::printData("debug: \$self->{X}->",$self->{X});

@@ -40,14 +40,26 @@ Net::Jabber - Jabber Perl Library
   stream from the server and based on what kind of tag it 
   encounters it calls a function to handle the tag.
 
-  Net::Jabber::Transport - this package contains the code needed
-  to write a transport.  A transport is a program tha handles
+  Net::Jabber::Component - this package contains the code needed
+  to write a server component.  A component is a program tha handles
   the communication between a jabber server and some outside
   program or communications pacakge (IRC, talk, email, etc...)
-  With this module you can write a full transport in just
+  With this module you can write a full component in just
   a few lines of Perl.  It uses XML::Stream to communicate with 
   its host server and based on what kind of tag it encounters it 
-  calls a function to handle the tag.
+  calls a function to handle the tag.  This replaces the Transport
+  module as of the new Jabber server v1.1.2.
+
+  Net::Jabber::Transport - *****DEPRECATED***** this package 
+  contains the code needed to write a transport.  A transport 
+  is a program tha handles the communication between a jabber
+  server and some outside program or communications pacakge
+  (IRC, talk, email, etc...) With this module you can write
+  a full transport in just a few lines of Perl.  It uses
+  XML::Stream to communicate with its host server and based
+  on what kind of tag it encounters it calls a function to
+  handle the tag.  This module will cease to exist in the
+  near future due to the shift from Transports to Components.
 
   Net::Jabber::Protocol - a collection of high-level functions
   that Client and transport use to make their lives easier.
@@ -122,7 +134,7 @@ it under the same terms as Perl itself.
 
 =cut
 
-require 5.003;
+require 5.005;
 use strict;
 use Time::Local;
 use Carp;
@@ -136,7 +148,7 @@ if ($] >= 5.006) {
 }
 
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -173,6 +185,10 @@ use Net::Jabber::Client;
 use Net::Jabber::Transport;
 ($Net::Jabber::Transport::VERSION < $VERSION) &&
   die("Net::Jabber::Transport $VERSION required--this is only version $Net::Jabber::Transport::VERSION");
+
+use Net::Jabber::Component;
+($Net::Jabber::Component::VERSION < $VERSION) &&
+  die("Net::Jabber::Component $VERSION required--this is only version $Net::Jabber::Component::VERSION");
 
 
 ##############################################################################
@@ -216,7 +232,136 @@ $DELEGATES{'jabber:x:gc'}->{delegate} = "Net::Jabber::X::GC";
 $DELEGATES{'jabber:x:oob'}->{parent}   = "Net::Jabber::X";
 $DELEGATES{'jabber:x:oob'}->{delegate}   = "Net::Jabber::X::Oob";
 $DELEGATES{'jabber:x:roster'}->{parent}   = "Net::Jabber::X";
-$DELEGATES{'jabber:x:roster'} ->{delegate}  = "Net::Jabber::X::Roster";
+$DELEGATES{'jabber:x:roster'}->{delegate}  = "Net::Jabber::X::Roster";
+$DELEGATES{'jabber:x:whiteboard'}->{parent}   = "Net::Jabber::X";
+$DELEGATES{'jabber:x:whiteboard'}->{delegate}  = "Net::Jabber::X::WhiteBoard";
+
+
+
+##############################################################################
+#
+# debug - prints out the XML::Parser Tree in a readable format for debugging
+#
+##############################################################################
+sub debug {
+  my $self = shift;
+  my $treeName = shift;
+  
+  print "debug ",$treeName,": ",$self,"\n";
+  &Net::Jabber::printData("debug: \$self->{",$treeName,"}->",$self->{$treeName});
+}
+
+
+##############################################################################
+#
+# MissingFunction - send an error if the function is missing.
+#
+##############################################################################
+sub MissingFunction {
+  my ($parent,$function) = @_;
+  croak("Undefined function $function in package ".ref($parent));
+}
+
+
+##############################################################################
+#
+# Get - returns the string that is contained in this tag/attribute.
+#
+##############################################################################
+sub Get {
+#  print "N::J::Get: (",join(",",@_),")\n";
+  my $parent = shift;
+  my $self = (ref($_[0]) ne "") ? shift : $parent;
+  my $tag = shift;
+  my $treeName = shift;
+  my $args = shift;
+  
+  &Net::Jabber::MissingFunction($parent,"Get$tag")
+    unless (ref($args) eq "ARRAY");
+
+#  print "\$\$args: (",join(",",@{$args}),")\n";
+
+  my $type = shift;
+  $type = "" unless defined($type);
+  
+  if ($$args[0] eq "value array") {
+    my @getData = &Net::Jabber::GetXMLData($$args[0],
+					   $self->{$treeName},
+					   $$args[1],
+					   $$args[2]);
+    my $lastIndex = $#getData;
+    my $index;
+    foreach $index (0..$lastIndex) {
+      if ($getData[($lastIndex - $index)] eq "") {
+	splice(@getData,($lastIndex-$index),1);
+      }
+    }
+    return @getData;
+  } else {
+    my $getData = &Net::Jabber::GetXMLData($$args[0],
+					   $self->{$treeName},
+					   $$args[1],
+					   $$args[2]);
+    
+    return new Net::Jabber::JID($getData) if ($type eq "jid");
+    return $getData;
+  }
+}
+
+
+##############################################################################
+#
+# Set - sets the XML data for this tag
+#
+##############################################################################
+sub Set {
+#  print "N::J::Set: (",join(",",@_),")\n";
+  my $parent = shift;
+  my $self = (ref($_[0]) ne "") ? shift : $parent;
+  my $tag = shift;
+  my $treeName = shift;
+  my $args = shift;
+
+  &Net::Jabber::MissingFunction($parent,"Set$tag")
+    unless (ref($args) eq "ARRAY");
+
+#  print "\$\$args: (",join(",",@{$args}),")\n";
+
+  &Net::Jabber::SetXMLData($$args[0],
+			   $self->{$treeName},
+			   $$args[1],
+			   (($$args[2] eq "*") ? shift : ""),
+			   (($$args[3] ne "") ?
+			    { $$args[3]=>(($$args[4] eq "*") ? shift : "") } :
+			    {}
+			   )
+			  );
+}
+
+
+##############################################################################
+#
+# Defined - returns 1 if the tag exists, 0 other else.
+#
+##############################################################################
+sub Defined {
+#  print "N::J::Defined: (",join(",",@_),")\n";
+  my $parent = shift;
+  my $self = (ref($_[0]) ne "") ? shift : $parent;
+  my $tag = shift;
+  my $treeName = shift;
+  my $args = shift;
+
+#  print "\$\$args: (",join(",",@{$args}),")\n";
+
+  &Net::Jabber::MissingFunction($parent,"Defined$tag")
+    unless (ref($args) eq "ARRAY");
+
+  return &Net::Jabber::GetXMLData($$args[0],
+				  $self->{$treeName},
+				  $$args[1],
+				  $$args[2]);
+}
 
 
 ##############################################################################
@@ -249,10 +394,10 @@ sub SetXMLData {
 	  if ($data ne "") {
 	    #todo: add code to handle writing the cdata again and appending it.
 	    $$XMLTree[1]->[$child+1]->[1] = 0;
-	    $$XMLTree[1]->[$child+1]->[2] = &EscapeXML($data);
+	    $$XMLTree[1]->[$child+1]->[2] = $data;
 	  }
 	  foreach $key (keys(%{$attribs})) {
-	    $$XMLTree[1]->[$child+1]->[0]->{$key} = &EscapeXML($$attribs{$key});
+	    $$XMLTree[1]->[$child+1]->[0]->{$key} = $$attribs{$key};
 	  }
 	  return;
 	}
@@ -261,23 +406,23 @@ sub SetXMLData {
     $$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = $tag;
     $$XMLTree[1]->[($#{$$XMLTree[1]}+1)]->[0] = {};
     foreach $key (keys(%{$attribs})) {
-      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[0]->{$key} = &EscapeXML($$attribs{$key});
+      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[0]->{$key} = $$attribs{$key};
     }
     if ($data ne "") {
       $$XMLTree[1]->[$#{$$XMLTree[1]}]->[1] = 0;
-      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[2] = &EscapeXML($data);
+      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[2] = $data;
     }
   } else {
     foreach $key (keys(%{$attribs})) {
-      $$XMLTree[1]->[0]->{$key} = &EscapeXML($$attribs{$key});
+      $$XMLTree[1]->[0]->{$key} = $$attribs{$key};
     }
     if ($data ne "") {
       if (($#{$$XMLTree[1]} > 0) &&
 	  ($$XMLTree[1]->[($#{$$XMLTree[1]}-1)] eq "0")) {
-	$$XMLTree[1]->[$#{$$XMLTree[1]}] .= &EscapeXML($data);
+	$$XMLTree[1]->[$#{$$XMLTree[1]}] .= $data;
       } else {
 	$$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = 0;
-	$$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = &EscapeXML($data);
+	$$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = $data;
       }
     }
   }
@@ -361,9 +506,9 @@ sub GetXMLData {
 		$next = 1;
 	      }
 	    }
-	    return &UnescapeXML($str);
+	    return $str;
 	  }
-	  return &UnescapeXML($$XMLTree[1]->[$child+1]->[0]->{$attrib})
+	  return $$XMLTree[1]->[$child+1]->[0]->{$attrib}
 	    if (exists $$XMLTree[1]->[$child+1]->[0]->{$attrib});
 	}
         #---------------------------------------------------------------------
@@ -381,7 +526,7 @@ sub GetXMLData {
 	      $next = 1;
 	    }
 	  }
-	  push(@array,&UnescapeXML($str));
+	  push(@array,$str);
 	}
         #---------------------------------------------------------------------
 	# Return a pointer to a new XML::Parser::Tree object that has the
@@ -428,9 +573,9 @@ sub GetXMLData {
 	    $next = 1;
 	  }
 	}
-	return &UnescapeXML($str);
+	return $str;
       }
-      return &UnescapeXML($$XMLTree[1]->[0]->{$attrib})
+      return $$XMLTree[1]->[0]->{$attrib}
         if (exists $$XMLTree[1]->[0]->{$attrib});
     }
     #---------------------------------------------------------------------
@@ -482,33 +627,6 @@ sub EscapeXML {
 
 ##############################################################################
 #
-# UnescapeXML - Simple function to unecnode the bad characters from the XML
-#              string.
-#
-##############################################################################
-sub UnescapeXML {
-  my $data = shift;
-
-  $data =~ s/&apos;/\'/g;
-  $data =~ s/&quot;/\"/g;
-  $data =~ s/&gt;/>/g;
-  $data =~ s/&lt;/</g;
-  $data =~ s/&amp;/&/g;
-  
-  if ($UNICODE == 1) {
-    eval("{  no warnings;  \$data =~ tr/\0-\x{ff}//UC;  };")
-  } else {
-    my $unicode = new Unicode::String();
-    $unicode->utf8($data);
-    $data = $unicode->latin1;
-  }
-
-  return $data;
-}
-
-
-##############################################################################
-#
 # BuildXML - takes an XML::Parser::Tree object and builds the XML string that
 #            it represents.
 #
@@ -522,12 +640,12 @@ sub BuildXML {
   if (ref($parseTree[0]) eq "") {
 
     if ($parseTree[0] eq "0") {
-      return $parseTree[1];
+      return &EscapeXML($parseTree[1]);
     }
 
     $str = "<".$parseTree[0];
     foreach $att (keys(%{$parseTree[1]->[0]})) {
-      $str .= " ".$att."='".$parseTree[1]->[0]->{$att}."'";
+      $str .= " ".$att."='".&EscapeXML($parseTree[1]->[0]->{$att})."'";
     }
     
     my $tempStr = &Net::Jabber::BuildXML(@{$parseTree[1]});

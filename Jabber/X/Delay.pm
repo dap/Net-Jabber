@@ -96,6 +96,14 @@ Net::Jabber::X::Delay - Jabber X Delay Delegate
 
   SetMessage(string) - sets description of the delay.
  
+=head2 Test functions
+
+  DefinedFrom() - returns 1 if the from attribute exists in the x, 
+                  0 otherwise.
+
+  DefinedStamp() - returns 1 if the stamp attribute exists in the x, 
+                   0 otherwise.
+
 =head1 AUTHOR
 
 By Ryan Eatmon in May of 2000 for http://jabber.org..
@@ -110,9 +118,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -129,38 +137,34 @@ sub new {
 
 ##############################################################################
 #
-# GetFrom - returns from of the jabber:x:delay
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetFrom {
-  shift;
+sub AUTOLOAD {
+  my $parent = shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"","from");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "X";
+
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
+$FUNCTIONS{get}->{From}    = ["value","","from"];
+$FUNCTIONS{get}->{Stamp}   = ["value","","stamp"];
+$FUNCTIONS{get}->{Message} = ["value","",""];
 
-##############################################################################
-#
-# GetStamp - returns the stamp of the jabber:x:delay
-#
-##############################################################################
-sub GetStamp {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"","stamp");
-}
+$FUNCTIONS{set}->{From}    = ["single","","","from","*"];
+$FUNCTIONS{set}->{Message} = ["single","","*","",""];
 
-
-##############################################################################
-#
-# GetMessage - returns the cdata of the jabber:x:delay
-#
-##############################################################################
-sub GetMessage {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"","");
-}
+$FUNCTIONS{defined}->{From}    = ["existence","","from"];
+$FUNCTIONS{defined}->{Stamp}   = ["existence","","stamp"];
 
 
 ##############################################################################
@@ -182,19 +186,6 @@ sub SetDelay {
 
 ##############################################################################
 #
-# SetFrom - sets the from attribute in the jabber:x:delay
-#
-##############################################################################
-sub SetFrom {
-  shift;
-  my $self = shift;
-  my ($from) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{X},"","",{from=>$from});
-}
-
-
-##############################################################################
-#
 # SetStamp - sets the stamp attribute in the jabber:x:delay
 #
 ##############################################################################
@@ -208,19 +199,6 @@ sub SetStamp {
     $stamp = sprintf("%d%02d%02dT%02d:%02d:%02d",($year + 1900),($mon+1),$mday,$hour,$min,$sec);
   }
   &Net::Jabber::SetXMLData("single",$self->{X},"","",{stamp=>$stamp});
-}
-
-
-##############################################################################
-#
-# SetMessage - sets the cdata of the jabber:x:delay
-#
-##############################################################################
-sub SetMessage {
-  shift;
-  my $self = shift;
-  my ($message) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{X},"","$message",{});
 }
 
 

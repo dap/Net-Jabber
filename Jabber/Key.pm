@@ -65,7 +65,7 @@ use strict;
 use FileHandle;
 use vars qw($VERSION);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   srand( time() ^ ($$ + ($$ << 15)));

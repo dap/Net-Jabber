@@ -45,6 +45,10 @@ Net::Jabber::Message - Jabber Message Module
     $toJID      = $Mess->GetTo("jid");
     $from       = $Mess->GetFrom();
     $fromJID    = $Mess->GetFrom("jid");
+    $sto        = $Mess->GetSTo();
+    $stoJID     = $Mess->GetSTo("jid");
+    $sfrom      = $Mess->GetSFrom();
+    $sfromJID   = $Mess->GetSFrom("jid");
     $etherxTo   = $Mess->GetEtherxTo();
     $etherxFrom = $Mess->GetEtherxFrom();
     $resource   = $Mess->GetResource();
@@ -74,6 +78,8 @@ Net::Jabber::Message - Jabber Message Module
 		      priority=>100);
     $Mess->SetTo("test\@jabber.org");
     $Mess->SetFrom("me\@jabber.org");
+    $Mess->SetSTo("jabber.org");
+    $Mess->SetSFrom("jabber.org");
     $Mess->SetEtherxTo("jabber.org");
     $Mess->SetEtherxFrom("transport.jabber.org");
     $Mess->SetType("groupchat");
@@ -90,10 +96,27 @@ Net::Jabber::Message - Jabber Message Module
 
     $X = $Mess->NewX("jabber:x:delay");
     $X = $Mess->NewX("my:namespace");
+    $X = $Mess->NewX(Net::Jabber::X::XXXXX);
 
     $Reply = $Mess->Reply();
     $Reply = $Mess->Reply(template=>"client");
     $Reply = $Mess->Reply(template=>"transport");
+
+=head2 Test functions
+
+    $test = $Mess->DefinedTo();
+    $test = $Mess->DefinedFrom();
+    $test = $Mess->DefinedSTo();
+    $test = $Mess->DefinedSFrom();
+    $test = $Mess->DefinedEtherxTo();
+    $test = $Mess->DefinedEtherxFrom();
+    $test = $Mess->DefinedType();
+    $test = $Mess->DefinedSubject();
+    $test = $Mess->DefinedBody();
+    $test = $Mess->DefinedThread();
+    $test = $Mess->DefinedPriority();
+    $test = $Mess->DefinedErrorCode();
+    $test = $Mess->DefinedError();
 
 =head1 METHODS
 
@@ -110,6 +133,18 @@ Net::Jabber::Message - Jabber Message Module
                     sent the <message/>.  To get the JID object set 
                     the string to "jid", otherwise leave blank for the 
                     text string.
+
+  GetSTo()      - returns either a string with the Jabber Identifier,
+  GetSTo("jid")   or a Net::Jabber::JID object for the <host/> of the
+                  component that is going to receive the <message/>.  
+                  To get the JID object set the string to "jid", 
+                  otherwise leave blank for the text string.
+
+  GetSFrom()      -  returns either a string with the Jabber Identifier,
+  GetSFrom("jid")    or a Net::Jabber::JID object for the <host/> of the
+                     component that sent the <message/>.  To get the JID 
+                     object set the string to "jid", otherwise leave 
+                     blank for the text string.
 
   GetEtherxTo(string) - returns the etherx:to attribute.  This is for
                         Transport writers who need to communicate with
@@ -173,13 +208,17 @@ Net::Jabber::Message - Jabber Message Module
 
   SetMessage(to=>string|JID,     - set multiple fields in the <message/>
              from=>string|JID,     at one time.  This is a cumulative
-             type=>string,         and over writing action.  If you set
-             subject=>string,      the "to" attribute twice, the second
-             body=>string,         setting is what is used.  If you set
-             thread=>integer,      the subject, and then set the body
-             priority=>string,     then both will be in the <message/>
-             errorcode=>string,    tag.  For valid settings read the
-             error=>string)        specific Set functions below.
+             sto=>string,          and over writing action.  If you set
+             sfrom=>string,        the "to" attribute twice, the second
+             etherxto=>string,     setting is what is used.  If you set
+             etherxfrom=>string,   the subject, and then set the body
+             type=>string,         then both will be in the <message/>
+             subject=>string,      tag.  For valid settings read the
+             body=>string,         specific Set functions below.
+             thread=>string,
+             priority=>integer,
+             errorcode=>string,
+             error=>string)
 
   SetTo(string) - sets the to attribute.  You can either pass a string
   SetTo(JID)      or a JID object.  They must be valid Jabber 
@@ -190,6 +229,16 @@ Net::Jabber::Message - Jabber Message Module
   SetFrom(JID)      or a JID object.  They must be valid Jabber 
                     Identifiers or the server will return an error message.
                     (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+
+  SetSTo(string) - sets the sto attribute.  You can either pass a string
+  SetSTo(JID)      or a JID object.  They must be valid Jabber 
+                   Identifiers or the server will return an error message.
+                   (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+
+  SetSFrom(string) - sets the sfrom attribute.  You can either pass a string
+  SetSFrom(JID)      or a JID object.  They must be valid Jabber 
+                     Identifiers or the server will return an error message.
+                     (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
 
   SetEtherxTo(string) - sets the etherx:to attribute.  This is for
                         Transport writers who need to communicate with
@@ -258,6 +307,47 @@ Net::Jabber::Message - Jabber Message Module
                                        sender@replytransport.  That
                                        way a two way filter can occur.
 
+=head2 Test functions
+
+  DefinedTo() - returns 1 if the to attribute is defined in the <message/>, 
+                0 otherwise.
+
+  DefinedFrom() - returns 1 if the from attribute is defined in the 
+                  <message/>, 0 otherwise.
+
+  DefinedSTo() - returns 1 if the sto attribute is defined in the <message/>, 
+                 0 otherwise.
+
+  DefinedSFrom() - returns 1 if the sfrom attribute is defined in the 
+                   <message/>, 0 otherwise.
+
+  DefinedEtherxTo() - returns 1 if the etherx:to attribute is defined in 
+                      the <message/>, 0 otherwise.
+
+  DefinedEtherxFrom() - returns 1 if the etherx:from attribute is defined 
+                        in the <message/>, 0 otherwise.
+
+  DefinedType() - returns 1 if the type attribute is defined in the 
+                  <message/>, 0 otherwise.
+
+  DefinedSubject() - returns 1 if <subject/> is defined in the <message/>, 
+                     0 otherwise.
+
+  DefinedBody() - returns 1 if <body/> is defined in the <message/>, 
+                  0 otherwise.
+
+  DefinedThread() - returns 1 if <thread/> is defined in the <message/>, 
+                    0 otherwise.
+
+  DefinedPriority() - returns 1 if <priority/> is defined in the <message/>, 
+                      0 otherwise.
+
+  DefinedErrorCode() - returns 1 if <error/> is defined in the <message/>, 
+                       0 otherwise.
+
+  DefinedError() - returns 1 if the code attribute is defined in the 
+                   <error/>, 0 otherwise.
+
 =head1 AUTHOR
 
 By Ryan Eatmon in May of 2000 for http://jabber.org..
@@ -272,9 +362,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -309,86 +399,68 @@ sub new {
 
 ##############################################################################
 #
-# GetTag - returns the Jabber tag of this object
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetTag {
+sub AUTOLOAD {
   my $self = shift;
-  return "message";
-}
-
-
-##############################################################################
-#
-# GetID - returns the id of the <message/>
-#
-##############################################################################
-sub GetID {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","id");
-}
-
-
-##############################################################################
-#
-# GetTo - returns the Jabber Identifier of the person you are sending the
-#         <message/> to.
-#
-##############################################################################
-sub GetTo {
-  my $self = shift;
-  my ($type) = @_;
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
   $type = "" unless defined($type);
-  my $to = &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","to");
-  if ($type eq "jid") {
-    return new Net::Jabber::JID($to);
-  } else {
-    return $to;
-  }
+  my $treeName = "MESSAGE";
+  
+  return "message" if ($AUTOLOAD eq "GetTag");
+  return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
+  return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
+  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
+  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
 }
 
 
-##############################################################################
-#
-# GetFrom - returns the Jabber Identifier of the person who sent the 
-#           <message/>
-#
-##############################################################################
-sub GetFrom {
-  my $self = shift;
-  my ($type) = @_;
-  $type = "" unless defined($type);
-  my $from = &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","from");
-  if ($type eq "jid") {
-    return new Net::Jabber::JID($from);
-  } else {
-    return $from;
-  }
-}
+$FUNCTIONS{get}->{To}         = ["value","","to"];
+$FUNCTIONS{get}->{From}       = ["value","","from"];
+$FUNCTIONS{get}->{STo}        = ["value","","sto"];
+$FUNCTIONS{get}->{SFrom}      = ["value","","sfrom"];
+$FUNCTIONS{get}->{EtherxTo}   = ["value","","etherx:to"];
+$FUNCTIONS{get}->{EtherxFrom} = ["value","","etherx:from"];
+$FUNCTIONS{get}->{ID}         = ["value","","id"];
+$FUNCTIONS{get}->{Type}       = ["value","","type"];
+$FUNCTIONS{get}->{Subject}    = ["value","subject",""];
+$FUNCTIONS{get}->{Thread}     = ["value","thread",""];
+$FUNCTIONS{get}->{Priority}   = ["value","priority",""];
+$FUNCTIONS{get}->{ErrorCode}  = ["value","error","code"];
+$FUNCTIONS{get}->{Error}      = ["value","error",""];
 
+$FUNCTIONS{set}->{EtherxTo}   = ["single","","","etherx:to","*"];
+$FUNCTIONS{set}->{EtherxFrom} = ["single","","","etherx:from","*"];
+$FUNCTIONS{set}->{ID}         = ["single","","","id","*"];
+$FUNCTIONS{set}->{Type}       = ["single","","","type","*"];
+$FUNCTIONS{set}->{Subject}    = ["single","subject","*","",""];
+$FUNCTIONS{set}->{Body}       = ["single","body","*","",""];
+$FUNCTIONS{set}->{Thread}     = ["single","thread","*","",""];
+$FUNCTIONS{set}->{Priority}   = ["single","priority","*","",""];
+$FUNCTIONS{set}->{ErrorCode}  = ["single","error","","code","*"];
+$FUNCTIONS{set}->{Error}      = ["single","error","*","",""];
 
-##############################################################################
-#
-# GetEtherxTo - returns the value of the etherx:to attribute in the 
-#               <message/>.
-#
-##############################################################################
-sub GetEtherxTo {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","etherx:to");
-}
-
-
-##############################################################################
-#
-# GetEtherxFrom - returns the value of the etherx:from attribute in the 
-#                 <message/>.
-#
-##############################################################################
-sub GetEtherxFrom {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","etherx:from");
-}
+$FUNCTIONS{defined}->{To}         = ["existence","","to"];
+$FUNCTIONS{defined}->{From}       = ["existence","","from"];
+$FUNCTIONS{defined}->{STo}        = ["existence","","sto"];
+$FUNCTIONS{defined}->{SFrom}      = ["existence","","sfrom"];
+$FUNCTIONS{defined}->{EtherxTo}   = ["existence","","etherx:to"];
+$FUNCTIONS{defined}->{EtherxFrom} = ["existence","","etherx:from"];
+$FUNCTIONS{defined}->{ID}         = ["existence","","id"];
+$FUNCTIONS{defined}->{Type}       = ["existence","","type"];
+$FUNCTIONS{defined}->{Subject}    = ["existence","subject",""];
+$FUNCTIONS{defined}->{Body}       = ["existence","body",""];
+$FUNCTIONS{defined}->{Thread}     = ["existence","thread",""];
+$FUNCTIONS{defined}->{Priority}   = ["existence","priority",""];
+$FUNCTIONS{defined}->{ErrorCode}  = ["existence","error","code"];
+$FUNCTIONS{defined}->{Error}      = ["existence","error",""];
 
 
 ##############################################################################
@@ -407,28 +479,6 @@ sub GetResource {
 
 ##############################################################################
 #
-# GetType - returns the type of the <message/>
-#
-##############################################################################
-sub GetType {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","type");
-}
-
-
-##############################################################################
-#
-# GetSubject - returns the subject of the <message/>
-#
-##############################################################################
-sub GetSubject {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"subject");
-}
-
-
-##############################################################################
-#
 # GetBody - returns the body of the <message/>
 #
 ##############################################################################
@@ -440,50 +490,6 @@ sub GetBody {
     if (($level eq "none") || ($level eq ""));
   return &Net::Jabber::GetXMLData("tree",$self->{MESSAGE},"body")
     if ($level eq "full");
-}
-
-
-##############################################################################
-#
-# GetThread - returns the thread of the <message/>
-#
-##############################################################################
-sub GetThread {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"thread");
-}
-
-
-##############################################################################
-#
-# GetPriority - returns the priority of the <message/>
-#
-##############################################################################
-sub GetPriority {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"priority");
-}
-
-
-##############################################################################
-#
-# GetError - returns the text associated with the error
-#
-##############################################################################
-sub GetError {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"error");
-}
-
-
-##############################################################################
-#
-# GetErrorCode - returns the code of the error
-#
-##############################################################################
-sub GetErrorCode {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"error","code");
 }
 
 
@@ -582,6 +588,8 @@ sub SetMessage {
   $self->SetID($message{id}) if exists($message{id});
   $self->SetTo($message{to}) if exists($message{to});
   $self->SetFrom($message{from}) if exists($message{from});
+  $self->SetSTo($message{sto}) if exists($message{sto});
+  $self->SetSFrom($message{sfrom}) if exists($message{sfrom});
   $self->SetEtherxTo($message{etherxto}) if exists($message{etherxto});
   $self->SetEtherxFrom($message{etherxfrom}) if exists($message{etherxfrom});
   $self->SetType($message{type}) if exists($message{type});
@@ -591,18 +599,6 @@ sub SetMessage {
   $self->SetPriority($message{priority}) if exists($message{priority});
   $self->SetErrorCode($message{errorcode}) if exists($message{errorcode});
   $self->SetError($message{error}) if exists($message{error});
-}
-
-
-##############################################################################
-#
-# SetID - sets the to attribute in the <message/>
-#
-##############################################################################
-sub SetID {
-  my $self = shift;
-  my ($id) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{id=>$id});
 }
 
 
@@ -638,111 +634,73 @@ sub SetFrom {
 
 ##############################################################################
 #
-# SetEtherxTo - sets the etherx:to attribute in the <message/>
+# SetSTo - sets the sto attribute in the <message/>
 #
 ##############################################################################
-sub SetEtherxTo {
+sub SetSTo {
   my $self = shift;
-  my ($etherxto) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{"etherx:to"=>$etherxto});
+  my ($sto) = @_;
+  if (ref($sto) eq "Net::Jabber::JID") {
+    $sto = $sto->GetJID("full");
+  }
+  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{sto=>$sto});
 }
 
 
 ##############################################################################
 #
-# SetEtherxFrom - sets the etherx:from attribute in the <message/>
+# SetSFrom - sets the sfrom attribute in the <message/>
 #
 ##############################################################################
-sub SetEtherxFrom {
+sub SetSFrom {
   my $self = shift;
-  my ($etherxfrom) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{"etherx:from"=>$etherxfrom});
+  my ($sfrom) = @_;
+  if (ref($sfrom) eq "Net::Jabber::JID") {
+    $sfrom = $sfrom->GetJID("full");
+  }
+  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{sfrom=>$sfrom});
 }
 
 
 ##############################################################################
 #
-# SetType - sets the type attribute in the <message/>
+# AddXML - adds the specfied XML into the outgoing XML whenever it's 
+#          requested.
 #
 ##############################################################################
-sub SetType {
+sub AddXML {
   my $self = shift;
-  my ($type) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{type=>$type});
+  my ($xml) = @_;
+
+  require XML::Parser;
+  my $parser = new XML::Parser(Style=>'Tree');
+  my @trees = $parser->parse($xml);
+
+  my $treeIndex;
+  foreach $treeIndex (0..$#trees) {
+    my $index;
+    foreach $index (0..$#{$trees[$treeIndex]}) {
+      $self->{MESSAGE}->[1]->[$#{$self->{MESSAGE}->[1]}+1] = $trees[$treeIndex]->[$index];      
+    }
+  }
 }
 
 
 ##############################################################################
 #
-# SetSubject - sets the subject of the <message/>
+# AddTree - adds the specfied Tree into the outgoing XML whenever it's 
+#           requested.
 #
 ##############################################################################
-sub SetSubject {
+sub AddTree {
   my $self = shift;
-  my ($subject) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"subject",$subject,{});
+  my (@tree) = @_;
+
+  my $index;
+  foreach $index (0..$#tree) {
+    $self->{MESSAGE}->[1]->[$#{$self->{MESSAGE}->[1]}+1] = $tree[$index];      
+  }
 }
-
-
-##############################################################################
-#
-# SetBody - sets the body of the <message/>
-#
-##############################################################################
-sub SetBody {
-  my $self = shift;
-  my ($body) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"body",$body,{});
-}
-
-
-##############################################################################
-#
-# SetThread - sets the thread of the <message/>
-#
-##############################################################################
-sub SetThread {
-  my $self = shift;
-  my ($thread) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"thread",$thread,{});
-}
-
-
-##############################################################################
-#
-# SetPriority - sets the priority of the <message/>
-#
-##############################################################################
-sub SetPriority {
-  my $self = shift;
-  my ($priority) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"priority",$priority,{});
-}
-
-
-##############################################################################
-#
-# SetErrorCode - sets the code attribute in the error tag of the <message/>
-#
-##############################################################################
-sub SetErrorCode {
-  my $self = shift;
-  my ($code) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"error","",{code=>$code});
-}
-
-
-##############################################################################
-#
-# SetError - sets the error of the <message/>
-#
-##############################################################################
-sub SetError {
-  my $self = shift;
-  my ($error) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"error",$error,{});
-}
-
 
 
 ##############################################################################
@@ -779,7 +737,7 @@ sub AddX {
   push(@{$self->{XTAGS}},$xTag);
   return $xTag;
 }
-  
+
 
 ##############################################################################
 #
@@ -912,18 +870,5 @@ sub Reply {
   return $reply;
 }
 
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug MESSAGE: $self\n";
-  $self->MergeX();
-  &Net::Jabber::printData("debug: \$self->{MESSAGE}->",$self->{MESSAGE});
-}
 
 1;

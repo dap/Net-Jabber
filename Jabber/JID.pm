@@ -119,7 +119,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -170,7 +170,9 @@ sub ParseJID {
 ##############################################################################
 sub BuildJID {
   my $self = shift;
-  $self->{JID} = $self->{USERID}."\@".$self->{SERVER};
+  $self->{JID} = $self->{USERID};
+  $self->{JID} .= "\@" if ($self->{USERID} ne "");
+  $self->{JID} .= $self->{SERVER};
   $self->{JID} .= "/".$self->{RESOURCE} if ($self->{RESOURCE} ne "");
 }
 
@@ -220,7 +222,8 @@ sub GetJID {
   my ($type) = @_;
   $type = "" unless defined($type);
   return $self->{JID} if ($type eq "full");
-  return $self->{USERID}."\@".$self->{SERVER};
+  return $self->{USERID}."\@".$self->{SERVER} if ($self->{USERID} ne "");
+  return $self->{SERVER};
 }
 
 

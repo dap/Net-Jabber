@@ -70,6 +70,13 @@ Net::Jabber::Query::AutoUpdate::Release - Jabber IQ AutoUpdate Release Module
     $release->SetURL('http://somesite/path/client.tar.gz');
     $release->SetPriority("mandatory");
 
+=head2 Test functions
+
+    $test = $release->DefinedVersion();
+    $test = $release->DefinedDesc();
+    $test = $release->DefinedURL();
+    $test = $release->DefinedPriority();
+
 =head1 METHODS
 
 =head2 Retrieval functions
@@ -114,10 +121,24 @@ Net::Jabber::Query::AutoUpdate::Release - Jabber IQ AutoUpdate Release Module
                         "optional" or "mandatory" then this defaults to
                         "optional".
 
+=head2 Test functions
+
+  DefinedVersion() - returns 1 if <version/> is defined in the query, 0
+                     otherwise.
+
+  DefinedDesc() -  returns 1 if <desc/> is defined in the query, 0
+                   otherwise.
+
+  DefinedURL() -  returns 1 if <url/> is defined in the query, 0
+                  otherwise.
+
+  DefinedPriority() -  returns 1 if priority is defined in the query, 0
+                       otherwise.
+
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in July of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -129,9 +150,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -161,70 +182,42 @@ sub new {
 
 ##############################################################################
 #
-# GetVersion - returns the version of this release
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetVersion {
+sub AUTOLOAD {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{RELEASE},"version","");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "RELEASE";
+
+  return &Net::Jabber::BuildXML(@{$self->{RELEASE}}) if ($AUTOLOAD eq "GetXML");
+  return @{$self->{RELEASE}} if ($AUTOLOAD eq "GetTree");
+  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
+  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
 }
 
 
-##############################################################################
-#
-# GetDesc - returns the description of this release
-#
-##############################################################################
-sub GetDesc {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{RELEASE},"desc","");
-}
+$FUNCTIONS{get}->{Version}  = ["value","version",""];
+$FUNCTIONS{get}->{Desc}     = ["value","desc",""];
+$FUNCTIONS{get}->{URL}      = ["value","url",""];
+$FUNCTIONS{get}->{Priority} = ["value","","priority"];
 
+$FUNCTIONS{set}->{Version}  = ["single","version","*","",""];
+$FUNCTIONS{set}->{Desc}     = ["single","desc","*","",""];
+$FUNCTIONS{set}->{URL}      = ["single","url","*","",""];
+$FUNCTIONS{set}->{Priority} = ["single","","","priority","*"];
 
-##############################################################################
-#
-# GetURL - returns the url of this release
-#
-##############################################################################
-sub GetURL {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{RELEASE},"url","");
-}
-
-
-##############################################################################
-#
-# GetPriority - returns the priority of this release
-#
-##############################################################################
-sub GetPriority {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{RELEASE},"","priority");
-}
-
-
-##############################################################################
-#
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  return &Net::Jabber::BuildXML(@{$self->{RELEASE}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#           the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;  
-  return @{$self->{RELEASE}};
-}
+$FUNCTIONS{defined}->{Version}  = ["existence","version",""];
+$FUNCTIONS{defined}->{Desc}     = ["existence","desc",""];
+$FUNCTIONS{defined}->{URL}      = ["existence","url",""];
+$FUNCTIONS{defined}->{Priority} = ["existence","","priority"];
 
 
 ##############################################################################
@@ -244,66 +237,5 @@ sub SetRelease {
   $self->SetPriority($release{priority}) if exists($release{priority});
 }
 
-
-##############################################################################
-#
-# SetVersion - sets the version number of this release
-#
-##############################################################################
-sub SetVersion {
-  my $self = shift;
-  my ($version) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{RELEASE},"version","$version",{});
-}
-
-
-##############################################################################
-#
-# SetDesc - sets the description of this release
-#
-##############################################################################
-sub SetDesc {
-  my $self = shift;
-  my ($desc) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{RELEASE},"desc","$desc",{});
-}
-
-
-##############################################################################
-#
-# SetURL - sets the downlaod URL of this release
-#
-##############################################################################
-sub SetURL {
-  my $self = shift;
-  my ($url) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{RELEASE},"url","$url",{});
-}
-
-
-##############################################################################
-#
-# SetPriority - sets the priority of this release
-#
-##############################################################################
-sub SetPriority {
-  my $self = shift;
-  my ($priority) = @_;
-  $priority = "optional" if ($priority ne "mandatory");
-  &Net::Jabber::SetXMLData("single",$self->{RELEASE},"","",{priority=>$priority});
-}
-
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug RELEASE: $self\n";
-  &Net::Jabber::printData("debug: \$self->{RELEASE}->",$self->{RELEASE});
-}
 
 1;

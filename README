@@ -1,4 +1,4 @@
-Net::Jabber v1.0013
+Net::Jabber v1.0017
 
 The Jabber Instant Messaging project is an Open Source project seeking
 to provide a complete cross protocol messaging solution.  The problem
@@ -16,7 +16,7 @@ tester.
 
 Ryan Eatmon
 Jabber Perl Team Leader
-reatmon@ti.com
+reatmon@jabber.org
 
 
 
@@ -45,5 +45,5 @@ are stable, but if you see a newer version, you should switch to it immediatly
 and read the CHANGES file to find out what has changed.
 
 
-Please send any bug reports to reatmon@ti.com.
-2000/07/06
+Please send any bug reports to reatmon@jabber.org.
+2000/09/26

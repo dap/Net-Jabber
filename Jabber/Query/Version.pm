@@ -63,6 +63,12 @@ Net::Jabber::Query::Version - Jabber IQ Version Module
     $version->SetVer('0.1');
     $version->SetOS('Perl/Tk');
 
+=head2 Test functions
+
+    $test = $version->DefinedName();
+    $test = $version->DefinedVer();
+    $test = $version->DefinedOS();
+
 =head1 METHODS
 
 =head2 Retrieval functions
@@ -91,6 +97,14 @@ Net::Jabber::Query::Version - Jabber IQ Version Module
   SetOS(string) - sets the os, or cross-platform language, of the local
                   client in the <query/>.
 
+=head2 Test functions
+
+  DefinedName() - returns 1 if <name/> exists in the query, 0 otherwise.
+
+  DefinedVer() - returns 1 if <version/> exists in the query, 0 otherwise.
+
+  DefinedOS() - returns 1 if <os/> exists in the query, 0 otherwise.
+
 =head1 AUTHOR
 
 By Ryan Eatmon in May of 2000 for http://jabber.org..
@@ -105,9 +119,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use POSIX;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -124,38 +138,35 @@ sub new {
 
 ##############################################################################
 #
-# GetName - returns the name in the <query/>.
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetName {
-  shift;
+sub AUTOLOAD {
+  my $parent = shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"name");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "QUERY";
+
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
+$FUNCTIONS{get}->{Name} = ["value","name",""];
+$FUNCTIONS{get}->{Ver}  = ["value","version",""];
+$FUNCTIONS{get}->{OS}   = ["value","os",""];
 
-##############################################################################
-#
-# GetVer - returns the version in the <query/>.
-#
-##############################################################################
-sub GetVer {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"version");
-}
+$FUNCTIONS{set}->{Name} = ["single","name","*","",""];
+$FUNCTIONS{set}->{Ver}  = ["single","version","*","",""];
 
-
-##############################################################################
-#
-# GetOS - returns the os in the <query/>.
-#
-##############################################################################
-sub GetOS {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"os");
-}
+$FUNCTIONS{defined}->{Name} = ["existence","name",""];
+$FUNCTIONS{defined}->{Ver}  = ["existence","version",""];
+$FUNCTIONS{defined}->{OS}   = ["existence","os",""];
 
 
 ##############################################################################
@@ -173,32 +184,6 @@ sub SetVersion {
   $self->SetName($version{name}) if exists($version{name});
   $self->SetVer($version{ver}) if exists($version{ver});
   $self->SetOS($version{os});
-}
-
-
-##############################################################################
-#
-# SetName - sets the name of your local client.
-#
-##############################################################################
-sub SetName {
-  shift;
-  my $self = shift;
-  my ($name) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"name",$name,{});
-}
-
-
-##############################################################################
-#
-# SetVer - sets the timezone of your local client.
-#
-##############################################################################
-sub SetVer {
-  shift;
-  my $self = shift;
-  my ($version) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"version",$version,{});
 }
 
 

@@ -333,7 +333,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -366,12 +366,16 @@ sub AUTOLOAD {
   return if ($AUTOLOAD =~ /::DESTROY$/);
   $AUTOLOAD =~ s/^.*:://;
   my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
-
   $type = "" unless defined($type);
+  my $treeName = "RULE";
 
-  return $self->Get($value,@_) if ($type eq "Get");
-  $self->Set($value,@_) if ($type eq "Set");
-  return $self->Defined($value,@_) if ($type eq "Defined");
+  return &Net::Jabber::BuildXML(@{$self->{RULE}}) if ($AUTOLOAD eq "GetXML");
+  return @{$self->{RULE}} if ($AUTOLOAD eq "GetTree");
+  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
+  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
 }
 
 
@@ -429,71 +433,6 @@ $FUNCTIONS{defined}->{Continued}   = ["existence","continued",""];
 
 ##############################################################################
 #
-# Get - returns the string that is contained in this tag/attribute.
-#
-##############################################################################
-sub Get {
-  my $self = shift;
-  my $tag = shift;
-
-  croak("Undefined function Get$tag in package ".ref($self))
-    unless exists($FUNCTIONS{get}->{$tag});
-
-  return &Net::Jabber::GetXMLData($FUNCTIONS{get}->{$tag}->[0],
-				  $self->{RULE},
-				  $FUNCTIONS{get}->{$tag}->[1],
-				  $FUNCTIONS{get}->{$tag}->[2]);
-}
-
-
-##############################################################################
-#
-# Set - sets the XML data for this tag
-#
-##############################################################################
-sub Set {
-  my $self = shift;
-  my $tag = shift;
-
-  croak("Undefined function Set$tag in package ".ref($self))
-    unless exists($FUNCTIONS{set}->{$tag});
-
-  &Net::Jabber::SetXMLData($FUNCTIONS{set}->{$tag}->[0],
-			   $self->{RULE},
-			   $FUNCTIONS{set}->{$tag}->[1],
-			   (($FUNCTIONS{set}->{$tag}->[2] eq "*") ? shift : ""),
-			   (($FUNCTIONS{set}->{$tag}->[3] ne "") ?
-			    {
-			     $FUNCTIONS{set}->{$tag}->[3]=>
-			     (($FUNCTIONS{set}->{$tag}->[4] eq "*") ? shift : ""),
-			    } :
-			    {}
-			   )
-			  );
-}
-
-
-##############################################################################
-#
-# Defined - returns 1 if the tag exists, 0 other else.
-#
-##############################################################################
-sub Defined {
-  my $self = shift;
-  my $tag = shift;
-
-  croak("Undefined function Defined$tag in package ".ref($self))
-    unless exists($FUNCTIONS{defined}->{$tag});
-
-  return &Net::Jabber::GetXMLData($FUNCTIONS{defined}->{$tag}->[0],
-				  $self->{RULE},
-				  $FUNCTIONS{defined}->{$tag}->[1],
-				  $FUNCTIONS{defined}->{$tag}->[2]);
-}
-
-
-##############################################################################
-#
 # GetConditions - returns a hash of the conditions that are set for this rule.
 #
 ##############################################################################
@@ -539,30 +478,6 @@ sub GetActions {
 
 ##############################################################################
 #
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  return &Net::Jabber::BuildXML(@{$self->{RULE}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#           the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;  
-  return @{$self->{RULE}};
-}
-
-
-##############################################################################
-#
 # SetRule - takes a hash of all of the things you can set on an rule <query/>
 #           and sets each one.
 #
@@ -590,17 +505,5 @@ sub SetRule {
   $self->SetContinue() if (exists($rule{continue}) && ($rule{continue} == 1));
 }
 
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug RULE: $self\n";
-  &Net::Jabber::printData("debug: \$self->{RULE}->",$self->{RULE});
-}
 
 1;

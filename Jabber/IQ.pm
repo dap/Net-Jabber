@@ -54,6 +54,10 @@ Net::Jabber::IQ - Jabber Info/Query Library
     $toJID      = $IQ->GetTo("jid");
     $from       = $IQ->GetFrom();
     $fromJID    = $IQ->GetFrom("jid");
+    $sto        = $IQ->GetSTo();
+    $stoJID     = $IQ->GetSTo("jid");
+    $sfrom      = $IQ->GetSFrom();
+    $sfromJID   = $IQ->GetSFrom("jid");
     $etherxTo   = $IQ->GetEtherxTo();
     $etherxFrom = $IQ->GetEtherxFrom();
     $id         = $IQ->GetID();
@@ -75,6 +79,8 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
     $IQ->SetTo("bob@jabber.org");
     $IQ->SetFrom("me\@jabber.org");
+    $IQ->SetSTo("jabber.org");
+    $IQ->SetSFrom("jabber.org");
     $IQ->SetEtherxTo("jabber.org");
     $IQ->SetEtherxFrom("transport.jabber.org");
     $IQ->SetType("set");
@@ -92,6 +98,19 @@ Net::Jabber::IQ - Jabber Info/Query Library
     $iqReply = $IQ->Reply("client");
     $iqReply = $IQ->Reply("transport");
 
+=head2 Test functions
+
+    $test = $IQ->DefinedTo();
+    $test = $IQ->DefinedFrom();
+    $test = $IQ->DefinedSTo();
+    $test = $IQ->DefinedSFrom();
+    $test = $IQ->DefinedEtherxTo();
+    $test = $IQ->DefinedEtherxFrom();
+    $test = $IQ->DefinedID();
+    $test = $IQ->DefinedType();
+    $test = $IQ->DefinedError();
+    $test = $IQ->DefinedErrorCode();
+
 =head1 METHODS
 
 =head2 Retrieval functions
@@ -107,6 +126,18 @@ Net::Jabber::IQ - Jabber Info/Query Library
                     sent the <iq/>.  To get the JID object set 
                     the string to "jid", otherwise leave blank for the 
                     text string.
+
+  GetSTo()      - returns either a string with the Jabber Identifier,
+  GetSTo("jid")   or a Net::Jabber::JID object for the <host/> of the
+                  conponent who is going to receive the <iq/>.  To 
+                  get the JID object set the string to "jid", 
+                  otherwise leave blank for the text string.
+
+  GetSFrom()      -  returns either a string with the Jabber Identifier,
+  GetSFrom("jid")    or a Net::Jabber::JID object for the <host/>
+                     component who sent the <iq/>.  To get the JID 
+                     object set the string to "jid", otherwise leave 
+                     blank for the text string.
 
   GetEtherxTo(string) - returns the etherx:to attribute.  This is for
                         Transport writers who need to communicate with
@@ -141,12 +172,14 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
   SetIQ(to=>string|JID,    - set multiple fields in the <iq/> at one
         from=>string|JID,    time.  This is a cumulative and over
-        type=>string,        writing action.  If you set the "to"
-        errorcode=>string,   attribute twice, the second setting is
-        error=>string)       what is used.  If you set the status, and
-                             then set the priority then both will be in
-                             the <iq/> tag.  For valid settings read the
-                             specific Set functions below.
+        sto=>string,         writing action.  If you set the "to"
+        sfrom=>string,       attribute twice, the second setting is
+        etherxto=>string,    what is used.  If you set the status, and
+        etherxfrom=>string,  then set the priority then both will be in
+        id=>string,          the <iq/> tag.  For valid settings read the
+        type=>string,        specific Set functions below.
+        errorcode=>string,
+        error=>string)
 
   SetTo(string) - sets the to attribute.  You can either pass a string
   SetTo(JID)      or a JID object.  They must be a valid Jabber 
@@ -157,6 +190,16 @@ Net::Jabber::IQ - Jabber Info/Query Library
   SetFrom(JID)      or a JID object.  They must be a valid Jabber 
                     Identifiers or the server will return an error message.
                     (ie.  jabber:bob@jabber.org, etc...)
+
+  SetSTo(string) - sets the sto attribute.  You can either pass a string
+  SetSTo(JID)      or a JID object.  They must be a valid Jabber 
+                   Identifiers or the server will return an error message.
+                   (ie.  jabber:bob@jabber.org, etc...)
+
+  SetSFrom(string) - sets the sfrom attribute.  You can either pass a string
+  SetSFrom(JID)      or a JID object.  They must be a valid Jabber 
+                     Identifiers or the server will return an error message.
+                     (ie.  jabber:bob@jabber.org, etc...)
 
   SetEtherxTo(string) - sets the etherx:to attribute.  This is for
                         Transport writers who need to communicate with
@@ -198,6 +241,38 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
                             The type will be set in the <iq/>.
 
+=head2 Test functions
+
+  DefinedTo() - returns 1 if the to attribute is defined in the <iq/>, 
+                0 otherwise.
+
+  DefinedFrom() - returns 1 if the from attribute is defined in the <iq/>, 
+                  0 otherwise.
+
+  DefinedSTo() - returns 1 if the sto attribute is defined in the <iq/>, 
+                 0 otherwise.
+
+  DefinedSFrom() - returns 1 if the sfrom attribute is defined in the <iq/>, 
+                   0 otherwise.
+
+  DefinedEtherxTo() - returns 1 if the etherx:to attribute is defined in 
+                      the <iq/>, 0 otherwise.
+
+  DefinedEtherxFrom() - returns 1 if the etherx:from attribute is defined 
+                        in the <iq/>, 0 otherwise.
+
+  DefinedID() - returns 1 if the id attribute is defined in the <iq/>, 
+                0 otherwise.
+
+  DefinedType() - returns 1 if the type attribute is defined in the <iq/>, 
+                  0 otherwise.
+
+  DefinedError() - returns 1 if <error/> is defined in the <iq/>, 
+                   0 otherwise.
+
+  DefinedErrorCode() - returns 1 if the code attribute is defined in
+                       <error/>, 0 otherwise.
+
 =head1 AUTHOR
 
 By Ryan Eatmon in May of 2000 for http://jabber.org..
@@ -212,9 +287,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -234,8 +309,10 @@ sub new {
     my @temp = @_;
     $self->{IQ} = \@temp;
     my $xmlns = $self->GetQueryXMLNS();
-    my @queryTree = $self->GetQueryTree();
-    $self->SetQuery($xmlns,@queryTree) if ($xmlns ne "");
+    if (exists($Net::Jabber::DELEGATES{$xmlns})) {
+      my @queryTree = $self->GetQueryTree();
+      $self->SetQuery($xmlns,@queryTree) if ($xmlns ne "");
+    }
   } else {
     $self->{IQ} = [ "iq" , [{}]];
   }
@@ -246,117 +323,55 @@ sub new {
 
 ##############################################################################
 #
-# GetTag - returns the Jabber tag of this object
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetTag {
+sub AUTOLOAD {
   my $self = shift;
-  return "iq";
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "IQ";
+  
+  return "iq" if ($AUTOLOAD eq "GetTag");
+  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
+  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
 }
 
 
-##############################################################################
-#
-# GetTo - returns the Jabber Identifier of the person you are sending the
-#         <iq/> to.
-#
-##############################################################################
-sub GetTo {
-  my $self = shift;
-  my ($type) = @_;
-  my $to = &Net::Jabber::GetXMLData("value",$self->{IQ},"","to");
-  if ($type eq "jid") {
-    return new Net::Jabber::JID($to);
-  } else {
-    return $to;
-  }
-}
+$FUNCTIONS{get}->{To}         = ["value","","to"];
+$FUNCTIONS{get}->{From}       = ["value","","from"];
+$FUNCTIONS{get}->{STo}        = ["value","","sto"];
+$FUNCTIONS{get}->{SFrom}      = ["value","","sfrom"];
+$FUNCTIONS{get}->{EtherxTo}   = ["value","","etherx:to"];
+$FUNCTIONS{get}->{EtherxFrom} = ["value","","etherx:from"];
+$FUNCTIONS{get}->{ID}         = ["value","","id"];
+$FUNCTIONS{get}->{Type}       = ["value","","type"];
+$FUNCTIONS{get}->{Error}      = ["value","error",""];
+$FUNCTIONS{get}->{ErrorCode}  = ["value","error","code"];
 
+$FUNCTIONS{set}->{EtherxTo}   = ["single","","","etherx:to","*"];
+$FUNCTIONS{set}->{EtherxFrom} = ["single","","","etherx:from","*"];
+$FUNCTIONS{set}->{ID}         = ["single","","","id","*"];
+$FUNCTIONS{set}->{Type}       = ["single","","","type","*"];
+$FUNCTIONS{set}->{Error}      = ["single","error","*","",""];
+$FUNCTIONS{set}->{ErrorCode}  = ["single","error","","code","*"];
 
-##############################################################################
-#
-# GetFrom - returns the Jabber Identifier of the person who sent the 
-#           <iq/>
-#
-##############################################################################
-sub GetFrom {
-  my $self = shift;
-  my ($type) = @_;
-  my $from = &Net::Jabber::GetXMLData("value",$self->{IQ},"","from");
-  if ($type eq "jid") {
-    return new Net::Jabber::JID($from);
-  } else {
-    return $from;
-  }
-}
-
-
-##############################################################################
-#
-# GetEtherxTo - returns the value of the etherx:to attribute in the 
-#               <iq/>.
-#
-##############################################################################
-sub GetEtherxTo {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"","etherx:to");
-}
-
-
-##############################################################################
-#
-# GetEtherxFrom - returns the value of the etherx:from attribute in the 
-#                 <iq/>.
-#
-##############################################################################
-sub GetEtherxFrom {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"","etherx:from");
-}
-
-
-##############################################################################
-#
-# GetID - returns the id of the <iq/>
-#
-##############################################################################
-sub GetID {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"","id");
-}
-
-
-##############################################################################
-#
-# GetType - returns the type of the <iq/>
-#
-##############################################################################
-sub GetType {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"","type");
-}
-
-
-##############################################################################
-#
-# GetError - returns the text associated with the error in the <iq/>
-#
-##############################################################################
-sub GetError {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"error");
-}
-
-
-##############################################################################
-#
-# GetErrorCode - returns the code of the error in the <iq/>
-#
-##############################################################################
-sub GetErrorCode {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{IQ},"error","code");
-}
+$FUNCTIONS{defined}->{To}         = ["existence","","to"];
+$FUNCTIONS{defined}->{From}       = ["existence","","from"];
+$FUNCTIONS{defined}->{STo}        = ["existence","","sto"];
+$FUNCTIONS{defined}->{SFrom}      = ["existence","","sfrom"];
+$FUNCTIONS{defined}->{EtherxTo}   = ["existence","","etherx:to"];
+$FUNCTIONS{defined}->{EtherxFrom} = ["existence","","etherx:from"];
+$FUNCTIONS{defined}->{ID}         = ["existence","","id"];
+$FUNCTIONS{defined}->{Type}       = ["existence","","type"];
+$FUNCTIONS{defined}->{Error}      = ["existence","error",""];
+$FUNCTIONS{defined}->{ErrorCode}  = ["existence","error","code"];
 
 
 ##############################################################################
@@ -436,23 +451,13 @@ sub SetIQ {
   $self->SetID($iq{id}) if exists($iq{id});
   $self->SetTo($iq{to}) if exists($iq{to});
   $self->SetFrom($iq{from}) if exists($iq{from});
+  $self->SetSTo($iq{sto}) if exists($iq{sto});
+  $self->SetSFrom($iq{sfrom}) if exists($iq{sfrom});
   $self->SetEtherxTo($iq{etherxto}) if exists($iq{etherxto});
   $self->SetEtherxFrom($iq{etherxfrom}) if exists($iq{etherxfrom});
   $self->SetType($iq{type}) if exists($iq{type});
   $self->SetErrorCode($iq{errorcode}) if exists($iq{errorcode});
   $self->SetError($iq{error}) if exists($iq{error});
-}
-
-
-##############################################################################
-#
-# SetID - sets the id attribute in the <iq/>
-#
-##############################################################################
-sub SetID {
-  my $self = shift;
-  my ($id) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{id=>$id});
 }
 
 
@@ -488,61 +493,31 @@ sub SetFrom {
 
 ##############################################################################
 #
-# SetEtherxTo - sets the etherx:to attribute in the <iq/>
+# SetSTo - sets the to attribute in the <iq/>
 #
 ##############################################################################
-sub SetEtherxTo {
+sub SetSTo {
   my $self = shift;
-  my ($etherxto) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{"etherx:to"=>$etherxto});
+  my ($sto) = @_;
+  if (ref($sto) eq "Net::Jabber::JID") {
+    $sto = $sto->GetJID("full");
+  }
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{sto=>$sto});
 }
 
 
 ##############################################################################
 #
-# SetEtherxFrom - sets the etherx:from attribute in the <iq/>
+# SetSFrom - sets the from attribute in the <iq/>
 #
 ##############################################################################
-sub SetEtherxFrom {
+sub SetSFrom {
   my $self = shift;
-  my ($etherxfrom) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{"etherx:from"=>$etherxfrom});
-}
-
-
-##############################################################################
-#
-# SetType - sets the type attribute in the <iq/>
-#
-##############################################################################
-sub SetType {
-  my $self = shift;
-  my ($type) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{type=>$type});
-}
-
-
-##############################################################################
-#
-# SetErrorCode - sets the code attribute in the error tag of the <iq/>
-#
-##############################################################################
-sub SetErrorCode {
-  my $self = shift;
-  my ($code) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"error","",{code=>$code});
-}
-
-
-##############################################################################
-#
-# SetError - sets the error of the <iq/>
-#
-##############################################################################
-sub SetError {
-  my $self = shift;
-  my ($error) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{IQ},"error",$error,{});
+  my ($sfrom) = @_;
+  if (ref($sfrom) eq "Net::Jabber::JID") {
+    $sfrom = $sfrom->GetJID("full");
+  }
+  &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{sfrom=>$sfrom});
 }
 
 
@@ -667,18 +642,5 @@ sub Reply {
   return $reply;
 }
 
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug IQ: $self\n";
-  $self->MergeQuery();
-  &Net::Jabber::printData("debug: \$self->{IQ}->",$self->{IQ});
-}
 
 1;

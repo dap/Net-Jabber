@@ -45,15 +45,16 @@ Net::Jabber::Presence - Jabber Presence Module
     $toJID      = $Pres->GetTo("jid");
     $from       = $Pres->GetFrom();
     $fromJID    = $Pres->GetFrom("jid");
+    $sto        = $Pres->GetSTo();
+    $stoJID     = $Pres->GetSTo("jid");
+    $sfrom      = $Pres->GetSFrom();
+    $sfromJID   = $Pres->GetSFrom("jid");
     $etherxTo   = $Pres->GetEtherxTo();
     $etherxFrom = $Pres->GetEtherxFrom();
     $type       = $Pres->GetType();
     $status     = $Pres->GetStatus();
     $priority   = $Pres->GetPriority();
-    $meta       = $Pres->GetMeta();
-    $icon       = $Pres->GetIcon();
     $show       = $Pres->GetShow();
-    $loc        = $Pres->GetLoc();
     @xTags      = $Pres->GetX();
     @xTags      = $Pres->GetX("my:namespace");
     @xTrees     = $Pres->GetXTrees();
@@ -69,15 +70,14 @@ Net::Jabber::Presence - Jabber Presence Module
 		       iCoN=>"normal");
     $Pres->SetTo("bob\@jabber.org");
     $Pres->SetFrom("jojo\@jabber.org");
+    $Pres->SetSTo("jabber.org");
+    $Pres->SetSFrom("jabber.org");
     $Pres->SetEtherxTo("jabber.org");
     $Pres->SetEtherxFrom("transport.jabber.org");
     $Pres->SetType("unavailable");
     $Pres->SetStatus("Taking a nap");
     $Pres->SetPriority(10);
-    $Pres->SetMeta("PerlClient/1.0");
-    $Pres->SetIcon("zzz");
     $Pres->SetShow("away");
-    $Pres->SetLoc("Lat: 32.91206 Lon: -96.75097");
 
     $X = $Pres->NewX("jabber:x:delay");
     $X = $Pres->NewX("my:namespace");
@@ -86,6 +86,19 @@ Net::Jabber::Presence - Jabber Presence Module
     $Reply = $Pres->Reply(template=>"client");
     $Reply = $Pres->Reply(template=>"transport",
                           type=>"subscribed");
+
+=head2 Test functions
+
+    $test = $Pres->DefinedTo();
+    $test = $Pres->DefinedFrom();
+    $test = $Pres->DefinedSTo();
+    $test = $Pres->DefinedSFrom();
+    $test = $Pres->DefinedEtherxTo();
+    $test = $Pres->DefinedEtherxFrom();
+    $test = $Pres->DefinedType();
+    $test = $Pres->DefinedStatus();
+    $test = $Pres->DefinedPriority();
+    $test = $Pres->DefinedShow();
 
 =head1 METHODS
 
@@ -103,6 +116,18 @@ Net::Jabber::Presence - Jabber Presence Module
                     the string to "jid", otherwise leave blank for the 
                     text string.
 
+  GetSTo()      - returns either a string with the Jabber Identifier,
+  GetSTo("jid")   or a Net::Jabber::JID object for the <host/> component
+                  who is going to receive the <presence/>.  To get the 
+                  JID object set the string to "jid", otherwise leave
+                  blank for the text string.
+
+  GetSFrom()      -  returns either a string with the Jabber Identifier,
+  GetSFrom("jid")    or a Net::Jabber::JID object for the <host/> 
+                     component who sent the <presence/>.  To get the 
+                     JID object set the string to "jid", otherwise 
+                     leave blank for the text string.
+
   GetEtherxTo(string) - returns the etherx:to attribute.  This is for
                         Transport writers who need to communicate with
                         Etherx.
@@ -118,13 +143,7 @@ Net::Jabber::Presence - Jabber Presence Module
   GetPriority() - returns an integer with the priority of the resource
                   The default is 0 if there is no priority in this presence.
 
-  GetMeta() - returns a string with the meta data of the client of the sender.
-
-  GetIcon() - returns a string with the icon the client should display.
-
   GetShow() - returns a string with the state the client should show.
-
-  GetLoc() - returns a string with the location the sender is at.
 
   GetX(string) - returns an array of Net::Jabber::X objects.  The string can 
                  either be empty or the XML Namespace you are looking for.  
@@ -148,21 +167,19 @@ Net::Jabber::Presence - Jabber Presence Module
 
 =head2 Creation functions
 
-
-#
-# todo: add etherxto and from to the list...
-#
-
-
   SetPresence(to=>string|JID     - set multiple fields in the <presence/>
               from=>string|JID,    at one time.  This is a cumulative
-              type=>string,        and over writing action.  If you set
-              status=>integer,     the "to" attribute twice, the second
-              priority=>string,    setting is what is used.  If you set
-              meta=>string,        the status, and then set the priority
-              icon=>string,        then both will be in the <presence/>
-              show=>string,        tag.  For valid settings read the
-              loc=>string)         specific Set functions below.
+              sto=>string,         and over writing action.  If you set
+              sfrom=>string,       the "to" attribute twice, the second
+              etherxto=>string,    setting is what is used.  If you set
+              etherxfrom=>string,  the status, and then set the priority
+              type=>string,        then both will be in the <presence/>
+              status=>string,      tag.  For valid settings read the
+              priority=>integer,   specific Set functions below.
+	      meta=>string, 
+	      icon=>string,
+              show=>string,
+              loc=>string)
 
   SetTo(string) - sets the to attribute.  You can either pass a string
   SetTo(JID)      or a JID object.  They must be valid Jabber 
@@ -173,6 +190,16 @@ Net::Jabber::Presence - Jabber Presence Module
   SetFrom(JID)      or a JID object.  They must be valid Jabber 
                     Identifiers or the server will return an error message.
                     (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+
+  SetSTo(string) - sets the sto attribute.  You can either pass a string
+  SetSTo(JID)      or a JID object.  They must be valid Jabber 
+                   Identifiers or the server will return an error message.
+                   (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+
+  SetSFrom(string) - sets the sfrom attribute.  You can either pass a string
+  SetSFrom(JID)      or a JID object.  They must be valid Jabber 
+                     Identifiers or the server will return an error message.
+                     (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
 
   SetEtherxTo(string) - sets the etherx:to attribute.  This is for
                         Transport writers who need to communicate with
@@ -199,18 +226,8 @@ Net::Jabber::Presence - Jabber Presence Module
                          resource attached to the jabber account is the
                          one that receives the messages.
 
-  SetMeta(string) - sets the meta data that tells everyone something about
-  <DRAFT)           your client.  
-                    (ie. device/pager, PerlClient/1.0, etc...)
-
-  SetIcon(string) - sets the name or URL of the icon to display for this
-  (DRAFT)           resource.
-
   SetShow(string) - sets the name of the default symbol to display for this
-  (DRAFT)           resource.
-
-  SetLoc(string) - sets the location that the user wants associated with
-  (DRAFT)          the resource.
+                    resource.
 
   NewX(string) - creates a new Net::Jabber::X object with the namespace
                  in the string.  In order for this function to work with
@@ -234,6 +251,32 @@ Net::Jabber::Presence - Jabber Presence Module
 
                             The type will be set in the <presence/>.
 
+=head2 Test functions
+
+  DefinedTo() - returns 1 if the to attribute is defined in the <presence/>, 
+                0 otherwise.
+
+  DefinedFrom() - returns 1 if the from attribute is defined in the 
+                  <presence/>, 0 otherwise.
+
+  DefinedEtherxTo() - returns 1 if the etherx:to attribute is defined in 
+                      the <presence/>, 0 otherwise.
+
+  DefinedEtherxFrom() - returns 1 if the etherx:from attribute is defined 
+                        in the <presence/>, 0 otherwise.
+
+  DefinedType() - returns 1 if the type attribute is defined in the 
+                  <presence/>, 0 otherwise.
+
+  DefinedStatus() - returns 1 if <status/> is defined in the <presence/>, 
+                    0 otherwise.
+
+  DefinedPriority() - returns 1 if <priority/> is defined in the 
+                      <presence/>, 0 otherwise.
+
+  DefinedShow() - returns 1 if <show/> is defined in the <presence/>, 
+                  0 otherwise.
+
 =head1 AUTHOR
 
 By Ryan Eatmon in May of 2000 for http://jabber.org..
@@ -248,9 +291,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -284,108 +327,58 @@ sub new {
 
 ##############################################################################
 #
-# GetTag - returns the Jabber tag of this object
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetTag {
+sub AUTOLOAD {
   my $self = shift;
-  return "presence";
-}
-
-
-##############################################################################
-#
-# GetID - returns the id of the <presence/>.
-#
-##############################################################################
-sub GetID {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","id");
-}
-
-
-##############################################################################
-#
-# GetTo - returns the Jabber Identifier of the person you are sending the
-#         <presence/> to.
-#
-##############################################################################
-sub GetTo {
-  my $self = shift;
-  my ($type) = @_;
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
   $type = "" unless defined($type);
-  my $to = &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","to");
-  if ($type eq "jid") {
-    return new Net::Jabber::JID($to);
-  } else {
-    return $to;
-  }
+  my $treeName = "PRESENCE";
+  
+  return "presence" if ($AUTOLOAD eq "GetTag");
+  return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
+  return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
+  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
+  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
 }
 
 
-##############################################################################
-#
-# GetFrom - returns the Jabber Identifier of the person who sent the 
-#           <presence/>
-#
-##############################################################################
-sub GetFrom {
-  my $self = shift;
-  my ($type) = @_;
-  $type = "" unless defined($type);
-  my $from = &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","from");
-  if ($type eq "jid") {
-    return new Net::Jabber::JID($from);
-  } else {
-    return $from;
-  }
-}
+$FUNCTIONS{get}->{To}         = ["value","","to"];
+$FUNCTIONS{get}->{From}       = ["value","","from"];
+$FUNCTIONS{get}->{STo}        = ["value","","sto"];
+$FUNCTIONS{get}->{SFrom}      = ["value","","sfrom"];
+$FUNCTIONS{get}->{EtherxTo}   = ["value","","etherx:to"];
+$FUNCTIONS{get}->{EtherxFrom} = ["value","","etherx:from"];
+$FUNCTIONS{get}->{ID}         = ["value","","id"];
+$FUNCTIONS{get}->{Type}       = ["value","","type"];
+$FUNCTIONS{get}->{Status}     = ["value","status",""];
+$FUNCTIONS{get}->{Show}       = ["value","show",""];
 
+$FUNCTIONS{set}->{EtherxTo}   = ["single","","","etherx:to","*"];
+$FUNCTIONS{set}->{EtherxFrom} = ["single","","","etherx:from","*"];
+$FUNCTIONS{set}->{ID}         = ["single","","","id","*"];
+$FUNCTIONS{set}->{Type}       = ["single","","","type","*"];
+$FUNCTIONS{set}->{Status}     = ["single","status","*","",""];
+$FUNCTIONS{set}->{Show}       = ["single","show","*","",""];
 
-##############################################################################
-#
-# GetEtherxTo - returns the value of the etherx:to attribute in the 
-#               <presence/>.
-#
-##############################################################################
-sub GetEtherxTo {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","etherx:to");
-}
-
-
-##############################################################################
-#
-# GetEtherxFrom - returns the value of the etherx:from attribute in the 
-#                 <presence/>.
-#
-##############################################################################
-sub GetEtherxFrom {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","etherx:from");
-}
-
-
-##############################################################################
-#
-# GetType - returns the type of the <presence/>
-#
-##############################################################################
-sub GetType {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"","type");
-}
-
-
-##############################################################################
-#
-# GetStatus - returns the status of the <presence/>
-#
-##############################################################################
-sub GetStatus {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"status");
-}
+$FUNCTIONS{defined}->{To}         = ["existence","","to"];
+$FUNCTIONS{defined}->{From}       = ["existence","","from"];
+$FUNCTIONS{defined}->{STo}        = ["existence","","sto"];
+$FUNCTIONS{defined}->{SFrom}      = ["existence","","sfrom"];
+$FUNCTIONS{defined}->{EtherxTo}   = ["existence","","etherx:to"];
+$FUNCTIONS{defined}->{EtherxFrom} = ["existence","","etherx:from"];
+$FUNCTIONS{defined}->{ID}         = ["existence","","id"];
+$FUNCTIONS{defined}->{Type}       = ["existence","","type"];
+$FUNCTIONS{defined}->{Status}     = ["existence","status",""];
+$FUNCTIONS{defined}->{Priority}   = ["existence","priority",""];
+$FUNCTIONS{defined}->{Show}       = ["existence","show",""];
 
 
 ##############################################################################
@@ -398,50 +391,6 @@ sub GetPriority {
   my $priority = &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"priority");
   $priority = 0 if ($priority eq "");
   return $priority;
-}
-
-
-##############################################################################
-#
-# GetMeta - returns the meta data of the <presence/>
-#
-##############################################################################
-sub GetMeta {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"meta");
-}
-
-
-##############################################################################
-#
-# GetIcon - returns the icon of the <presence/>
-#
-##############################################################################
-sub GetIcon {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"icon");
-}
-
-
-##############################################################################
-#
-# GetShow - returns the show of the <presence/>
-#
-##############################################################################
-sub GetShow {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"show");
-}
-
-
-##############################################################################
-#
-# GetLoc - returns the loc of the <presence/>
-#
-##############################################################################
-sub GetLoc {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"loc");
 }
 
 
@@ -521,27 +470,14 @@ sub SetPresence {
   $self->SetID($presence{id}) if exists($presence{id});
   $self->SetTo($presence{to}) if exists($presence{to});
   $self->SetFrom($presence{from}) if exists($presence{from});
+  $self->SetSTo($presence{sto}) if exists($presence{sto});
+  $self->SetSFrom($presence{sfrom}) if exists($presence{sfrom});
   $self->SetEtherxTo($presence{etherxto}) if exists($presence{etherxto});
   $self->SetEtherxFrom($presence{etherxfrom}) if exists($presence{etherxfrom});
   $self->SetType($presence{type}) if exists($presence{type});
   $self->SetStatus($presence{status}) if exists($presence{status});
   $self->SetPriority($presence{priority}) if exists($presence{priority});
-  $self->SetMeta($presence{meta}) if exists($presence{meta});
-  $self->SetIcon($presence{icon}) if exists($presence{icon});
   $self->SetShow($presence{show}) if exists($presence{show});
-  $self->SetLoc($presence{loc}) if exists($presence{loc});
-}
-
-
-##############################################################################
-#
-# SetID - sets the id attribute in the <presence/>
-#
-##############################################################################
-sub SetID {
-  my $self = shift;
-  my ($id) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{id=>$id});
 }
 
 
@@ -577,49 +513,31 @@ sub SetFrom {
 
 ##############################################################################
 #
-# SetEtherxTo - sets the etherx:to attribute in the <presence/>
+# SetSTo - sets the sto attribute in the <presence/>
 #
 ##############################################################################
-sub SetEtherxTo {
+sub SetSTo {
   my $self = shift;
-  my ($etherxto) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{"etherx:to"=>$etherxto});
+  my ($sto) = @_;
+  if (ref($sto) eq "Net::Jabber::JID") {
+    $sto = $sto->GetJID("full");
+  }
+  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{sto=>$sto});
 }
 
 
 ##############################################################################
 #
-# SetEtherxFrom - sets the etherx:from attribute in the <presence/>
+# SetSFrom - sets the sfrom attribute in the <presence/>
 #
 ##############################################################################
-sub SetEtherxFrom {
+sub SetSFrom {
   my $self = shift;
-  my ($etherxfrom) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{"etherx:from"=>$etherxfrom});
-}
-
-
-##############################################################################
-#
-# SetType - sets the type attribute in the <presence/>
-#
-##############################################################################
-sub SetType {
-  my $self = shift;
-  my ($type) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{type=>$type});
-}
-
-
-##############################################################################
-#
-# SetStatus - sets the status of the <presence/>
-#
-##############################################################################
-sub SetStatus {
-  my $self = shift;
-  my ($status) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"status",$status,{});
+  my ($sfrom) = @_;
+  if (ref($sfrom) eq "Net::Jabber::JID") {
+    $sfrom = $sfrom->GetJID("full");
+  }
+  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{sfrom=>$sfrom});
 }
 
 
@@ -633,54 +551,6 @@ sub SetPriority {
   my ($priority) = @_;
   $priority = 0 if ($priority eq "");
   &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"priority",$priority,{});
-}
-
-
-##############################################################################
-#
-# SetMeta - sets the meta data of the <presence/>
-#
-##############################################################################
-sub SetMeta {
-  my $self = shift;
-  my ($meta) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"meta",$meta,{});
-}
-
-
-##############################################################################
-#
-# SetIcon - sets the icon of the <presence/>
-#
-##############################################################################
-sub SetIcon {
-  my $self = shift;
-  my ($icon) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"icon",$icon,{});
-}
-
-
-##############################################################################
-#
-# SetShow - sets the show of the <presence/>
-#
-##############################################################################
-sub SetShow {
-  my $self = shift;
-  my ($show) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"show",$show,{});
-}
-
-
-##############################################################################
-#
-# SetLoc - sets the location of the <presence/>
-#
-##############################################################################
-sub SetLoc {
-  my $self = shift;
-  my ($loc) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"loc",$loc,{});
 }
 
 
@@ -818,18 +688,5 @@ sub Reply {
   return $reply;
 }
 
-
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
-
-  print "debug PRESENCE: $self\n";
-  $self->MergeX();
-  &Net::Jabber::printData("debug: \$self->{PRESENCE}->",$self->{PRESENCE});
-}
 
 1;

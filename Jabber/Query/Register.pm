@@ -357,7 +357,7 @@ Net::Jabber::Query::Register - Jabber IQ Registration Module
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in July of 2000 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -369,9 +369,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -388,242 +388,87 @@ sub new {
 
 ##############################################################################
 #
-# GetInstructions - returns the instructions in the <query/>.
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetInstructions {
-  shift;
+sub AUTOLOAD {
+  my $parent = shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"instructions");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "QUERY";
+
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
+$FUNCTIONS{get}->{Instructions} = ["value","instructions",""];
+$FUNCTIONS{get}->{Username}     = ["value","username",""];
+$FUNCTIONS{get}->{Password}     = ["value","password",""];
+$FUNCTIONS{get}->{Name}         = ["value","name",""];
+$FUNCTIONS{get}->{First}        = ["value","first",""];
+$FUNCTIONS{get}->{Last}         = ["value","last",""];
+$FUNCTIONS{get}->{Nick}         = ["value","nick",""];
+$FUNCTIONS{get}->{Email}        = ["value","email",""];
+$FUNCTIONS{get}->{Address}      = ["value","address",""];
+$FUNCTIONS{get}->{City}         = ["value","city",""];
+$FUNCTIONS{get}->{State}        = ["value","state",""];
+$FUNCTIONS{get}->{Zip}          = ["value","zip",""];
+$FUNCTIONS{get}->{Phone}        = ["value","phone",""];
+$FUNCTIONS{get}->{URL}          = ["value","url",""];
+$FUNCTIONS{get}->{Date}         = ["value","date",""];
+$FUNCTIONS{get}->{Misc}         = ["value","misc",""];
+$FUNCTIONS{get}->{Text}         = ["value","text",""];
+$FUNCTIONS{get}->{Key}          = ["value","key",""];
+$FUNCTIONS{get}->{Remove}       = ["value","remove",""];
+$FUNCTIONS{get}->{Registered}   = ["value","registered",""];
 
-##############################################################################
-#
-# GetUsername - returns the username in the <query/>.
-#
-##############################################################################
-sub GetUsername {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"username");
-}
+$FUNCTIONS{set}->{Instructions} = ["single","instructions","*","",""];
+$FUNCTIONS{set}->{Username}     = ["single","username","*","",""];
+$FUNCTIONS{set}->{Password}     = ["single","password","*","",""];
+$FUNCTIONS{set}->{Name}         = ["single","name","*","",""];
+$FUNCTIONS{set}->{First}        = ["single","first","*","",""];
+$FUNCTIONS{set}->{Last}         = ["single","last","*","",""];
+$FUNCTIONS{set}->{Nick}         = ["single","nick","*","",""];
+$FUNCTIONS{set}->{Email}        = ["single","email","*","",""];
+$FUNCTIONS{set}->{Address}      = ["single","address","*","",""];
+$FUNCTIONS{set}->{City}         = ["single","city","*","",""];
+$FUNCTIONS{set}->{State}        = ["single","state","*","",""];
+$FUNCTIONS{set}->{Zip}          = ["single","zip","*","",""];
+$FUNCTIONS{set}->{Phone}        = ["single","phone","*","",""];
+$FUNCTIONS{set}->{URL}          = ["single","url","*","",""];
+$FUNCTIONS{set}->{Date}         = ["single","date","*","",""];
+$FUNCTIONS{set}->{Misc}         = ["single","misc","*","",""];
+$FUNCTIONS{set}->{Text}         = ["single","text","*","",""];
+$FUNCTIONS{set}->{Key}          = ["single","key","*","",""];
+$FUNCTIONS{set}->{Remove}       = ["single","remove","*","",""];
+$FUNCTIONS{set}->{Registered}   = ["single","registered","*","",""];
 
-
-##############################################################################
-#
-# GetPassword - returns the password in the <query/>.
-#
-##############################################################################
-sub GetPassword {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"password");
-}
-
-
-##############################################################################
-#
-# GetName - returns the name in the <query/>.
-#
-##############################################################################
-sub GetName {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"name");
-}
-
-
-##############################################################################
-#
-# GetFirst - returns the first in the <query/>.
-#
-##############################################################################
-sub GetFirst {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"first");
-}
-
-
-##############################################################################
-#
-# GetLast - returns the last in the <query/>.
-#
-##############################################################################
-sub GetLast {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"last");
-}
-
-
-##############################################################################
-#
-# GetNick - returns the nick in the <query/>.
-#
-##############################################################################
-sub GetNick {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"nick");
-}
-
-
-##############################################################################
-#
-# GetEmail - returns the email in the <query/>.
-#
-##############################################################################
-sub GetEmail {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"email");
-}
-
-
-##############################################################################
-#
-# GetAddress - returns the address in the <query/>.
-#
-##############################################################################
-sub GetAddress {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"address");
-}
-
-
-##############################################################################
-#
-# GetCity - returns the city in the <query/>.
-#
-##############################################################################
-sub GetCity {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"city");
-}
-
-
-##############################################################################
-#
-# GetState - returns the state in the <query/>.
-#
-##############################################################################
-sub GetState {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"state");
-}
-
-
-##############################################################################
-#
-# GetZip - returns the zip in the <query/>.
-#
-##############################################################################
-sub GetZip {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"zip");
-}
-
-
-##############################################################################
-#
-# GetPhone - returns the phone in the <query/>.
-#
-##############################################################################
-sub GetPhone {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"phone");
-}
-
-
-##############################################################################
-#
-# GetURL - returns the url in the <query/>.
-#
-##############################################################################
-sub GetURL {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"url");
-}
-
-
-##############################################################################
-#
-# GetDate - returns the date in the <query/>.
-#
-##############################################################################
-sub GetDate {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"date");
-}
-
-
-##############################################################################
-#
-# GetMisc - returns the misc in the <query/>.
-#
-##############################################################################
-sub GetMisc {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"misc");
-}
-
-
-##############################################################################
-#
-# GetText - returns the text in the <query/>.
-#
-##############################################################################
-sub GetText {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"text");
-}
-
-
-##############################################################################
-#
-# GetKey - returns the key in the <query/>.
-#
-##############################################################################
-sub GetKey {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"key");
-}
-
-
-##############################################################################
-#
-# GetRemove - returns the remove in the <query/>.
-#
-##############################################################################
-sub GetRemove {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"remove");
-}
-
-
-##############################################################################
-#
-# GetRegistered - returns the registered in the <query/>.
-#
-##############################################################################
-sub GetRegistered {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{QUERY},"registered");
-}
+$FUNCTIONS{defined}->{Instructions} = ["existence","instructions",""];
+$FUNCTIONS{defined}->{Username}     = ["existence","username",""];
+$FUNCTIONS{defined}->{Password}     = ["existence","password",""];
+$FUNCTIONS{defined}->{Name}         = ["existence","name",""];
+$FUNCTIONS{defined}->{First}        = ["existence","first",""];
+$FUNCTIONS{defined}->{Last}         = ["existence","last",""];
+$FUNCTIONS{defined}->{Nick}         = ["existence","nick",""];
+$FUNCTIONS{defined}->{Email}        = ["existence","email",""];
+$FUNCTIONS{defined}->{Address}      = ["existence","address",""];
+$FUNCTIONS{defined}->{City}         = ["existence","city",""];
+$FUNCTIONS{defined}->{State}        = ["existence","state",""];
+$FUNCTIONS{defined}->{Zip}          = ["existence","zip",""];
+$FUNCTIONS{defined}->{Phone}        = ["existence","phone",""];
+$FUNCTIONS{defined}->{URL}          = ["existence","url",""];
+$FUNCTIONS{defined}->{Date}         = ["existence","date",""];
+$FUNCTIONS{defined}->{Misc}         = ["existence","misc",""];
+$FUNCTIONS{defined}->{Text}         = ["existence","text",""];
+$FUNCTIONS{defined}->{Key}          = ["existence","key",""];
+$FUNCTIONS{defined}->{Remove}       = ["existence","remove",""];
+$FUNCTIONS{defined}->{Registered}   = ["existence","registered",""];
 
 
 ##############################################################################
@@ -693,504 +538,6 @@ sub SetRegister {
   $self->SetKey($register{key}) if exists($register{key});
   $self->SetRemove() if exists($register{remove});
   $self->SetRegistered() if exists($register{registered});
-}
-
-
-##############################################################################
-#
-# SetInstructions - sets the instructions result register
-#
-##############################################################################
-sub SetInstructions {
-  shift;
-  my $self = shift;
-  my ($instructions) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"instructions",$instructions,{});
-}
-
-
-##############################################################################
-#
-# SetUsername - sets the username of the account you want to connect with.
-#
-##############################################################################
-sub SetUsername {
-  shift;
-  my $self = shift;
-  my ($username) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"username",$username,{});
-}
-
-
-##############################################################################
-#
-# SetPassword - sets the password of the account you want to connect with.
-#
-##############################################################################
-sub SetPassword {
-  shift;
-  my $self = shift;
-  my ($password) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"password",$password,{});
-}
-
-
-##############################################################################
-#
-# SetName - sets the name of the account you want to connect with.
-#
-##############################################################################
-sub SetName {
-  shift;
-  my $self = shift;
-  my ($name) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"name",$name,{});
-}
-
-
-##############################################################################
-#
-# SetFirst - sets the first of the account you want to connect with.
-#
-##############################################################################
-sub SetFirst {
-  shift;
-  my $self = shift;
-  my ($first) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"first",$first,{});
-}
-
-
-##############################################################################
-#
-# SetLast - sets the last of the account you want to connect with.
-#
-##############################################################################
-sub SetLast {
-  shift;
-  my $self = shift;
-  my ($last) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"last",$last,{});
-}
-
-
-##############################################################################
-#
-# SetNick - sets the nick of the account you want to connect with.
-#
-##############################################################################
-sub SetNick {
-  shift;
-  my $self = shift;
-  my ($nick) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"nick",$nick,{});
-}
-
-
-##############################################################################
-#
-# SetEmail - sets the email of the account you want to connect with.
-#
-##############################################################################
-sub SetEmail {
-  shift;
-  my $self = shift;
-  my ($email) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"email",$email,{});
-}
-
-
-##############################################################################
-#
-# SetAddress - sets the address of the account you want to connect with.
-#
-##############################################################################
-sub SetAddress {
-  shift;
-  my $self = shift;
-  my ($address) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"address",$address,{});
-}
-
-
-##############################################################################
-#
-# SetCity - sets the city of the account you want to connect with.
-#
-##############################################################################
-sub SetCity {
-  shift;
-  my $self = shift;
-  my ($city) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"city",$city,{});
-}
-
-
-##############################################################################
-#
-# SetState - sets the state of the account you want to connect with.
-#
-##############################################################################
-sub SetState {
-  shift;
-  my $self = shift;
-  my ($state) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"state",$state,{});
-}
-
-
-##############################################################################
-#
-# SetZip - sets the zip of the account you want to connect with.
-#
-##############################################################################
-sub SetZip {
-  shift;
-  my $self = shift;
-  my ($zip) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"zip",$zip,{});
-}
-
-
-##############################################################################
-#
-# SetPhone - sets the phone of the account you want to connect with.
-#
-##############################################################################
-sub SetPhone {
-  shift;
-  my $self = shift;
-  my ($phone) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"phone",$phone,{});
-}
-
-
-##############################################################################
-#
-# SetURL - sets the url of the account you want to connect with.
-#
-##############################################################################
-sub SetURL {
-  shift;
-  my $self = shift;
-  my ($url) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"url",$url,{});
-}
-
-
-##############################################################################
-#
-# SetDate - sets the date of the account you want to connect with.
-#
-##############################################################################
-sub SetDate {
-  shift;
-  my $self = shift;
-  my ($date) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"date",$date,{});
-}
-
-
-##############################################################################
-#
-# SetMisc - sets the misc of the account you want to connect with.
-#
-##############################################################################
-sub SetMisc {
-  shift;
-  my $self = shift;
-  my ($misc) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"misc",$misc,{});
-}
-
-
-##############################################################################
-#
-# SetText - sets the text of the account you want to connect with.
-#
-##############################################################################
-sub SetText {
-  shift;
-  my $self = shift;
-  my ($text) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"text",$text,{});
-}
-
-
-##############################################################################
-#
-# SetKey - sets the key of the account you want to connect with.
-#
-##############################################################################
-sub SetKey {
-  shift;
-  my $self = shift;
-  my ($key) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"key",$key,{});
-}
-
-
-##############################################################################
-#
-# SetRemove - sets the remove of the account you want to connect with.
-#
-##############################################################################
-sub SetRemove {
-  shift;
-  my $self = shift;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"remove","",{});
-}
-
-
-##############################################################################
-#
-# SetRegistered - sets the registered of the account you want to connect with.
-#
-##############################################################################
-sub SetRegistered {
-  shift;
-  my $self = shift;
-  &Net::Jabber::SetXMLData("single",$self->{QUERY},"registered","",{});
-}
-
-
-##############################################################################
-#
-# DefinedInstructions - returns the instructions in the <query/>.
-#
-##############################################################################
-sub DefinedInstructions {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"instructions");
-}
-
-
-##############################################################################
-#
-# DefinedUsername - returns the username in the <query/>.
-#
-##############################################################################
-sub DefinedUsername {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"username");
-}
-
-
-##############################################################################
-#
-# DefinedPassword - returns the password in the <query/>.
-#
-##############################################################################
-sub DefinedPassword {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"password");
-}
-
-
-##############################################################################
-#
-# DefinedName - returns the name in the <query/>.
-#
-##############################################################################
-sub DefinedName {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"name");
-}
-
-
-##############################################################################
-#
-# DefinedFirst - returns the first in the <query/>.
-#
-##############################################################################
-sub DefinedFirst {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"first");
-}
-
-
-##############################################################################
-#
-# DefinedLast - returns the last in the <query/>.
-#
-##############################################################################
-sub DefinedLast {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"last");
-}
-
-
-##############################################################################
-#
-# DefinedNick - returns the nick in the <query/>.
-#
-##############################################################################
-sub DefinedNick {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"nick");
-}
-
-
-##############################################################################
-#
-# DefinedEmail - returns the email in the <query/>.
-#
-##############################################################################
-sub DefinedEmail {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"email");
-}
-
-
-##############################################################################
-#
-# DefinedAddress - returns the address in the <query/>.
-#
-##############################################################################
-sub DefinedAddress {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"address");
-}
-
-
-##############################################################################
-#
-# DefinedCity - returns the city in the <query/>.
-#
-##############################################################################
-sub DefinedCity {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"city");
-}
-
-
-##############################################################################
-#
-# DefinedState - returns the state in the <query/>.
-#
-##############################################################################
-sub DefinedState {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"state");
-}
-
-
-##############################################################################
-#
-# DefinedZip - returns the zip in the <query/>.
-#
-##############################################################################
-sub DefinedZip {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"zip");
-}
-
-
-##############################################################################
-#
-# DefinedPhone - returns the phone in the <query/>.
-#
-##############################################################################
-sub DefinedPhone {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"phone");
-}
-
-
-##############################################################################
-#
-# DefinedURL - returns the url in the <query/>.
-#
-##############################################################################
-sub DefinedURL {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"url");
-}
-
-
-##############################################################################
-#
-# DefinedDate - returns the date in the <query/>.
-#
-##############################################################################
-sub DefinedDate {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"date");
-}
-
-
-##############################################################################
-#
-# DefinedMisc - returns the misc in the <query/>.
-#
-##############################################################################
-sub DefinedMisc {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"misc");
-}
-
-
-##############################################################################
-#
-# DefinedText - returns the text in the <query/>.
-#
-##############################################################################
-sub DefinedText {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"text");
-}
-
-
-##############################################################################
-#
-# DefinedKey - returns the key in the <query/>.
-#
-##############################################################################
-sub DefinedKey {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"key");
-}
-
-
-##############################################################################
-#
-# DefinedRemove - returns the remove in the <query/>.
-#
-##############################################################################
-sub DefinedRemove {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"remove");
-}
-
-
-##############################################################################
-#
-# DefinedRegistered - returns the registered in the <query/>.
-#
-##############################################################################
-sub DefinedRegistered {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("existence",$self->{QUERY},"registered");
 }
 
 

@@ -1,23 +1,22 @@
-package Net::Jabber::Client;
+package Net::Jabber::Component;
 
 =head1 NAME
 
-Net::Jabber::Client - Jabber Client Library
+Net::Jabber::Component - Jabber Component Library
 
 =head1 SYNOPSIS
 
-  Net::Jabber::Client is a module that provides a developer easy access
-  to the Jabber Instant Messaging protocol.
+  Net::Jabber::Component is a module that provides a developer easy access
+  to developing server components in the Jabber Instant Messaging protocol.
 
 =head1 DESCRIPTION
 
-  Client.pm uses Protocol.pm to provide enough high level APIs and 
-  automation of the low level APIs that writing a Jabber Client in 
-  Perl is trivial.  For those that wish to work with the low level 
-  you can do that too, but those functions are covered in the 
-  documentation for each module.
+  Component.pm seeks to provide enough high level APIs and automation of 
+  the low level APIs that writing a Jabber Component in Perl is trivial.
+  For those that wish to work with the low level you can do that too, 
+  but those functions are covered in the documentation for each module.
 
-  Net::Jabber::Client provides functions to connect to a Jabber server,
+  Net::Jabber::Component provides functions to connect to a Jabber server,
   login, send and receive messages, set personal information, create
   a new user account, manage the roster, and disconnect.  You can use
   all or none of the functions, there is no requirement.
@@ -32,7 +31,7 @@ Net::Jabber::Client - Jabber Client Library
 
     use Net::Jabber;
 
-    $Con = new Net::Jabber::Client();
+    $Con = new Net::Jabber::Component();
 
     $Con->Connect(hostname=>"jabber.org");
 
@@ -50,7 +49,7 @@ Net::Jabber::Client - Jabber Client Library
 
 =head2 Basic Functions
 
-    new(debuglevel=>0|1|2, - creates the Client object.  debugfile
+    new(debuglevel=>0|1|2, - creates the Component object.  debugfile
         debugfile=>string,   should be set to the path for the debug
         debugtime=>0|1)      log to be written.  If set to "stdout" 
                              then the debug will go there.  debuglevel 
@@ -59,14 +58,19 @@ Net::Jabber::Client - Jabber Client Library
                              debuglevel, debugfile, and debugtime see 
                              Net::Jabber::Debug.
 
-    Connect(hostname=>string, - opens a connection to the server listed
-	    port=>integer)      in the host name value, on the port
-                                listed.  The defaults for the two are
-				localhost and 5222.
+    Connect(hostname=>string,      - opens a connection to the server
+	    port=>integer,           listedt in the hostname value,
+	    secret=>string,          on the port listed.  The defaults
+	    componentname=>string)   for the two are localhost and 5222.
+				     The secret is the password needed
+                                     to attach the hostname, and the
+                                     componentname is the name that
+                                     server and clients will know the
+                                     component by.
 
     Disconnect() - closes the connection to the server.
 
-    Connected() - returns 1 if the Transport is connected to the server,
+    Connected() - returns 1 if the Component is connected to the server,
                   and 0 if not.
 
 =head1 AUTHOR
@@ -91,7 +95,13 @@ use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&
   die("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
 
+use Net::Jabber::Key;
+($Net::Jabber::Key::VERSION < $VERSION) &&
+  die("Net::Jabber::Key $VERSION required--this is only version $Net::Jabber::Key::VERSION");
+
 sub new {
+  srand( time() ^ ($$ + ($$ << 15)));
+
   my $proto = shift;
   my $self = { };
 
@@ -107,13 +117,12 @@ sub new {
 			   file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
 			   time=>exists($args{debugtime}) ? $args{debugtime} : 0,
 			   setdefault=>1,
-			   header=>"NJ::Client"
+			   header=>"NJ::Component"
 			  );
-
-  $self->{SERVER} = {hostname => "localhost", 
-		     port => 5222 ,
-		     ssl=>(exists($args{ssl}) ? $args{ssl} : 0)
-		    };
+  
+  $self->{SERVER} = {hostname => "localhost",
+		     port => 5269,
+		     componentname => ""};
 
   $self->{CONNECTED} = 0;
 
@@ -129,7 +138,8 @@ sub new {
     $self->{DIGEST} = 1;
     Digest::SHA1->import(qw(sha1 sha1_hex sha1_base64));
   } else {
-    $self->{DIGEST} = 0;
+    print "ERROR:  You cannot use Component.pm unless you have Digest::SHA1 installed.\n";
+    exit(0);
   }
 
   return $self;
@@ -162,21 +172,59 @@ sub AUTOLOAD {
 ###########################################################################
 sub Connect {
   my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
-  while($#_ >= 0) { $self->{SERVER}{ lc pop(@_) } = pop(@_); }
+  $self->{DEBUG}->Log1("Connect: type($args{connectiontype})");
 
-  $self->{DEBUG}->Log1("Connect: hostname($self->{SERVER}->{hostname})");
+  $args{connectiontype} = "tcpip" unless exists($args{connectiontype});
+  $self->{CONNECTIONTYPE} = $args{connectiontype};
 
-  $self->{SESSION} =
-    $self->{STREAM}->
-      Connect(hostname=>$self->{SERVER}->{hostname},
-	      port=>$self->{SERVER}->{port},
-	      namespace=>"jabber:client",
-	      ssl=>$self->{SERVER}->{ssl},
-	     ) || ($self->SetErrorCode($self->{STREAM}->GetErrorCode()) &&
-		   return);
-  
-  $self->{DEBUG}->Log1("Connect: connection made");
+  if ($args{connectiontype} eq "stdinout") {
+
+    $self->{SESSION} = 
+      $self->{STREAM}->
+	Connect(connectiontype=>"stdinout",
+		namespace=>"jabber:server"
+	       ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
+		     return);
+  }
+
+  if ($args{connectiontype} eq "tcpip") {
+
+    $self->{DEBUG}->Log1("Connect: hostname($args{hostname}) secret($args{secret}) componentname($args{componentname})");
+    
+    if (!exists($args{hostname})) {
+      $self->SetErrorCode("No hostname specified.");
+      return;
+    }
+    
+    if (!exists($args{secret})) {
+      $self->SetErrorCode("No secret specified.");
+      return;
+    }
+    
+    $self->{SERVER}->{hostname} = delete($args{hostname});
+    $self->{SERVER}->{port} = delete($args{port}) if exists($args{port});
+    
+    $self->{SESSION} = 
+      $self->{STREAM}->
+	Connect(hostname=>$self->{SERVER}->{hostname},
+		port=>$self->{SERVER}->{port},
+#		namespace=>"jabber:server",
+		namespace=>"jabberd:sockets",
+	       ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
+		     return);
+    
+    $self->{DEBUG}->Log1("Connect: connection made");
+  }
+
+  if ($args{connectiontype} eq "tcpip") {
+    $self->Send("<handshake>".Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$args{secret})."</handshake>");
+    my @handshake = $self->Process();
+    return if ($handshake[0] eq "");
+    return if (&Net::Jabber::GetXMLData("value",$handshake[0],"","") ne "");
+  }
 
   $self->{STREAM}->OnNode(sub{ $self->CallBack(@_) });
   $self->{CONNECTED} = 1;
@@ -191,7 +239,6 @@ sub Connect {
 ###########################################################################
 sub Disconnect {
   my $self = shift;
-
   $self->{STREAM}->Disconnect() if ($self->{CONNECTED} == 1);
   $self->{CONNECTED} = 0;
   $self->{DEBUG}->Log1("Disconnect: bye bye");
@@ -200,7 +247,7 @@ sub Disconnect {
 
 ###########################################################################
 #
-# Connected - returns 1 if the Transport is connected to the server, 0
+# Connected - returns 1 if the Component is connected to the server, 0
 #             otherwise.
 #
 ###########################################################################

@@ -84,6 +84,12 @@ Net::Jabber::X::Oob - Jabber X Out Of Bandwidth File Transfer Module
 
   SetDesc(string) - sets the description for the file being sent Oob.
 
+=head2 Test functions
+
+  DefinedURL() - returns 1 if <url/> exists in the x, 0 otherwise.
+
+  DefinedDesc() - returns 1 if <desc/> exists in the x, 0 otherwise.
+
 =head1 AUTHOR
 
 By Ryan Eatmon in May of 2000 for http://jabber.org..
@@ -98,9 +104,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0013";
+$VERSION = "1.0017";
 
 sub new {
   my $proto = shift;
@@ -117,26 +123,33 @@ sub new {
 
 ##############################################################################
 #
-# GetURL - returns the url of the jabber:x:oob
+# AUTOLOAD - This function calls the delegate with the appropriate function
+#            name and argument list.
 #
 ##############################################################################
-sub GetURL {
-  shift;
+sub AUTOLOAD {
+  my $parent = shift;
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"url","");
+  return if ($AUTOLOAD =~ /::DESTROY$/);
+  $AUTOLOAD =~ s/^.*:://;
+  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+  $type = "" unless defined($type);
+  my $treeName = "X";
+
+  return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+  return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+  return &Net::Jabber::Defined($parent,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+  &Net::Jabber::MissingFunction($parent,$AUTOLOAD);
 }
 
+$FUNCTIONS{get}->{URL}  = ["value","url",""];
+$FUNCTIONS{get}->{Desc} = ["value","desc",""];
 
-##############################################################################
-#
-# GetDesc - returns the desc of the jabber:x:oob
-#
-##############################################################################
-sub GetDesc {
-  shift;
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"desc","");
-}
+$FUNCTIONS{set}->{URL}  = ["single","url","*","",""];
+$FUNCTIONS{set}->{Desc} = ["single","desc","*","",""];
+
+$FUNCTIONS{defined}->{URL}  = ["existence","url",""];
+$FUNCTIONS{defined}->{Desc} = ["existence","desc",""];
 
 
 ##############################################################################
@@ -153,33 +166,6 @@ sub SetOob {
 
   $self->SetURL($oob{url}) if exists($oob{url});
   $self->SetDesc($oob{desc}) if exists($oob{desc});
-}
-
-
-##############################################################################
-#
-# SetURL - sets the url in the jabber:x:oob
-#
-##############################################################################
-sub SetURL {
-  shift;
-  my $self = shift;
-  my ($url) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{X},"url",$url,{});
-}
-
-
-##############################################################################
-#
-# SetDesc - sets the desc in the jabber:x:oob
-#
-##############################################################################
-sub SetDesc {
-  shift;
-  my $self = shift;
-  my ($desc) = @_;
-  
-  &Net::Jabber::SetXMLData("single",$self->{X},"desc",$desc,{});
 }
 
 
