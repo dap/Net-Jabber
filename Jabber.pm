@@ -170,7 +170,7 @@ if ($] >= 5.006) {
 }
 
 
-$VERSION = "1.0018";
+$VERSION = "1.0019";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&

@@ -567,7 +567,7 @@ it under the same terms as Perl itself.
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "1.0018";
+$VERSION = "1.0019";
 
 sub new {
   my $proto = shift;
@@ -702,6 +702,7 @@ sub Process {
   if (!defined($timeout) || ($timeout eq "")) {
     while(1) {
       $status = $self->{STREAM}->Process();
+      $self->{DEBUG}->Log1("Process: status($status)");
       last if (($status != 0) || ($status eq ""));
       select(undef,undef,undef,.25);
     }
@@ -764,17 +765,22 @@ sub SendWithID {
   #------------------------------------------------------------------------
   my $currentID = $self->{LIST}->{currentID};
 
+  $self->{DEBUG}->Log1("SendWithID: currentID($currentID)");
+
   my $xml;
   if (ref($object) eq "") {
+    $self->{DEBUG}->Log1("SendWithID: in($object)");
     $xml = $object;
     $xml =~ s/^(\<[^\>]+)(\>)/$1 id\=\'$currentID\'$2/;
     my ($tag) = ($xml =~ /^\<(\S+)\s/);
     $self->RegisterID($tag,$currentID);
   } else {
+    $self->{DEBUG}->Log1("SendWithID: in(",$object->GetXML(),")");
     $object->SetID($currentID);
     $xml = $object->GetXML();
     $self->RegisterID($object->GetTag(),$currentID);
   }
+  $self->{DEBUG}->Log1("SendWithID: out($xml)");
 
   #------------------------------------------------------------------------
   # Send the new XML string.
@@ -802,7 +808,9 @@ sub SendAndReceiveWithID {
   my $self = shift;
   my ($object) = @_;
 
+  $self->{DEBUG}->Log1("SendAndReceiveWithID: object($object)");
   my $id = $self->SendWithID($object);
+  $self->{DEBUG}->Log1("SendAndReceiveWithID: sent with id($id)");
   return $self->WaitForID($id);
 }
 
@@ -818,7 +826,9 @@ sub ReceivedID {
   my $self = shift;
   my ($id) = @_;
 
+  $self->{DEBUG}->Log1("ReceivedID: id($id)");
   return 1 if exists($self->{LIST}->{$id});
+  $self->{DEBUG}->Log1("ReceivedID: nope...");
   return 0;
 }
 
@@ -834,7 +844,9 @@ sub GetID {
   my $self = shift;
   my ($id) = @_;
 
+  $self->{DEBUG}->Log1("GetID: id($id)");
   return $self->{LIST}->{$id} if $self->ReceivedID($id);
+  $self->{DEBUG}->Log1("GetID: haven't gotten that id yet...");
   return 0;
 }
 
@@ -850,9 +862,12 @@ sub WaitForID {
   my $self = shift;
   my ($id) = @_;
   
+  $self->{DEBUG}->Log1("WaitForID: id($id)");
   while(!$self->ReceivedID($id)) {
-    return undef unless (defined($self->Process()));
+    $self->{DEBUG}->Log1("WaitForID: haven't gotten it yet... let's wait for more packets");
+    return unless (defined($self->Process()));
   }
+  $self->{DEBUG}->Log1("WaitForID: we got it!");
   return $self->GetID($id);
 }
 
@@ -868,6 +883,7 @@ sub GotID {
   my $self = shift;
   my ($id,$object) = @_;
 
+  $self->{DEBUG}->Log1("GotID: id($id) xml(",$object->GetXML(),")");
   $self->{LIST}->{$id} = $object;
 }
 
@@ -883,7 +899,10 @@ sub CheckID {
   my $self = shift;
   my ($tag,$id) = @_;
   $id = "" unless defined($id);
+
+  $self->{DEBUG}->Log1("CheckID: tag($tag) id($id)");
   return 0 if ($id eq "");
+  $self->{DEBUG}->Log1("CheckID: we have that here somewhere...");
   return exists($self->{IDRegistry}->{$tag}->{$id});
 }
 
@@ -899,6 +918,7 @@ sub RegisterID {
   my $self = shift;
   my ($tag,$id) = @_;
 
+  $self->{DEBUG}->Log1("RegisterID: tag($tag) id($id)");
   $self->{IDRegistry}->{$tag}->{$id} = 1;
 }
 
@@ -914,6 +934,7 @@ sub DeregisterID {
   my $self = shift;
   my ($tag,$id) = @_;
 
+  $self->{DEBUG}->Log1("DeregisterID: tag($tag) id($id)");
   delete($self->{IDRegistry}->{$tag}->{$id});
 }
 
@@ -1179,6 +1200,8 @@ sub AgentsGet {
 
   $iq = $self->SendAndReceiveWithID($iq);
 
+  return unless defined($iq);
+
   $query = $iq->GetQuery();
   my @agents = $query->GetAgents();
 
@@ -1252,6 +1275,7 @@ sub AuthSend {
   # From the reply IQ determine if we were successful or not.  If yes then 
   # return "".  If no then return error string from the reply.
   #------------------------------------------------------------------------
+  return unless defined($IQLogin);
   return ( $IQLogin->GetErrorCode() , $IQLogin->GetError() )
     if ($IQLogin->GetType() eq "error");
   return ("ok","");
@@ -1290,6 +1314,7 @@ sub RegisterRequest {
   #------------------------------------------------------------------------
   # Check if there was an error.
   #------------------------------------------------------------------------
+  return unless defined($IQ);
   if ($IQ->GetType() eq "error") {
     $self->SetErrorCode($IQ->GetErrorCode().": ".$IQ->GetError());
     return;
@@ -1336,6 +1361,7 @@ sub RegisterSend {
   # From the reply IQ determine if we were successful or not.  If yes then 
   # return "".  If no then return error string from the reply.
   #------------------------------------------------------------------------
+  return unless defined($IQ);
   return ( $IQ->GetErrorCode() , $IQ->GetError() )
     if ($IQ->GetType() eq "error");
   return ("ok","");
@@ -1467,11 +1493,13 @@ sub SearchRequest {
   #------------------------------------------------------------------------
   $IQ = $self->SendAndReceiveWithID($IQ);
   
-  $self->{DEBUG}->Log1("SearchRequest: received(",$IQ->GetXML(),")");
+  $self->{DEBUG}->Log1("SearchRequest: received(",$IQ->GetXML(),")")
+    if defined($IQ);
 
   #------------------------------------------------------------------------
   # Check if there was an error.
   #------------------------------------------------------------------------
+  return unless defined($IQ);
   if ($IQ->GetType() eq "error") {
     $self->SetErrorCode($IQ->GetErrorCode().": ".$IQ->GetError());
     $self->{DEBUG}->Log1("SearchRequest: error(",$self->GetErrorCode(),")");

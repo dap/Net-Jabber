@@ -111,7 +111,7 @@ use XML::Stream 1.06;
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0018";
+$VERSION = "1.0019";
 
 use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&
@@ -207,7 +207,7 @@ sub Connect {
     $self->{SESSION} = 
       $self->{STREAM}->
 	Connect(connectiontype=>"stdinout",
-		namespace=>"jabber:server"
+		namespace=>"jabber:component:exec"
 	       ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
 		     return);
   }
@@ -226,6 +226,11 @@ sub Connect {
       return;
     }
     
+    if (!exists($args{componentname})) {
+      $self->SetErrorCode("No component specified.");
+      return;
+    }
+    
     $self->{SERVER}->{hostname} = delete($args{hostname});
     $self->{SERVER}->{port} = delete($args{port}) if exists($args{port});
     
@@ -233,8 +238,8 @@ sub Connect {
       $self->{STREAM}->
 	Connect(hostname=>$self->{SERVER}->{hostname},
 		port=>$self->{SERVER}->{port},
-#		namespace=>"jabber:server",
-		namespace=>"jabberd:sockets",
+		to=>$args{componentname},
+		namespace=>"jabber:component:accept",
 	       ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
 		     return);
     

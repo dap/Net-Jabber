@@ -1,3 +1,15 @@
+1.0019
+======
+  - Fixed Component.pm to use the new XML::Stream to argument in the
+    Connect function for writing Components to work with the accept
+    model.
+  - Fixed bug in Component.pm where someone on the sever side changed
+    the namespace that you are supposed to connect with and never told
+    me.
+  - Fixed bug in the cases where I would use SendAndReceiveWithID.
+    I was not checking for undef.
+  - Added more debugging in Protocol.pm.
+
 1.0018
 ======
   - Changed the WaitForID function to be Process() instead of

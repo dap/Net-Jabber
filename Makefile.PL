@@ -48,8 +48,8 @@ WriteMakefile(
 			      'Jabber/X/Roster/Item.pm' => '$(INST_LIBDIR)/Jabber/X/Roster/Item.pm',
 			     },
 	      'PREREQ_PM' => {
-			      'XML::Stream' => 1.08
+			      'XML::Stream' => 1.09
 			     },
-	      'VERSION' => '1.0018',
+	      'VERSION' => '1.0019',
 	      'dist' => { 'COMPRESS' => 'gzip --best' }
 	     );

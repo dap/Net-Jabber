@@ -279,7 +279,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0018";
+$VERSION = "1.0019";
 
 use Net::Jabber::Query::Search::Item;
 ($Net::Jabber::Query::Search::Item::VERSION < $VERSION) &&
