@@ -1,5 +1,5 @@
 use lib "t/lib";
-use Test::More tests=>72;
+use Test::More tests=>80;
 
 BEGIN{ use_ok( "Net::Jabber","Client" ); }
 
@@ -19,12 +19,17 @@ testScalar($iq, "ID", "id");
 testJID($iq, "To", "user2", "server2", "resource2");
 testScalar($iq, "Type", "Type");
 
+is( $iq->DefinedX("jabber:x:oob"), "", "not DefinedX - jabber:x:oob" );
+is( $iq->DefinedX("jabber:x:roster"), "", "not DefinedX - jabber:x:roster" );
+
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
 my $xoob = $iq->NewX("jabber:x:oob");
 ok( defined( $xoob ), "NewX - jabber:x:oob" );
 isa_ok( $xoob, "Net::Jabber::X" );
+is( $iq->DefinedX(), 1, "DefinedX" );
+is( $iq->DefinedX("jabber:x:oob"), 1, "DefinedX - jabber:x:oob" );
 
 #------------------------------------------------------------------------------
 # X
@@ -38,6 +43,9 @@ is( $x[0], $xoob, "Is the first x the oob?");
 my $xroster = $iq->NewX("jabber:x:roster");
 ok( defined( $xoob ), "NewX - jabber:x:roster" );
 isa_ok( $xoob, "Net::Jabber::X" );
+is( $iq->DefinedX(), 1, "DefinedX" );
+is( $iq->DefinedX("jabber:x:oob"), 1, "DefinedX - jabber:x:oob" );
+is( $iq->DefinedX("jabber:x:roster"), 1, "DefinedX - jabber:x:roster" );
 
 #------------------------------------------------------------------------------
 # X
@@ -59,6 +67,8 @@ is( $x3[0], $xoob, "Is the first x the oob?");
 my @x4 = $iq->GetX("jabber:x:roster");
 is( $#x4, 0, "filter on xmlns - only one x... right?");
 is( $x4[0], $xroster, "Is the first x the roster?");
+
+is( $iq->DefinedX("jabber:x:testns"), "", "not DefinedX - jabber:x:testns" );
 
 #------------------------------------------------------------------------------
 # iq

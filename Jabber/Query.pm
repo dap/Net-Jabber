@@ -437,7 +437,7 @@ use strict;
 use Carp;
 use vars qw($VERSION %FUNCTIONS %NAMESPACES $AUTOLOAD);
 
-$VERSION = "1.27";
+$VERSION = "1.28";
 
 sub new
 {
@@ -1092,6 +1092,40 @@ $NAMESPACES{"jabber:iq:version"}->{Ver}->{XPath}->{Type}  = ['special','version-
 $NAMESPACES{"jabber:iq:version"}->{Ver}->{XPath}->{Path}  = 'version/text()';
 
 $NAMESPACES{"jabber:iq:version"}->{Version}->{XPath}->{Type}  = ['master','all'];
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/muc#admin
+#-----------------------------------------------------------------------------
+$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Admin}->{XPath}->{Type}  = 'master';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Item}->{XPath}->{Type}  = 'node';
+$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Item}->{XPath}->{Path}  = 'item';
+$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:muc:admin:item'];
+$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Item}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Items}->{XPath}->{Type}  = 'children';
+$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Items}->{XPath}->{Path}  = 'item';
+$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:muc:admin:item'];
+$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Items}->{XPath}->{Calls} = ['Get'];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:muc:admin:item
+#-----------------------------------------------------------------------------
+$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{ActorJID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{ActorJID}->{XPath}->{Path} = 'actor/@jid';
+
+$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Affiliation}->{XPath}->{Path} = '@affiliation';
+
+$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{JID}->{XPath}->{Path} = '@jid';
+
+$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Nick}->{XPath}->{Path} = '@nick';
+
+$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Reason}->{XPath}->{Path} = 'reason/text()';
+
+$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Role}->{XPath}->{Path} = '@role';
+
+$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Item}->{XPath}->{Type} = "master";
 
 
 ##############################################################################

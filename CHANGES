@@ -1,3 +1,9 @@
+1.28
+====
+  - Fixed bug in XPathDefined which caused the main iq callback
+    function to not work.  Show stopper bug.
+  - Fixed iq:time test.
+
 1.27
 ====
   - Update examples/client scripts to include an xpath based

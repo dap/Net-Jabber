@@ -47,5 +47,5 @@ $query3->SetVersion(name=>"test-script",
                     ver=>"v1.03"
                    );
 
-is( $query3->GetXML(), "<query xmlns='jabber:iq:version'><name>test-script</name><os>Linux</os><version>v1.03 - [ Net::Jabber v$Net::Jabber::VERSION ]</version></query>", "GetXML()" );
+is( $query3->GetXML(), "<query xmlns='jabber:iq:version'><name>test-script</name><os>".(&POSIX::uname())[0]."</os><version>v1.03 - [ Net::Jabber v$Net::Jabber::VERSION ]</version></query>", "GetXML()" );
 

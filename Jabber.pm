@@ -258,7 +258,7 @@ else
     $TIMEZONE = 0;
 }
 
-$VERSION = "1.27";
+$VERSION = "1.28";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -601,18 +601,33 @@ sub XPathSet
         my $path = $xpath;
         #print "XPathSet: val($val) path($path)\n";
     
-        if (($path !~ /^\/?\@/) && ($path !~ /^\/?text\(\)/))
+        my $childPath = "";
+        while(($path !~ /^\/?\@/) && ($path !~ /^\/?text\(\)/))
         {
             #print "XPathSet: Multi-level!!!!\n";
             my ($child) = ($path =~ /^\/?([^\/]+)/);
             $path =~ s/^\/?[^\/]+//;
-
+            #print "XPathSet: path($path)\n";
+            #print "XPathSet: childPath($childPath)\n";
+            
             if (($type eq "scalar") || ($type eq "jid") || ($type eq "timestamp"))
             {
-                my @nodes = $self->{TREE}->XPath("$child");
+                my $tmpPath = $child;
+                $tmpPath = "$childPath/$child" if ($childPath ne "");
+                
+                my @nodes = $self->{TREE}->XPath("$tmpPath");
+                #print "XPathSet: \$#nodes($#nodes)\n";
                 if ($#nodes == -1)
                 {
-                    $node = $self->{TREE}->add_child($child);
+                    if ($childPath eq "")
+                    {
+                        $node = $self->{TREE}->add_child($child);
+                    }
+                    else
+                    {
+                        my $tree = $self->{TREE}->XPath("$childPath");
+                        $node = $tree->add_child($child);
+                    }
                 }
                 else
                 {
@@ -630,6 +645,9 @@ sub XPathSet
                 $node = $self->{TREE}->add_child($child);
                 return;
             }
+            
+            $childPath .= "/" unless ($childPath eq "");
+            $childPath .= $child;
         }
 
         my ($piece) = ($path =~ /^\/?([^\/]+)/);
@@ -661,8 +679,10 @@ sub XPathDefined
     my $type = shift;
     my $xpath = shift;
     my $childtype = shift;
+    my $ns = shift;
 
     #print "XPathDefined: self($self) type($type) xpath($xpath) childtype($childtype)\n";
+    #print "XPathDefined: ns($ns)\n" if defined($ns);
 
     my @nodes = $self->{TREE}->XPath($xpath);
     my $defined = ($#nodes > -1);
@@ -671,11 +691,17 @@ sub XPathDefined
     #print "nodes(",join(",",@nodes),")\n";
     #print $#nodes,"\n";
 
-    if (!$defined && ($type eq "children"))
+    if (ref($childtype) eq "ARRAY")
     {
-        foreach my $packet (@{$self->{CHILDREN}->{lc($childtype->[0])}})
+        $ns = $childtype->[1];
+        $childtype = $childtype->[0];
+    }
+    
+    if (!$defined && (($type eq "children") || ($type eq "node")))
+    {
+        foreach my $packet (@{$self->{CHILDREN}->{lc($childtype)}})
         {
-            if ($packet->GetXMLNS() eq $childtype->[1])
+            if (!defined($ns) || ($packet->GetXMLNS() eq $ns))
             {
                 $defined = 1;
                 last;
@@ -1047,6 +1073,7 @@ sub XPathAutoLoad
         }
     }
 
+    #print STDERR "XPathAutoLoad: return($XPathCall,$XPathType,$XPathPath,$XPathChildType);\n";
     return ($XPathCall,$XPathType,$XPathPath,$XPathChildType);
 }
 

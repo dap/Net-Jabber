@@ -339,6 +339,12 @@ Net::Jabber::Protocol - Jabber Protocol Library
                       ver=>"1.0a",
                       os=>"Perl");
 
+=head2 Multi-User Chat Functions
+
+    $Con->MUCJoin(room=>"jabber",
+                  server=>"conference.jabber.org",
+                  nick=>"nick");
+
 =head2 X Functions
 
     $Con->SXPMSend(to=>'bob@jabber.org',
@@ -624,7 +630,7 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
     PresenceSend()                  - no arguments will send an empty
     PresenceSend(hash,                Presence to the server to tell it
-		 signature=>string)   that you are available.  If you
+                 signature=>string)   that you are available.  If you
                                       provide a hash, then it will pass
                                       that hash to the SetPresence()
                                       function as defined in the
@@ -995,6 +1001,12 @@ Net::Jabber::Protocol - Jabber Protocol Library
                 ver=>string,
                 os=>string)
 
+=head2 Multi-User Chat Functions
+
+    MUCJoin(room=>string,   - Sends the appropriate MUC protocol to join
+            server=>string,   the specified room with the specified nick.
+            nick=>string)
+
 =head2 X Functions
 
     SXPMSend(to=>string,   - sends the specified sxpm information to the
@@ -1019,7 +1031,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.27";
+$VERSION = "1.28";
 
 sub new
 {
@@ -3385,6 +3397,27 @@ sub VersionSend
     $version->SetVersion(%args);
 
     $self->Send($iq);
+}
+
+
+###############################################################################
+#
+# MUCJoin - join a MUC room
+#
+###############################################################################
+sub MUCJoin
+{
+    shift;
+    my $self = shift;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+    my $presence = new Net::Jabber::Presence();
+    $presence->SetTo($args{room}.'@'.$args{server}.'/'.$args{nick});
+    $presence->NewX("http://jabber.org/protocol/muc");
+
+    return $presence->GetXML() if exists($args{'__netjabber__:test'});
+    $self->Send($presence);
 }
 
 

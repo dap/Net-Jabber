@@ -43,8 +43,9 @@ t/mytestlib.pl
 t/parse_x_data.t
 t/parse_x_delay.t
 t/presence.t
-t/protocol_rpc.t
 t/protocol_definenamespace.t
+t/protocol_muc.t
+t/protocol_rpc.t
 t/query_agent.t
 t/query_agents.t
 t/query_auth.t
@@ -54,6 +55,7 @@ t/query_conference.t
 t/query_filter.t
 t/query_gateway.t
 t/query_last.t
+t/query_muc_admin.t
 t/query_oob.t
 t/query_pass.t
 t/query_register.t
@@ -69,6 +71,8 @@ t/x_data.t
 t/x_delay.t
 t/x_encrypted.t
 t/x_expire.t
+t/x_muc.t
+t/x_muc_user.t
 t/x_oob.t
 t/x_roster.t
 t/x_signed.t

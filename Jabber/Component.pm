@@ -161,7 +161,7 @@ it under the same terms as Perl itself.
 use strict;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.27";
+$VERSION = "1.28";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&

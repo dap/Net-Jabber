@@ -232,7 +232,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.27";
+$VERSION = "1.28";
 
 sub new
 {

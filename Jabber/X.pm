@@ -313,7 +313,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS %NAMESPACES);
 
-$VERSION = "1.27";
+$VERSION = "1.28";
 
 sub new
 {
@@ -619,5 +619,43 @@ $NAMESPACES{"__netjabber__:x:sxpm:map"}->{Char}->{XPath}->{Path}  = '@char';
 $NAMESPACES{"__netjabber__:x:sxpm:map"}->{Color}->{XPath}->{Path}  = '@color';
 
 $NAMESPACES{"__netjabber__:x:sxpm:map"}->{Map}->{XPath}->{Type}  = 'master';
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/muc
+#-----------------------------------------------------------------------------
+$NAMESPACES{'http://jabber.org/protocol/muc'}->{MUC}->{XPath}->{Type} = "master";
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/muc#user
+#-----------------------------------------------------------------------------
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{Alt}->{XPath}->{Path} = 'alt/text()';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{InviteFrom}->{XPath}->{Type} = 'jid';
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{InviteFrom}->{XPath}->{Path} = 'invite/@from';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{InviteReason}->{XPath}->{Path} = 'invite/reason/text()';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{InviteTo}->{XPath}->{Type} = 'jid';
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{InviteTo}->{XPath}->{Path} = 'invite/@to';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{ItemActorJID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{ItemActorJID}->{XPath}->{Path} = 'item/actor/@jid';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{ItemAffiliation}->{XPath}->{Path} = 'item/@affiliation';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{ItemJID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{ItemJID}->{XPath}->{Path} = 'item/@jid';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{ItemNick}->{XPath}->{Path} = 'item/@nick';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{ItemReason}->{XPath}->{Path} = 'item/reason/text()';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{ItemRole}->{XPath}->{Path} = 'item/@role';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{Password}->{XPath}->{Path} = 'password/text()';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{StatusCode}->{XPath}->{Path} = 'status/@code';
+
+$NAMESPACES{'http://jabber.org/protocol/muc#user'}->{User}->{XPath}->{Type} = "master";
 
 1;
