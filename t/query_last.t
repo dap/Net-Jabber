@@ -1,5 +1,5 @@
 use lib "t/lib";
-use Test::More tests=>22;
+use Test::More tests=>26;
 
 BEGIN{ use_ok( "Net::Jabber","Client" ); }
 
@@ -31,4 +31,10 @@ testPostScalar($query2,"Message","message");
 testPostScalar($query2,"Seconds",1000);
 
 is( $query2->GetXML(), "<query seconds='1000' xmlns='jabber:iq:last'>message</query>", "GetXML()" );
+
+my %fields = $query2->GetLast();
+
+testFieldScalar(\%fields,"Message","message");
+testFieldScalar(\%fields,"Seconds",1000);
+
 

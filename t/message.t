@@ -1,5 +1,5 @@
 use lib "t/lib";
-use Test::More tests=>90;
+use Test::More tests=>94;
 
 BEGIN{ use_ok( "Net::Jabber","Client" ); }
 
@@ -62,6 +62,11 @@ is( $x3[0], $xoob, "Is the first x the oob?");
 my @x4 = $message->GetX("jabber:x:roster");
 is( $#x4, 0, "filter on xmlns - only one x... right?");
 is( $x4[0], $xroster, "Is the first x the roster?");
+
+ok( $message->DefinedX(), "DefinedX - yes");
+ok( $message->DefinedX("jabber:x:roster"), "DefinedX - jabber:x:roster - yes");
+ok( $message->DefinedX("jabber:x:oob"), "DefinedX - jabber:x:oob - yes");
+ok( !$message->DefinedX("foo:bar"), "DefinedX - foo:bar - no");
 
 #------------------------------------------------------------------------------
 # message

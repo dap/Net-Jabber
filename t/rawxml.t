@@ -1,5 +1,5 @@
 use lib "t/lib";
-use Test::More tests=>28;
+use Test::More tests=>54;
 
 BEGIN{ use_ok( "Net::Jabber","Client" ); }
 
@@ -26,4 +26,31 @@ is( $message->GetXML(), "<message from='user1\@server1/resource1' to='user2\@ser
 $message->InsertRawXML("<bar>foo</bar>");
 
 is( $message->GetXML(), "<message from='user1\@server1/resource1' to='user2\@server2/resource2'><body>body</body><subject>subject</subject><bar>foo</bar></message>", "GetXML()" );
+
+
+my $iq = new Net::Jabber::IQ();
+ok( defined($iq), "new()");
+isa_ok( $iq, "Net::Jabber::IQ");
+
+testJID($iq, "From", "user1", "server1", "resource1");
+testJID($iq, "To", "user2", "server2", "resource2");
+
+my $query = $iq->NewQuery("jabber:iq:auth");
+ok( defined($query), "AddQuery()");
+isa_ok( $query, "Net::Jabber::Query" );
+
+testPostScalar( $query, "XMLNS", "jabber:iq:auth");
+
+is( $iq->GetXML(), "<iq from='user1\@server1/resource1' to='user2\@server2/resource2'><query xmlns='jabber:iq:auth'/></iq>", "GetXML()");
+
+$iq->InsertRawXML("<test1/>");
+
+is( $iq->GetXML(), "<iq from='user1\@server1/resource1' to='user2\@server2/resource2'><query xmlns='jabber:iq:auth'/><test1/></iq>", "GetXML()");
+
+$query->InsertRawXML("<test2/>");
+
+is( $query->GetXML(), "<query xmlns='jabber:iq:auth'><test2/></query>", "GetXML()");
+
+is( $iq->GetXML(), "<iq from='user1\@server1/resource1' to='user2\@server2/resource2'><query xmlns='jabber:iq:auth'><test2/></query><test1/></iq>", "GetXML()");
+
 

@@ -36,7 +36,7 @@ Net::Jabber::Query - Jabber Query Library
 
   Net::Jabber::Query differs from the other modules in that its behavior
   and available functions are based off of the XML namespace that is
-  set in it.  The current list of supported namespaces is:
+  set in it.  The current supported namespaces are:
 
     jabber:iq:agent
     jabber:iq:agents
@@ -55,7 +55,19 @@ Net::Jabber::Query - Jabber Query Library
     jabber:iq:search
     jabber:iq:time
     jabber:iq:version
-
+    http://jabber.org/protocol/bytestreams
+    http://jabber.org/protocol/commands
+    http://jabber.org/protocol/disco#info
+    http://jabber.org/protocol/disco#items
+    http://jabber.org/protocol/feature-neg
+    http://jabber.org/protocol/muc#admin
+    http://jabber.org/protocol/pubsub
+    http://jabber.org/protocol/pubsub#event
+    http://jabber.org/protocol/pubsub#owner
+    http://jabber.org/protocol/si
+    http://jabber.org/protocol/si/profile/file-transfer
+    http://www.jabber.org/protocol/soap # Experimental
+    
   For more information on what these namespaces are for, visit 
   http://www.jabber.org and browse the Jabber Programmers Guide.
 
@@ -81,7 +93,7 @@ Net::Jabber::Query - Jabber Query Library
     use Net::Jabber qw(Client);
 
     sub iqCB {
-      my ($IQ) = @_;
+      my ($sid,$IQ) = @_;
       my $query = $IQ->GetQuery();
       .
       .
@@ -360,9 +372,88 @@ types I will use:
 
 =head1 jabber:iq:rpc
 
+  Type     Get                 Set                 Defined
+  =======  ================    ================    ==================
+  objects  GetMethodCall()     AddMethodCall()     DefinedMethodCall()
+  objects  GetMethodResponse() AddMethodResponse() DefinedMethodReponse()
+
+=head1 jabber:iq:rpc - methodCall objects
+
   Type     Get               Set               Defined
   =======  ================  ================  ==================
-TODO
+  string   GetMethodName()   SetMethodName()   DefinedMethodName()
+  objects  GetParams()       AddParams()       DefinedParams()
+  master   GetMethodCall()   SetMethodCall()
+  
+=head1 jabber:iq:rpc - methodResponse objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetParams()       AddParams()       DefinedParams()
+  objects  GetFault()        AddFault()        DefinedFault()
+
+=head1 jabber:iq:rpc - fault objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetValue()        AddValue()        DefinedValue() 
+
+=head1 jabber:iq:rpc - params objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects                    AddParam()
+  objects  GetParams()
+
+=head1 jabber:iq:rpc - param objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetValue()        AddValue()        DefinedValue() 
+
+=head1 jabber:iq:rpc - value objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetBase64()       SetBase64()       DefinedBase64()
+  string   GetBoolean()      SetBoolean()      DefinedBoolean()
+  string   GetDateTime()     SetDateTime()     DefinedDateTime()
+  string   GetDouble()       SetDouble()       DefinedDouble()
+  string   GetI4()           SetI4()           DefinedI4()    
+  string   GetInt()          SetInt()          DefinedInt()
+  string   GetString()       SetString()       DefinedString()
+  string   GetValue()        SetValue()        DefinedValue() 
+  objects  GetStruct()       AddStruct()       DefinedStruct()
+  objects  GetArray()        AddArray()        DefinedArray() 
+  master   GetRPCValue()     SetRPCValue()                      
+
+=head1 jabber:iq:rpc - struct objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects                    AddMember()
+  objects  GetMembers()
+
+=head1 jabber:iq:rpc - member objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetName()         SetName()         DefinedName()
+  objects  GetValue()        AddValue()        DefinedValue()
+  master   GetMember()       SetMember()
+  
+=head1 jabber:iq:rpc - array objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects                    AddData()
+  objects  GetDatas()
+
+=head1 jabber:iq:rpc - data objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetValue()        AddValue()        DefinedValue()
 
 =head1 jabber:iq:search
 
@@ -415,6 +506,314 @@ TODO
   special  GetVer()          SetVer()          DefinedVer()
   master   GetVersion()      SetVersion()
 
+=head1 http://www.jabber.org/protocol/bytestreams
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetActivate()     SetActivate()     DefinedActivate()
+  string   GetStreamHostUsedJID()
+                             SetStreamHostUsedJID()
+                                               DefinedStreamHostUsedJID()
+  string   GetSID()          SetSID()          DefinedSID()
+  objects                    AddStreamHost()                    
+  objects  GetStreamHosts()                                     
+  master   GetByteStreams()  SetByteStreams()
+
+=head1 http://www.jabber.org/protocol/bytestreams streamhost objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetHost()         SetHost()         DefinedHost()
+  string   GetJID()          SetJID()          DefinedJID()
+  string   GetPort()         SetPort()         DefinedPort()
+  string   GetZeroConf()     SetZeroConf()     DefinedZeroConf()
+  master   GetStreamHost()   SetStreamHost()
+
+=head1 http://www.jabber.org/protocol/commands
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetAction()       SetAction()       DefinedAction() 
+  string   GetNode()         SetNode()         DefinedNode() 
+  string   GetSessionID()    SetSessionID()    DefinedSessionID() 
+  objects                    AddNote()
+  objects  GetNotes()
+  master   GetCommand()      SetCommand()
+
+=head1 http://www.jabber.org/protocol/commands note object
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetMessage()      SetMessage()      DefinedMessage() 
+  string   GetType()         SetType()         DefinedType() 
+  master   GetNote()         SetNote()
+
+=head1 http://www.jabber.org/protocol/disco#info
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetNode()         SetNode()         DefinedNode() 
+  objects                    AddFeature()
+  objects  GetFeatures()
+  objects                    AddIdentity()
+  objects  GetIdentities()
+  master   GetDiscoInfo()    SetDiscoInfo()
+
+=head1 http://www.jabber.org/protocol/disco#info feature objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetVar()          SetVar()          DefinedVar() 
+  master   GetFeature()      SetFeature()
+
+=head1 http://www.jabber.org/protocol/disco#info identity objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetCategory()     SetCategory()     DefinedCategory() 
+  string   GetName()         SetName()         DefinedName() 
+  string   GetType()         SetType()         DefinedType() 
+  master   GetIdentity()     SetIdentity()
+
+=head1 http://www.jabber.org/protocol/disco#items
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetNode()         SetNode()         DefinedNode() 
+  objects                    AddItem()
+  objects  GetItems()
+  master   GetDiscoItems()   SetDiscoItems()
+
+=head1 http://www.jabber.org/protocol/disco#items item objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetAction()       SetAction()       DefinedAction() 
+  string   GetJID()          SetJID()          DefinedJID() 
+  string   GetName()         SetName()         DefinedName() 
+  string   GetNode()         SetNode()         DefinedNode() 
+  master   GetItem()         SetItem()
+
+=head1 http://www.jabber.org/protocol/feature-neg
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+
+      This is just a wrapper for x:data to provide it with context.
+
+=head1 http://www.jabber.org/protocol/pubsub
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetAffiliations() AddAffiliations()
+  objects  GetConfigure()    AddConfigure()
+  objects  GetCreate()       AddCreate()
+  objects  GetDelete()       AddDelete()
+  objects  GetEntities()     AddEntities()
+  objects  GetEntity()       AddEntity()
+  objects  GetItems()        AddItems()
+  objects  GetItem()         AddItem()
+  objects  GetOptions()      AddOptions()
+  objects  GetPublish()      AddPublish()
+  objects  GetPurge()        AddPurge()
+  objects  GetRetract()      AddRetract()
+  objects  GetSubscribe()    AddSubscribe()
+  objects  GetUnsubscribe()  AddUnsubscribe()
+
+=head1 http://www.jabber.org/protocol/pubsub affiliations objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetEntity()       AddEntity()
+
+=head1 http://www.jabber.org/protocol/pubsub configure objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetConfigure()    SetConfigure()
+
+=head1 http://www.jabber.org/protocol/pubsub create objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetCreate()       SetCreate()
+
+=head1 http://www.jabber.org/protocol/pubsub delete objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetDelete()       SetDelete()
+
+=head1 http://www.jabber.org/protocol/pubsub entity objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetAffiliation()  SetAffiliation()  DefinedAffiliation()
+  string   GetJID()          SetJID()          DefinedJID()
+  string   GetNode()         SetNode()         DefinedNode()
+  string   GetSubscription() SetSubscription() DefinedSubscription()
+  objects  GetSubscribeOptions()
+                             AddSubscribeOptions()
+  master   GetEntity()       SetEntity()
+
+=head1 http://www.jabber.org/protocol/pubsub items objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetItem()         AddItem()
+  string   GetMaxItems()     SetMaxItems()     DefinedMaxItems()
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetItems()        SetItems()
+
+=head1 http://www.jabber.org/protocol/pubsub item objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetID()           SetID()           DefinedID()
+  raw      GetPayload()      SetPayload()      DefinedPayload()
+  master   GetItem()         SetItem()
+
+=head1 http://www.jabber.org/protocol/pubsub options objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetJID()          SetJID()          DefinedJID()
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetOptions()      SetOptions()
+
+=head1 http://www.jabber.org/protocol/pubsub publish objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetItem()         AddItem()
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetRetract()      SetRetract()
+
+=head1 http://www.jabber.org/protocol/pubsub purge objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetPurge()        SetPurge()
+
+=head1 http://www.jabber.org/protocol/pubsub retract objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetItem()         AddItem()
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetRetract()      SetRetract()
+
+=head1 http://www.jabber.org/protocol/pubsub subscribe objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetJID()          SetJID()          DefinedJID()
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetSubscribe()    SetSubscribe()
+
+=head1 http://www.jabber.org/protocol/pubsub subscribe-options objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  flag     GetRequired()     SetRequired()     DefinedRequired()
+  master   GetSubscribeOptions()
+                             SetSubscriceOptions()
+
+=head1 http://www.jabber.org/protocol/pubsub unsubscribe objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetJID()          SetJID()          DefinedJID()
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetUnsubscribe()  SetUnsubscribe()
+
+=head1 http://www.jabber.org/protocol/pubsub#event
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetDelete()       AddDelete()
+  objects  GetItems()        AddItems()
+
+=head1 http://www.jabber.org/protocol/pubsub#event delete objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetDelete()       SetDelete()
+
+=head1 http://www.jabber.org/protocol/pubsub#event items objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetItem()         AddItem()
+  string   GetNode()         SetNode()         DefinedNode()
+  objects  GetRetract()      AddRetract()
+  master   GetItems()        SetItems()
+
+=head1 http://www.jabber.org/protocol/pubsub#event item objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetID()           SetID()           DefinedID()
+  raw      GetPayload()      SetPayload()      DefinedPayload()
+  master   GetItem()         SetItem()
+
+=head1 http://www.jabber.org/protocol/pubsub#event retract objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetID()           SetID()           DefinedID()
+  master   GetRetract()      SetRetract()
+
+=head1 http://www.jabber.org/protocol/pubsub#owner
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetAction()       SetAction()       DefinedAction()
+  objects  GetConfigure()    AddConfigure()
+  master   GetOwner()        SetOwner()
+ 
+=head1 http://www.jabber.org/protocol/pubsub#owner configure objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetNode()         SetNode()         DefinedNode()
+  master   GetConfigure()    SetConfigure()
+
+=head1 http://www.jabber.org/protocol/si
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetID()           SetID()           DefinedID()
+  string   GetMimeType()     SetMimeType()     DefinedMimeType()
+  string   GetProfile()      SetProfile()      DefinedProfile()
+  master   GetStream()       SetStream()
+
+=head1 http://www.jabber.org/protocol/si/profile/file-transfer
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetDate()         SetDate()         DefinedDate()
+  string   GetDesc()         SetDesc()         DefinedDesc()
+  string   GetHash()         SetHash()         DefinedHash()
+  string   GetName()         SetName()         DefinedName()
+  string   GetRange()        SetRange()        DefinedRange()
+  string   GetRangeOffset()  SetRangeOffset()  DefinedRangeOffset()
+  string   GetRangeLength()  SetRangeLength()  DefinedRangeLength()
+  string   GetSize()         SetSize()         DefinedSize()
+  master   GetFile()         SetFile()   
+
+=head1 http://www.jabber.org/protocol/soap - Experimental
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  raw      GetPayload()      SetPayload()      DefinedPayload()
+  master   GetSoap()         SetSoap()
+
 =head1 CUSTOM NAMESPACES
 
   Part of the flexability of this module is that you can define your own
@@ -435,9 +834,9 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION %FUNCTIONS %NAMESPACES $AUTOLOAD);
+use vars qw($VERSION %FUNCTIONS %NAMESPACES %TAGS $AUTOLOAD);
 
-$VERSION = "1.28";
+$VERSION = "1.29";
 
 sub new
 {
@@ -495,637 +894,1292 @@ sub AUTOLOAD
     &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
-$FUNCTIONS{XMLNS}->{XPath}->{Path}  = '@xmlns';
+$FUNCTIONS{XMLNS}->{XPath}->{Path} = '@xmlns';
 
-$FUNCTIONS{Query}->{XPath}->{Type}  = 'node';
-$FUNCTIONS{Query}->{XPath}->{Path}  = '*[@xmlns]';
+$FUNCTIONS{Query}->{XPath}->{Type} = 'node';
+$FUNCTIONS{Query}->{XPath}->{Path} = '*[@xmlns]';
 $FUNCTIONS{Query}->{XPath}->{Child} = 'Query';
 $FUNCTIONS{Query}->{XPath}->{Calls} = ['Get','Defined'];
 
-$FUNCTIONS{X}->{XPath}->{Type}  = 'node';
-$FUNCTIONS{X}->{XPath}->{Path}  = '*[@xmlns]';
+$FUNCTIONS{X}->{XPath}->{Type} = 'node';
+$FUNCTIONS{X}->{XPath}->{Path} = '*[@xmlns]';
 $FUNCTIONS{X}->{XPath}->{Child} = 'X';
 $FUNCTIONS{X}->{XPath}->{Calls} = ['Get','Defined'];
+
+my $ns;
 
 #-----------------------------------------------------------------------------
 # jabber:iq:agent
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:agent"}->{Agents}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:agent"}->{Agents}->{XPath}->{Path}  = 'agents';
+$ns = 'jabber:iq:agent';
 
-$NAMESPACES{"jabber:iq:agent"}->{Description}->{XPath}->{Path}  = 'description/text()';
+$NAMESPACES{$ns}->{Agents}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Agents}->{XPath}->{Path} = 'agents';
 
-$NAMESPACES{"jabber:iq:agent"}->{JID}->{XPath}->{Type}  = 'jid';
-$NAMESPACES{"jabber:iq:agent"}->{JID}->{XPath}->{Path}  = '@jid';
+$NAMESPACES{$ns}->{Description}->{XPath}->{Path} = 'description/text()';
 
-$NAMESPACES{"jabber:iq:agent"}->{Name}->{XPath}->{Path}  = 'name/text()';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
 
-$NAMESPACES{"jabber:iq:agent"}->{GroupChat}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:agent"}->{GroupChat}->{XPath}->{Path}  = 'groupchat';
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = 'name/text()';
 
-$NAMESPACES{"jabber:iq:agent"}->{Register}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:agent"}->{Register}->{XPath}->{Path}  = 'register';
+$NAMESPACES{$ns}->{GroupChat}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{GroupChat}->{XPath}->{Path} = 'groupchat';
 
-$NAMESPACES{"jabber:iq:agent"}->{Search}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:agent"}->{Search}->{XPath}->{Path}  = 'search';
+$NAMESPACES{$ns}->{Register}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Register}->{XPath}->{Path} = 'register';
 
-$NAMESPACES{"jabber:iq:agent"}->{Service}->{XPath}->{Path}  = 'service/text()';
+$NAMESPACES{$ns}->{Search}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Search}->{XPath}->{Path} = 'search';
 
-$NAMESPACES{"jabber:iq:agent"}->{Transport}->{XPath}->{Path}  = 'transport/text()';
+$NAMESPACES{$ns}->{Service}->{XPath}->{Path} = 'service/text()';
 
-$NAMESPACES{"jabber:iq:agent"}->{URL}->{XPath}->{Path}  = 'url/text()';
+$NAMESPACES{$ns}->{Transport}->{XPath}->{Path} = 'transport/text()';
 
-$NAMESPACES{"jabber:iq:agent"}->{Agent}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{URL}->{XPath}->{Path} = 'url/text()';
+
+$NAMESPACES{$ns}->{Agent}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:agents
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:agents"}->{Agent}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"jabber:iq:agents"}->{Agent}->{XPath}->{Path}  = 'agent';
-$NAMESPACES{"jabber:iq:agents"}->{Agent}->{XPath}->{Child} = ['Query','jabber:iq:agent',"__netjabber__:skip_xmlns"];
-$NAMESPACES{"jabber:iq:agents"}->{Agent}->{XPath}->{Calls} = ['Add'];
+$ns = 'jabber:iq:agents';
 
-$NAMESPACES{"jabber:iq:agents"}->{Agents}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"jabber:iq:agents"}->{Agents}->{XPath}->{Path}  = 'agent';
-$NAMESPACES{"jabber:iq:agents"}->{Agents}->{XPath}->{Child} = ['Query','jabber:iq:agent'];
-$NAMESPACES{"jabber:iq:agents"}->{Agents}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Agent}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Agent}->{XPath}->{Path} = 'agent';
+$NAMESPACES{$ns}->{Agent}->{XPath}->{Child} = ['Query','jabber:iq:agent',"__netjabber__:skip_xmlns"];
+$NAMESPACES{$ns}->{Agent}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Agents}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Agents}->{XPath}->{Path} = 'agent';
+$NAMESPACES{$ns}->{Agents}->{XPath}->{Child} = ['Query','jabber:iq:agent'];
+$NAMESPACES{$ns}->{Agents}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # jabber:iq:auth
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:auth"}->{Digest}->{XPath}->{Path}  = 'digest/text()';
+$ns = 'jabber:iq:auth';
 
-$NAMESPACES{"jabber:iq:auth"}->{Hash}->{XPath}->{Path}  = 'hash/text()';
+$NAMESPACES{$ns}->{Digest}->{XPath}->{Path} = 'digest/text()';
 
-$NAMESPACES{"jabber:iq:auth"}->{Password}->{XPath}->{Path}  = 'password/text()';
+$NAMESPACES{$ns}->{Hash}->{XPath}->{Path} = 'hash/text()';
 
-$NAMESPACES{"jabber:iq:auth"}->{Resource}->{XPath}->{Path}  = 'resource/text()';
+$NAMESPACES{$ns}->{Password}->{XPath}->{Path} = 'password/text()';
 
-$NAMESPACES{"jabber:iq:auth"}->{Sequence}->{XPath}->{Path}  = 'sequence/text()';
+$NAMESPACES{$ns}->{Resource}->{XPath}->{Path} = 'resource/text()';
 
-$NAMESPACES{"jabber:iq:auth"}->{Token}->{XPath}->{Path}  = 'token/text()';
+$NAMESPACES{$ns}->{Sequence}->{XPath}->{Path} = 'sequence/text()';
 
-$NAMESPACES{"jabber:iq:auth"}->{Username}->{XPath}->{Path}  = 'username/text()';
+$NAMESPACES{$ns}->{Token}->{XPath}->{Path} = 'token/text()';
 
-$NAMESPACES{"jabber:iq:auth"}->{Auth}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Username}->{XPath}->{Path} = 'username/text()';
+
+$NAMESPACES{$ns}->{Auth}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:autoupdate
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{XPath}->{Path}  = 'beta';
-$NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{XPath}->{Child} = ['Query','__netjabber__:iq:autoupdate:release'];
-$NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{XPath}->{Calls} = ['Add'];
+$ns = 'jabber:iq:autoupdate';
 
-$NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{XPath}->{Path}  = 'dev';
-$NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{XPath}->{Child} = ['Query','__netjabber__:iq:autoupdate:release'];
-$NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{XPath}->{Calls} = ['Add'];
+$NAMESPACES{$ns}->{Beta}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Beta}->{XPath}->{Path} = 'beta';
+$NAMESPACES{$ns}->{Beta}->{XPath}->{Child} = ['Query','__netjabber__:iq:autoupdate:release'];
+$NAMESPACES{$ns}->{Beta}->{XPath}->{Calls} = ['Add'];
 
-$NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{XPath}->{Path}  = 'release';
-$NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{XPath}->{Child} = ['Query','__netjabber__:iq:autoupdate:release'];
-$NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{XPath}->{Calls} = ['Add'];
+$NAMESPACES{$ns}->{Dev}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Dev}->{XPath}->{Path} = 'dev';
+$NAMESPACES{$ns}->{Dev}->{XPath}->{Child} = ['Query','__netjabber__:iq:autoupdate:release'];
+$NAMESPACES{$ns}->{Dev}->{XPath}->{Calls} = ['Add'];
 
-$NAMESPACES{"jabber:iq:autoupdate"}->{Releases}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"jabber:iq:autoupdate"}->{Releases}->{XPath}->{Path}  = '*';
-$NAMESPACES{"jabber:iq:autoupdate"}->{Releases}->{XPath}->{Child} = ['Query','__netjabber__:iq:autoupdate:release'];
-$NAMESPACES{"jabber:iq:autoupdate"}->{Releases}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Release}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Release}->{XPath}->{Path} = 'release';
+$NAMESPACES{$ns}->{Release}->{XPath}->{Child} = ['Query','__netjabber__:iq:autoupdate:release'];
+$NAMESPACES{$ns}->{Release}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Releases}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Releases}->{XPath}->{Path} = '*';
+$NAMESPACES{$ns}->{Releases}->{XPath}->{Child} = ['Query','__netjabber__:iq:autoupdate:release'];
+$NAMESPACES{$ns}->{Releases}->{XPath}->{Calls} = ['Get'];
 
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:autoupdate:release
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:autoupdate:release"}->{Desc}->{XPath}->{Path}  = 'desc/text()';
+$ns = '__netjabber__:iq:autoupdate:release';
 
-$NAMESPACES{"__netjabber__:iq:autoupdate:release"}->{Priority}->{XPath}->{Path}  = '@priority';
+$NAMESPACES{$ns}->{Desc}->{XPath}->{Path} = 'desc/text()';
 
-$NAMESPACES{"__netjabber__:iq:autoupdate:release"}->{URL}->{XPath}->{Path}  = 'url/text()';
+$NAMESPACES{$ns}->{Priority}->{XPath}->{Path} = '@priority';
 
-$NAMESPACES{"__netjabber__:iq:autoupdate:release"}->{Version}->{XPath}->{Path}  = 'version/text()';
+$NAMESPACES{$ns}->{URL}->{XPath}->{Path} = 'url/text()';
 
-$NAMESPACES{"__netjabber__:iq:autoupdate:release"}->{Release}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Version}->{XPath}->{Path} = 'version/text()';
+
+$NAMESPACES{$ns}->{Release}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:browse
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:browse"}->{Category}->{XPath}->{Path}  = '@category';
+$ns = 'jabber:iq:browse';
 
-$NAMESPACES{"jabber:iq:browse"}->{JID}->{XPath}->{Type}  = 'jid';
-$NAMESPACES{"jabber:iq:browse"}->{JID}->{XPath}->{Path}  = '@jid';
+$NAMESPACES{$ns}->{Category}->{XPath}->{Path} = '@category';
 
-$NAMESPACES{"jabber:iq:browse"}->{Name}->{XPath}->{Path}  = '@name';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
 
-$NAMESPACES{"jabber:iq:browse"}->{Type}->{XPath}->{Path}  = '@type';
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = '@name';
 
-$NAMESPACES{"jabber:iq:browse"}->{NS}->{XPath}->{Type}  = 'array';
-$NAMESPACES{"jabber:iq:browse"}->{NS}->{XPath}->{Path}  = 'ns/text()';
+$NAMESPACES{$ns}->{Type}->{XPath}->{Path} = '@type';
 
-$NAMESPACES{"jabber:iq:browse"}->{Browse}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{NS}->{XPath}->{Type} = 'array';
+$NAMESPACES{$ns}->{NS}->{XPath}->{Path} = 'ns/text()';
 
-$NAMESPACES{"jabber:iq:browse"}->{Item}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"jabber:iq:browse"}->{Item}->{XPath}->{Path}  = '*[name() != "ns"]';
-$NAMESPACES{"jabber:iq:browse"}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:browse','__netjabber__:specifyname','item'];
-$NAMESPACES{"jabber:iq:browse"}->{Item}->{XPath}->{Calls} = ['Add'];
+$NAMESPACES{$ns}->{Browse}->{XPath}->{Type} = 'master';
 
-$NAMESPACES{"jabber:iq:browse"}->{Items}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"jabber:iq:browse"}->{Items}->{XPath}->{Path}  = '*[name() != "ns"]';
-$NAMESPACES{"jabber:iq:browse"}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:browse'];
-$NAMESPACES{"jabber:iq:browse"}->{Items}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = '*[name() != "ns"]';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:browse','__netjabber__:specifyname','item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Path} = '*[name() != "ns"]';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:browse'];
+$NAMESPACES{$ns}->{Items}->{XPath}->{Calls} = ['Get'];
 
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:browse
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:browse"}->{Category}->{XPath}->{Path}  = '@category';
+$ns = '__netjabber__:iq:browse';
 
-$NAMESPACES{"__netjabber__:iq:browse"}->{JID}->{XPath}->{Type}  = 'jid';
-$NAMESPACES{"__netjabber__:iq:browse"}->{JID}->{XPath}->{Path}  = '@jid';
+$NAMESPACES{$ns}->{Category}->{XPath}->{Path} = '@category';
 
-$NAMESPACES{"__netjabber__:iq:browse"}->{Name}->{XPath}->{Path}  = '@name';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
 
-$NAMESPACES{"__netjabber__:iq:browse"}->{Type}->{XPath}->{Path}  = '@type';
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = '@name';
 
-$NAMESPACES{"__netjabber__:iq:browse"}->{NS}->{XPath}->{Type}  = 'array';
-$NAMESPACES{"__netjabber__:iq:browse"}->{NS}->{XPath}->{Path}  = 'ns/text()';
+$NAMESPACES{$ns}->{Type}->{XPath}->{Path} = '@type';
 
-$NAMESPACES{"__netjabber__:iq:browse"}->{Browse}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{NS}->{XPath}->{Type} = 'array';
+$NAMESPACES{$ns}->{NS}->{XPath}->{Path} = 'ns/text()';
 
-$NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{XPath}->{Path}  = '*[name() != "ns"]';
-$NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:browse','__netjabber__:specifyname','item'];
-$NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{XPath}->{Calls} = ['Add'];
+$NAMESPACES{$ns}->{Browse}->{XPath}->{Type} = 'master';
 
-$NAMESPACES{"__netjabber__:iq:browse"}->{Items}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:browse"}->{Items}->{XPath}->{Path}  = '*[name() != "ns"]';
-$NAMESPACES{"__netjabber__:iq:browse"}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:browse'];
-$NAMESPACES{"__netjabber__:iq:browse"}->{Items}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = '*[name() != "ns"]';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:browse','__netjabber__:specifyname','item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Path} = '*[name() != "ns"]';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:browse'];
+$NAMESPACES{$ns}->{Items}->{XPath}->{Calls} = ['Get'];
 
 
 #-----------------------------------------------------------------------------
 # jabber:iq:conference
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:conference"}->{ID}->{XPath}->{Path}  = 'id/text()';
+$ns = 'jabber:iq:conference';
 
-$NAMESPACES{"jabber:iq:conference"}->{Name}->{XPath}->{Path}  = 'name/text()';
+$NAMESPACES{$ns}->{ID}->{XPath}->{Path} = 'id/text()';
 
-$NAMESPACES{"jabber:iq:conference"}->{Nick}->{XPath}->{Path}  = 'nick/text()';
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = 'name/text()';
 
-$NAMESPACES{"jabber:iq:conference"}->{Privacy}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:conference"}->{Privacy}->{XPath}->{Path}  = 'privacy';
+$NAMESPACES{$ns}->{Nick}->{XPath}->{Path} = 'nick/text()';
 
-$NAMESPACES{"jabber:iq:conference"}->{Secret}->{XPath}->{Path}  = 'secret/text()';
+$NAMESPACES{$ns}->{Privacy}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Privacy}->{XPath}->{Path} = 'privacy';
 
-$NAMESPACES{"jabber:iq:conference"}->{Conference}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Secret}->{XPath}->{Path} = 'secret/text()';
+
+$NAMESPACES{$ns}->{Conference}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:filter
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:filter"}->{Rule}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"jabber:iq:filter"}->{Rule}->{XPath}->{Path}  = 'rule';
-$NAMESPACES{"jabber:iq:filter"}->{Rule}->{XPath}->{Child} = ['Query','__netjabber__:iq:filter:rule'];
-$NAMESPACES{"jabber:iq:filter"}->{Rule}->{XPath}->{Calls} = ['Add'];
+$ns = 'jabber:iq:filter';
 
-$NAMESPACES{"jabber:iq:filter"}->{Rules}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"jabber:iq:filter"}->{Rules}->{XPath}->{Path}  = 'rule';
-$NAMESPACES{"jabber:iq:filter"}->{Rules}->{XPath}->{Child} = ['Query','__netjabber__:iq:filter:rule'];
-$NAMESPACES{"jabber:iq:filter"}->{Rules}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Rule}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Rule}->{XPath}->{Path} = 'rule';
+$NAMESPACES{$ns}->{Rule}->{XPath}->{Child} = ['Query','__netjabber__:iq:filter:rule'];
+$NAMESPACES{$ns}->{Rule}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Rules}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Rules}->{XPath}->{Path} = 'rule';
+$NAMESPACES{$ns}->{Rules}->{XPath}->{Child} = ['Query','__netjabber__:iq:filter:rule'];
+$NAMESPACES{$ns}->{Rules}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:filter:rule
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Body}->{XPath}->{Path}  = 'body/text()';
+$ns = '__netjabber__:iq:filter:rule';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Continued}->{XPath}->{Path}  = 'continued/text()';
+$NAMESPACES{$ns}->{Body}->{XPath}->{Path} = 'body/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Drop}->{XPath}->{Path}  = 'drop/text()';
+$NAMESPACES{$ns}->{Continued}->{XPath}->{Path} = 'continued/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Edit}->{XPath}->{Path}  = 'edit/text()';
+$NAMESPACES{$ns}->{Drop}->{XPath}->{Path} = 'drop/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Error}->{XPath}->{Path}  = 'error/text()';
+$NAMESPACES{$ns}->{Edit}->{XPath}->{Path} = 'edit/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{From}->{XPath}->{Path}  = 'from/text()';
+$NAMESPACES{$ns}->{Error}->{XPath}->{Path} = 'error/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Offline}->{XPath}->{Path}  = 'offline/text()';
+$NAMESPACES{$ns}->{From}->{XPath}->{Path} = 'from/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Reply}->{XPath}->{Path}  = 'reply/text()';
+$NAMESPACES{$ns}->{Offline}->{XPath}->{Path} = 'offline/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Resource}->{XPath}->{Path}  = 'resource/text()';
+$NAMESPACES{$ns}->{Reply}->{XPath}->{Path} = 'reply/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Show}->{XPath}->{Path}  = 'show/text()';
+$NAMESPACES{$ns}->{Resource}->{XPath}->{Path} = 'resource/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Size}->{XPath}->{Path}  = 'size/text()';
+$NAMESPACES{$ns}->{Show}->{XPath}->{Path} = 'show/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Subject}->{XPath}->{Path}  = 'subject/text()';
+$NAMESPACES{$ns}->{Size}->{XPath}->{Path} = 'size/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Time}->{XPath}->{Path}  = 'time/text()';
+$NAMESPACES{$ns}->{Subject}->{XPath}->{Path} = 'subject/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Type}->{XPath}->{Path}  = 'type/text()';
+$NAMESPACES{$ns}->{Time}->{XPath}->{Path} = 'time/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Unavailable}->{XPath}->{Path}  = 'unavailable/text()';
+$NAMESPACES{$ns}->{Type}->{XPath}->{Path} = 'type/text()';
 
-$NAMESPACES{"__netjabber__:iq:filter:rule"}->{Rule}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Unavailable}->{XPath}->{Path} = 'unavailable/text()';
+
+$NAMESPACES{$ns}->{Rule}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:gateway
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:gateway"}->{JID}->{XPath}->{Type}  = 'jid';
-$NAMESPACES{"jabber:iq:gateway"}->{JID}->{XPath}->{Path}  = 'jid/text()';
+$ns = 'jabber:iq:gateway';
 
-$NAMESPACES{"jabber:iq:gateway"}->{Desc}->{XPath}->{Path}  = 'desc/text()';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = 'jid/text()';
 
-$NAMESPACES{"jabber:iq:gateway"}->{Prompt}->{XPath}->{Path}  = 'prompt/text()';
+$NAMESPACES{$ns}->{Desc}->{XPath}->{Path} = 'desc/text()';
 
-$NAMESPACES{"jabber:iq:gateway"}->{Gateway}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Prompt}->{XPath}->{Path} = 'prompt/text()';
+
+$NAMESPACES{$ns}->{Gateway}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:last
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:last"}->{Message}->{XPath}->{Path}  = 'text()';
+$ns = 'jabber:iq:last';
 
-$NAMESPACES{"jabber:iq:last"}->{Seconds}->{XPath}->{Path}  = '@seconds';
+$NAMESPACES{$ns}->{Message}->{XPath}->{Path} = 'text()';
 
-$NAMESPACES{"jabber:iq:last"}->{Last}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Seconds}->{XPath}->{Path} = '@seconds';
+
+$NAMESPACES{$ns}->{Last}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:oob
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:oob"}->{Desc}->{XPath}->{Path}  = 'desc/text()';
+$ns = 'jabber:iq:oob';
 
-$NAMESPACES{"jabber:iq:oob"}->{URL}->{XPath}->{Path}  = 'url/text()';
+$NAMESPACES{$ns}->{Desc}->{XPath}->{Path} = 'desc/text()';
 
-$NAMESPACES{"jabber:iq:oob"}->{Oob}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{URL}->{XPath}->{Path} = 'url/text()';
+
+$NAMESPACES{$ns}->{Oob}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:pass
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:pass"}->{Client}->{XPath}->{Path}  = 'client/text()';
+$ns = 'jabber:iq:pass';
 
-$NAMESPACES{"jabber:iq:pass"}->{ClientPort}->{XPath}->{Path}  = 'client/@port';
+$NAMESPACES{$ns}->{Client}->{XPath}->{Path} = 'client/text()';
 
-$NAMESPACES{"jabber:iq:pass"}->{Close}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:pass"}->{Close}->{XPath}->{Path}  = 'close';
+$NAMESPACES{$ns}->{ClientPort}->{XPath}->{Path} = 'client/@port';
 
-$NAMESPACES{"jabber:iq:pass"}->{Expire}->{XPath}->{Path}  = 'expire/text()';
+$NAMESPACES{$ns}->{Close}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Close}->{XPath}->{Path} = 'close';
 
-$NAMESPACES{"jabber:iq:pass"}->{OneShot}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:pass"}->{OneShot}->{XPath}->{Path}  = 'oneshot';
+$NAMESPACES{$ns}->{Expire}->{XPath}->{Path} = 'expire/text()';
 
-$NAMESPACES{"jabber:iq:pass"}->{Proxy}->{XPath}->{Path}  = 'proxy/text()';
+$NAMESPACES{$ns}->{OneShot}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{OneShot}->{XPath}->{Path} = 'oneshot';
 
-$NAMESPACES{"jabber:iq:pass"}->{ProxyPort}->{XPath}->{Path}  = 'proxy/@port';
+$NAMESPACES{$ns}->{Proxy}->{XPath}->{Path} = 'proxy/text()';
 
-$NAMESPACES{"jabber:iq:pass"}->{Server}->{XPath}->{Path}  = 'server/text()';
+$NAMESPACES{$ns}->{ProxyPort}->{XPath}->{Path} = 'proxy/@port';
 
-$NAMESPACES{"jabber:iq:pass"}->{ServerPort}->{XPath}->{Path}  = 'server/@port';
+$NAMESPACES{$ns}->{Server}->{XPath}->{Path} = 'server/text()';
 
-$NAMESPACES{"jabber:iq:pass"}->{Pass}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{ServerPort}->{XPath}->{Path} = 'server/@port';
+
+$NAMESPACES{$ns}->{Pass}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:register
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:register"}->{Address}->{XPath}->{Path}  = 'address/text()';
+$ns = 'jabber:iq:register';
 
-$NAMESPACES{"jabber:iq:register"}->{City}->{XPath}->{Path}  = 'city/text()';
+$NAMESPACES{$ns}->{Address}->{XPath}->{Path} = 'address/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Date}->{XPath}->{Path}  = 'date/text()';
+$NAMESPACES{$ns}->{City}->{XPath}->{Path} = 'city/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Email}->{XPath}->{Path}  = 'email/text()';
+$NAMESPACES{$ns}->{Date}->{XPath}->{Path} = 'date/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{First}->{XPath}->{Path}  = 'first/text()';
+$NAMESPACES{$ns}->{Email}->{XPath}->{Path} = 'email/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Instructions}->{XPath}->{Path}  = 'instructions/text()';
+$NAMESPACES{$ns}->{First}->{XPath}->{Path} = 'first/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Key}->{XPath}->{Path}  = 'key/text()';
+$NAMESPACES{$ns}->{Instructions}->{XPath}->{Path} = 'instructions/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Last}->{XPath}->{Path}  = 'last/text()';
+$NAMESPACES{$ns}->{Key}->{XPath}->{Path} = 'key/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Misc}->{XPath}->{Path}  = 'misc/text()';
+$NAMESPACES{$ns}->{Last}->{XPath}->{Path} = 'last/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Name}->{XPath}->{Path}  = 'name/text()';
+$NAMESPACES{$ns}->{Misc}->{XPath}->{Path} = 'misc/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Nick}->{XPath}->{Path}  = 'nick/text()';
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = 'name/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Password}->{XPath}->{Path}  = 'password/text()';
+$NAMESPACES{$ns}->{Nick}->{XPath}->{Path} = 'nick/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Phone}->{XPath}->{Path}  = 'phone/text()';
+$NAMESPACES{$ns}->{Password}->{XPath}->{Path} = 'password/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Registered}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:register"}->{Registered}->{XPath}->{Path}  = 'registered';
+$NAMESPACES{$ns}->{Phone}->{XPath}->{Path} = 'phone/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Remove}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:register"}->{Remove}->{XPath}->{Path}  = 'remove';
+$NAMESPACES{$ns}->{Registered}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Registered}->{XPath}->{Path} = 'registered';
 
-$NAMESPACES{"jabber:iq:register"}->{State}->{XPath}->{Path}  = 'state/text()';
+$NAMESPACES{$ns}->{Remove}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Remove}->{XPath}->{Path} = 'remove';
 
-$NAMESPACES{"jabber:iq:register"}->{Text}->{XPath}->{Path}  = 'text/text()';
+$NAMESPACES{$ns}->{State}->{XPath}->{Path} = 'state/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{URL}->{XPath}->{Path}  = 'url/text()';
+$NAMESPACES{$ns}->{Text}->{XPath}->{Path} = 'text/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Username}->{XPath}->{Path}  = 'username/text()';
+$NAMESPACES{$ns}->{URL}->{XPath}->{Path} = 'url/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Zip}->{XPath}->{Path}  = 'zip/text()';
+$NAMESPACES{$ns}->{Username}->{XPath}->{Path} = 'username/text()';
 
-$NAMESPACES{"jabber:iq:register"}->{Register}->{XPath}->{Type}  = 'master';
-$NAMESPACES{"jabber:iq:register"}->{Register}->{XPath}->{Path}  = '*/name()';
+$NAMESPACES{$ns}->{Zip}->{XPath}->{Path} = 'zip/text()';
+
+$NAMESPACES{$ns}->{Register}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:roster
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:roster"}->{Item}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"jabber:iq:roster"}->{Item}->{XPath}->{Path}  = 'item';
-$NAMESPACES{"jabber:iq:roster"}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:roster:item'];
-$NAMESPACES{"jabber:iq:roster"}->{Item}->{XPath}->{Calls} = ['Add'];
+$ns = 'jabber:iq:roster';
 
-$NAMESPACES{"jabber:iq:roster"}->{Items}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"jabber:iq:roster"}->{Items}->{XPath}->{Path}  = 'item';
-$NAMESPACES{"jabber:iq:roster"}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:roster:item'];
-$NAMESPACES{"jabber:iq:roster"}->{Items}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:roster:item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:roster:item'];
+$NAMESPACES{$ns}->{Items}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:roster:item
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:roster:item"}->{Ask}->{XPath}->{Path}  = '@ask';
+$ns = '__netjabber__:iq:roster:item';
 
-$NAMESPACES{"__netjabber__:iq:roster:item"}->{Group}->{XPath}->{Type}  = 'array';
-$NAMESPACES{"__netjabber__:iq:roster:item"}->{Group}->{XPath}->{Path}  = 'group/text()';
+$NAMESPACES{$ns}->{Ask}->{XPath}->{Path} = '@ask';
 
-$NAMESPACES{"__netjabber__:iq:roster:item"}->{JID}->{XPath}->{Type}  = 'jid';
-$NAMESPACES{"__netjabber__:iq:roster:item"}->{JID}->{XPath}->{Path}  = '@jid';
+$NAMESPACES{$ns}->{Group}->{XPath}->{Type} = 'array';
+$NAMESPACES{$ns}->{Group}->{XPath}->{Path} = 'group/text()';
 
-$NAMESPACES{"__netjabber__:iq:roster:item"}->{Name}->{XPath}->{Path}  = '@name';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
 
-$NAMESPACES{"__netjabber__:iq:roster:item"}->{Subscription}->{XPath}->{Path}  = '@subscription';
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = '@name';
 
-$NAMESPACES{"__netjabber__:iq:roster:item"}->{Item}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Subscription}->{XPath}->{Path} = '@subscription';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:rpc
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:rpc"}->{MethodCall}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"jabber:iq:rpc"}->{MethodCall}->{XPath}->{Path}  = 'methodCall';
-$NAMESPACES{"jabber:iq:rpc"}->{MethodCall}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:methodCall'];
-$NAMESPACES{"jabber:iq:rpc"}->{MethodCall}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$ns = 'jabber:iq:rpc';
 
-$NAMESPACES{"jabber:iq:rpc"}->{MethodResponse}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"jabber:iq:rpc"}->{MethodResponse}->{XPath}->{Path}  = 'methodResponse';
-$NAMESPACES{"jabber:iq:rpc"}->{MethodResponse}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:methodResponse'];
-$NAMESPACES{"jabber:iq:rpc"}->{MethodResponse}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$NAMESPACES{$ns}->{MethodCall}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{MethodCall}->{XPath}->{Path} = 'methodCall';
+$NAMESPACES{$ns}->{MethodCall}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:methodCall'];
+$NAMESPACES{$ns}->{MethodCall}->{XPath}->{Calls} = ['Get','Defined','Add'];
+
+$NAMESPACES{$ns}->{MethodResponse}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{MethodResponse}->{XPath}->{Path} = 'methodResponse';
+$NAMESPACES{$ns}->{MethodResponse}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:methodResponse'];
+$NAMESPACES{$ns}->{MethodResponse}->{XPath}->{Calls} = ['Get','Defined','Add'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:methodCall
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{MethodName}->{XPath}->{Path}  = 'methodName/text()';
+$ns = '__netjabber__:iq:rpc:methodCall';
 
-$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{Params}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{Params}->{XPath}->{Path}  = 'params';
-$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{Params}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:params'];
-$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{Params}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$NAMESPACES{$ns}->{MethodName}->{XPath}->{Path} = 'methodName/text()';
 
-$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{MethodCall}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Params}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Params}->{XPath}->{Path} = 'params';
+$NAMESPACES{$ns}->{Params}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:params'];
+$NAMESPACES{$ns}->{Params}->{XPath}->{Calls} = ['Get','Defined','Add'];
+
+$NAMESPACES{$ns}->{MethodCall}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:methodResponse
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Params}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Params}->{XPath}->{Path}  = 'params';
-$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Params}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:params'];
-$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Params}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$ns = '__netjabber__:iq:rpc:methodResponse';
 
-$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Fault}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Fault}->{XPath}->{Path}  = 'fault';
-$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Fault}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:fault'];
-$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Fault}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$NAMESPACES{$ns}->{Params}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Params}->{XPath}->{Path} = 'params';
+$NAMESPACES{$ns}->{Params}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:params'];
+$NAMESPACES{$ns}->{Params}->{XPath}->{Calls} = ['Get','Defined','Add'];
+
+$NAMESPACES{$ns}->{Fault}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Fault}->{XPath}->{Path} = 'fault';
+$NAMESPACES{$ns}->{Fault}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:fault'];
+$NAMESPACES{$ns}->{Fault}->{XPath}->{Calls} = ['Get','Defined','Add'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:fault
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:fault"}->{Value}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:fault"}->{Value}->{XPath}->{Path}  = 'value';
-$NAMESPACES{"__netjabber__:iq:rpc:fault"}->{Value}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:value'];
-$NAMESPACES{"__netjabber__:iq:rpc:fault"}->{Value}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$ns = '__netjabber__:iq:rpc:fault';
+
+$NAMESPACES{$ns}->{Value}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Path} = 'value';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:value'];
+$NAMESPACES{$ns}->{Value}->{XPath}->{Calls} = ['Get','Defined','Add'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:params
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Param}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Param}->{XPath}->{Path}  = 'param';
-$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Param}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:param'];
-$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Param}->{XPath}->{Calls} = ['Add'];
+$ns = '__netjabber__:iq:rpc:params';
 
-$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Params}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Params}->{XPath}->{Path}  = 'param';
-$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Params}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:param'];
-$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Params}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Param}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Param}->{XPath}->{Path} = 'param';
+$NAMESPACES{$ns}->{Param}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:param'];
+$NAMESPACES{$ns}->{Param}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Params}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Params}->{XPath}->{Path} = 'param';
+$NAMESPACES{$ns}->{Params}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:param'];
+$NAMESPACES{$ns}->{Params}->{XPath}->{Calls} = ['Get'];
 
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:param
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:param"}->{Value}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:param"}->{Value}->{XPath}->{Path}  = 'value';
-$NAMESPACES{"__netjabber__:iq:rpc:param"}->{Value}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:value'];
-$NAMESPACES{"__netjabber__:iq:rpc:param"}->{Value}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$ns = '__netjabber__:iq:rpc:param';
+
+$NAMESPACES{$ns}->{Value}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Path} = 'value';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:value'];
+$NAMESPACES{$ns}->{Value}->{XPath}->{Calls} = ['Get','Defined','Add'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:value
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Base64}->{XPath}->{Path}  = 'base64/text()';
+$ns = '__netjabber__:iq:rpc:value';
 
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Boolean}->{XPath}->{Path}  = 'boolean/text()';
+$NAMESPACES{$ns}->{Base64}->{XPath}->{Path} = 'base64/text()';
 
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{DateTime}->{XPath}->{Path}  = 'dateTime.iso8601/text()';
+$NAMESPACES{$ns}->{Boolean}->{XPath}->{Path} = 'boolean/text()';
 
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Double}->{XPath}->{Path}  = 'double/text()';
+$NAMESPACES{$ns}->{DateTime}->{XPath}->{Path} = 'dateTime.iso8601/text()';
 
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{I4}->{XPath}->{Path}  = 'i4/text()';
+$NAMESPACES{$ns}->{Double}->{XPath}->{Path} = 'double/text()';
 
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{String}->{XPath}->{Path}  = 'string/text()';
+$NAMESPACES{$ns}->{I4}->{XPath}->{Path} = 'i4/text()';
+$NAMESPACES{$ns}->{Int}->{XPath}->{Path} = 'int/text()';
 
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Value}->{XPath}->{Path}  = 'value/text()';
+$NAMESPACES{$ns}->{String}->{XPath}->{Path} = 'string/text()';
 
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{RPCValue}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Path} = 'value/text()';
 
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Struct}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Struct}->{XPath}->{Path}  = 'struct';
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Struct}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:struct'];
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Struct}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$NAMESPACES{$ns}->{RPCValue}->{XPath}->{Type} = 'master';
 
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Array}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Array}->{XPath}->{Path}  = 'array';
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Array}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:array'];
-$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Array}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$NAMESPACES{$ns}->{Struct}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Struct}->{XPath}->{Path} = 'struct';
+$NAMESPACES{$ns}->{Struct}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:struct'];
+$NAMESPACES{$ns}->{Struct}->{XPath}->{Calls} = ['Get','Defined','Add'];
+
+$NAMESPACES{$ns}->{Array}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Array}->{XPath}->{Path} = 'array';
+$NAMESPACES{$ns}->{Array}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:array'];
+$NAMESPACES{$ns}->{Array}->{XPath}->{Calls} = ['Get','Defined','Add'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:struct
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Member}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Member}->{XPath}->{Path}  = 'member';
-$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Member}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:struct:member'];
-$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Member}->{XPath}->{Calls} = ['Add'];
+$ns = '__netjabber__:iq:rpc:struct';
 
-$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Members}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Members}->{XPath}->{Path}  = 'member';
-$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Members}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:struct:member'];
-$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Members}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Member}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Member}->{XPath}->{Path} = 'member';
+$NAMESPACES{$ns}->{Member}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:struct:member'];
+$NAMESPACES{$ns}->{Member}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Members}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Members}->{XPath}->{Path} = 'member';
+$NAMESPACES{$ns}->{Members}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:struct:member'];
+$NAMESPACES{$ns}->{Members}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:struct:member
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Name}->{XPath}->{Path}  = 'name/text()';
+$ns = '__netjabber__:iq:rpc:struct:member';
 
-$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Value}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Value}->{XPath}->{Path}  = 'value';
-$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Value}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:value'];
-$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Value}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = 'name/text()';
 
-$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Member}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Path} = 'value';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:value'];
+$NAMESPACES{$ns}->{Value}->{XPath}->{Calls} = ['Get','Defined','Add'];
+
+$NAMESPACES{$ns}->{Member}->{XPath}->{Type} = 'master';
 
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:array
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Data}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Data}->{XPath}->{Path}  = 'data';
-$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Data}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:array:data'];
-$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Data}->{XPath}->{Calls} = ['Add'];
+$ns = '__netjabber__:iq:rpc:array';
 
-$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Datas}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Datas}->{XPath}->{Path}  = 'data';
-$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Datas}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:array:data'];
-$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Datas}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Data}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Data}->{XPath}->{Path} = 'data';
+$NAMESPACES{$ns}->{Data}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:array:data'];
+$NAMESPACES{$ns}->{Data}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Datas}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Datas}->{XPath}->{Path} = 'data';
+$NAMESPACES{$ns}->{Datas}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:array:data'];
+$NAMESPACES{$ns}->{Datas}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:rpc:array:data
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:rpc:array:data"}->{Value}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"__netjabber__:iq:rpc:array:data"}->{Value}->{XPath}->{Path}  = 'value';
-$NAMESPACES{"__netjabber__:iq:rpc:array:data"}->{Value}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:value'];
-$NAMESPACES{"__netjabber__:iq:rpc:array:data"}->{Value}->{XPath}->{Calls} = ['Get','Defined','Add'];
+$ns = '__netjabber__:iq:rpc:array:data';
+
+$NAMESPACES{$ns}->{Value}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Path} = 'value';
+$NAMESPACES{$ns}->{Value}->{XPath}->{Child} = ['Query','__netjabber__:iq:rpc:value'];
+$NAMESPACES{$ns}->{Value}->{XPath}->{Calls} = ['Get','Defined','Add'];
 
 #-----------------------------------------------------------------------------
 # jabber:iq:search
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:search"}->{Email}->{XPath}->{Path}  = 'email/text()';
+$ns = 'jabber:iq:search';
 
-$NAMESPACES{"jabber:iq:search"}->{Family}->{XPath}->{Path}  = 'family/text()';
+$NAMESPACES{$ns}->{Email}->{XPath}->{Path} = 'email/text()';
 
-$NAMESPACES{"jabber:iq:search"}->{First}->{XPath}->{Path}  = 'first/text()';
+$NAMESPACES{$ns}->{Family}->{XPath}->{Path} = 'family/text()';
 
-$NAMESPACES{"jabber:iq:search"}->{Given}->{XPath}->{Path}  = 'given/text()';
+$NAMESPACES{$ns}->{First}->{XPath}->{Path} = 'first/text()';
 
-$NAMESPACES{"jabber:iq:search"}->{Instructions}->{XPath}->{Path}  = 'instructions/text()';
+$NAMESPACES{$ns}->{Given}->{XPath}->{Path} = 'given/text()';
 
-$NAMESPACES{"jabber:iq:search"}->{Key}->{XPath}->{Path}  = 'key/text()';
+$NAMESPACES{$ns}->{Instructions}->{XPath}->{Path} = 'instructions/text()';
 
-$NAMESPACES{"jabber:iq:search"}->{Last}->{XPath}->{Path}  = 'last/text()';
+$NAMESPACES{$ns}->{Key}->{XPath}->{Path} = 'key/text()';
 
-$NAMESPACES{"jabber:iq:search"}->{Name}->{XPath}->{Path}  = 'name/text()';
+$NAMESPACES{$ns}->{Last}->{XPath}->{Path} = 'last/text()';
 
-$NAMESPACES{"jabber:iq:search"}->{Nick}->{XPath}->{Path}  = 'nick/text()';
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = 'name/text()';
 
-$NAMESPACES{"jabber:iq:search"}->{Truncated}->{XPath}->{Type}  = 'flag';
-$NAMESPACES{"jabber:iq:search"}->{Truncated}->{XPath}->{Path}  = 'truncated';
+$NAMESPACES{$ns}->{Nick}->{XPath}->{Path} = 'nick/text()';
 
-$NAMESPACES{"jabber:iq:search"}->{Search}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Truncated}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Truncated}->{XPath}->{Path} = 'truncated';
 
-$NAMESPACES{"jabber:iq:search"}->{Item}->{XPath}->{Type}  = 'node';
-$NAMESPACES{"jabber:iq:search"}->{Item}->{XPath}->{Path}  = 'item';
-$NAMESPACES{"jabber:iq:search"}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:search:item'];
-$NAMESPACES{"jabber:iq:search"}->{Item}->{XPath}->{Calls} = ['Add'];
+$NAMESPACES{$ns}->{Search}->{XPath}->{Type} = 'master';
 
-$NAMESPACES{"jabber:iq:search"}->{Items}->{XPath}->{Type}  = 'children';
-$NAMESPACES{"jabber:iq:search"}->{Items}->{XPath}->{Path}  = 'item';
-$NAMESPACES{"jabber:iq:search"}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:search:item'];
-$NAMESPACES{"jabber:iq:search"}->{Items}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:search:item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:search:item'];
+$NAMESPACES{$ns}->{Items}->{XPath}->{Calls} = ['Get'];
 
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:search:item
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:iq:search:item"}->{Email}->{XPath}->{Path}  = 'email/text()';
+$ns = '__netjabber__:iq:search:item';
 
-$NAMESPACES{"__netjabber__:iq:search:item"}->{First}->{XPath}->{Path}  = 'first/text()';
+$NAMESPACES{$ns}->{Email}->{XPath}->{Path} = 'email/text()';
 
-$NAMESPACES{"__netjabber__:iq:search:item"}->{Family}->{XPath}->{Path}  = 'family/text()';
+$NAMESPACES{$ns}->{First}->{XPath}->{Path} = 'first/text()';
 
-$NAMESPACES{"__netjabber__:iq:search:item"}->{Given}->{XPath}->{Path}  = 'given/text()';
+$NAMESPACES{$ns}->{Family}->{XPath}->{Path} = 'family/text()';
 
-$NAMESPACES{"__netjabber__:iq:search:item"}->{JID}->{XPath}->{Type}  = 'jid';
-$NAMESPACES{"__netjabber__:iq:search:item"}->{JID}->{XPath}->{Path}  = '@jid';
+$NAMESPACES{$ns}->{Given}->{XPath}->{Path} = 'given/text()';
 
-$NAMESPACES{"__netjabber__:iq:search:item"}->{Key}->{XPath}->{Path}  = 'key/text()';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
 
-$NAMESPACES{"__netjabber__:iq:search:item"}->{Last}->{XPath}->{Path}  = 'last/text()';
+$NAMESPACES{$ns}->{Key}->{XPath}->{Path} = 'key/text()';
 
-$NAMESPACES{"__netjabber__:iq:search:item"}->{Name}->{XPath}->{Path}  = 'name/text()';
+$NAMESPACES{$ns}->{Last}->{XPath}->{Path} = 'last/text()';
 
-$NAMESPACES{"__netjabber__:iq:search:item"}->{Nick}->{XPath}->{Path}  = 'nick/text()';
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = 'name/text()';
 
-$NAMESPACES{"__netjabber__:iq:search:item"}->{Item}->{XPath}->{Type}  = 'master';
+$NAMESPACES{$ns}->{Nick}->{XPath}->{Path} = 'nick/text()';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:iq:time
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:time"}->{Display}->{XPath}->{Type}  = ['special','time-display'];
-$NAMESPACES{"jabber:iq:time"}->{Display}->{XPath}->{Path}  = 'display/text()';
-$NAMESPACES{"jabber:iq:time"}->{Display}->{XPath}->{Calls} = ['Get','Set','Defined'];
+$ns = 'jabber:iq:time';
 
-$NAMESPACES{"jabber:iq:time"}->{TZ}->{XPath}->{Type}  = ['special','time-tz'];
-$NAMESPACES{"jabber:iq:time"}->{TZ}->{XPath}->{Path}  = 'tz/text()';
+$NAMESPACES{$ns}->{Display}->{XPath}->{Type} = ['special','time-display'];
+$NAMESPACES{$ns}->{Display}->{XPath}->{Path} = 'display/text()';
+$NAMESPACES{$ns}->{Display}->{XPath}->{Calls} = ['Get','Set','Defined'];
 
-$NAMESPACES{"jabber:iq:time"}->{UTC}->{XPath}->{Type}  = ['special','time-utc'];
-$NAMESPACES{"jabber:iq:time"}->{UTC}->{XPath}->{Path}  = 'utc/text()';
+$NAMESPACES{$ns}->{TZ}->{XPath}->{Type} = ['special','time-tz'];
+$NAMESPACES{$ns}->{TZ}->{XPath}->{Path} = 'tz/text()';
 
-$NAMESPACES{"jabber:iq:time"}->{Time}->{XPath}->{Type}  = ['master','all'];
-$NAMESPACES{"jabber:iq:time"}->{Time}->{XPath}->{Calls} = ['Get','Set'];
+$NAMESPACES{$ns}->{UTC}->{XPath}->{Type} = ['special','time-utc'];
+$NAMESPACES{$ns}->{UTC}->{XPath}->{Path} = 'utc/text()';
+
+$NAMESPACES{$ns}->{Time}->{XPath}->{Type} = ['master','all'];
+$NAMESPACES{$ns}->{Time}->{XPath}->{Calls} = ['Get','Set'];
 
 #-----------------------------------------------------------------------------
 # jabber:iq:version
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:version"}->{Name}->{XPath}->{Path}  = 'name/text()';
+$ns = 'jabber:iq:version';
 
-$NAMESPACES{"jabber:iq:version"}->{OS}->{XPath}->{Type}  = ['special','version-os'];
-$NAMESPACES{"jabber:iq:version"}->{OS}->{XPath}->{Path}  = 'os/text()';
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = 'name/text()';
 
-$NAMESPACES{"jabber:iq:version"}->{Ver}->{XPath}->{Type}  = ['special','version-version'];
-$NAMESPACES{"jabber:iq:version"}->{Ver}->{XPath}->{Path}  = 'version/text()';
+$NAMESPACES{$ns}->{OS}->{XPath}->{Type} = ['special','version-os'];
+$NAMESPACES{$ns}->{OS}->{XPath}->{Path} = 'os/text()';
 
-$NAMESPACES{"jabber:iq:version"}->{Version}->{XPath}->{Type}  = ['master','all'];
+$NAMESPACES{$ns}->{Ver}->{XPath}->{Type} = ['special','version-version'];
+$NAMESPACES{$ns}->{Ver}->{XPath}->{Path} = 'version/text()';
+
+$NAMESPACES{$ns}->{Version}->{XPath}->{Type} = ['master','all'];
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/bytestreams
+#-----------------------------------------------------------------------------
+$ns = 'http://jabber.org/protocol/bytestreams';
+
+$NAMESPACES{$ns}->{Activate}->{XPath}->{Path} = 'activate/text()';
+
+$NAMESPACES{$ns}->{StreamHostUsedJID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{StreamHostUsedJID}->{XPath}->{Path} = 'streamhost-used/@jid';
+
+$NAMESPACES{$ns}->{SID}->{XPath}->{Path} = '@sid';
+
+$NAMESPACES{$ns}->{StreamHost}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{StreamHost}->{XPath}->{Path} = 'streamhost';
+$NAMESPACES{$ns}->{StreamHost}->{XPath}->{Child} = ['Query','__netjabber__:iq:bytestreams:streamhost'];
+$NAMESPACES{$ns}->{StreamHost}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{StreamHosts}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{StreamHosts}->{XPath}->{Path} = 'streamhost';
+$NAMESPACES{$ns}->{StreamHosts}->{XPath}->{Child} = ['Query','__netjabber__:iq:bytestreams:streamhost'];
+$NAMESPACES{$ns}->{StreamHosts}->{XPath}->{Calls} = ['Get'];
+
+$NAMESPACES{$ns}->{ByteStreams}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:bytestreams:streamhost
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:bytestreams:streamhost';
+
+$NAMESPACES{$ns}->{Host}->{XPath}->{Path} = '@host';
+
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
+
+$NAMESPACES{$ns}->{Port}->{XPath}->{Path} = '@port';
+
+$NAMESPACES{$ns}->{ZeroConf}->{XPath}->{Path} = '@zeroconf';
+
+$NAMESPACES{$ns}->{StreamHost}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/commands
+#-----------------------------------------------------------------------------
+$ns = 'http://jabber.org/protocol/commands';
+
+$TAGS{$ns} = "command";
+
+$NAMESPACES{$ns}->{Action}->{XPath}->{Path} = '@action';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{SessionID}->{XPath}->{Path} = '@sessionid';
+
+$NAMESPACES{$ns}->{Status}->{XPath}->{Path} = '@status';
+
+$NAMESPACES{$ns}->{Note}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Note}->{XPath}->{Path} = 'note';
+$NAMESPACES{$ns}->{Note}->{XPath}->{Child} = ['Query','__netjabber__:iq:commands:note'];
+$NAMESPACES{$ns}->{Note}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Notes}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Notes}->{XPath}->{Path} = 'note';
+$NAMESPACES{$ns}->{Notes}->{XPath}->{Child} = ['Query','__netjabber__:iq:commands:note'];
+$NAMESPACES{$ns}->{Notes}->{XPath}->{Calls} = ['Get'];
+
+# xxx xml:lang
+
+$NAMESPACES{$ns}->{Command}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:commands:note
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:commands:note';
+
+$NAMESPACES{$ns}->{Type}->{XPath}->{Path} = '@type';
+
+$NAMESPACES{$ns}->{Message}->{XPath}->{Path} = 'text()';
+
+$NAMESPACES{$ns}->{Note}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/disco#info
+#-----------------------------------------------------------------------------
+$ns = 'http://jabber.org/protocol/disco#info';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Feature}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Feature}->{XPath}->{Path} = 'feature';
+$NAMESPACES{$ns}->{Feature}->{XPath}->{Child} = ['Query','__netjabber__:iq:disco:info:feature'];
+$NAMESPACES{$ns}->{Feature}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Features}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Features}->{XPath}->{Path} = 'feature';
+$NAMESPACES{$ns}->{Features}->{XPath}->{Child} = ['Query','__netjabber__:iq:disco:info:feature'];
+$NAMESPACES{$ns}->{Features}->{XPath}->{Calls} = ['Get'];
+
+$NAMESPACES{$ns}->{Identity}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Identity}->{XPath}->{Path} = 'identity';
+$NAMESPACES{$ns}->{Identity}->{XPath}->{Child} = ['Query','__netjabber__:iq:disco:info:identity'];
+$NAMESPACES{$ns}->{Identity}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Identities}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Identities}->{XPath}->{Path} = 'identity';
+$NAMESPACES{$ns}->{Identities}->{XPath}->{Child} = ['Query','__netjabber__:iq:disco:info:identity'];
+$NAMESPACES{$ns}->{Identities}->{XPath}->{Calls} = ['Get'];
+
+$NAMESPACES{$ns}->{DiscoInfo}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:disco:info:feature
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:disco:info:feature';
+
+$NAMESPACES{$ns}->{Var}->{XPath}->{Path} = '@var';
+
+$NAMESPACES{$ns}->{Feature}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:disco:info:identity
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:disco:info:identity';
+
+$NAMESPACES{$ns}->{Category}->{XPath}->{Path} = '@category';
+
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = '@name';
+
+$NAMESPACES{$ns}->{Type}->{XPath}->{Path} = '@type';
+
+$NAMESPACES{$ns}->{Identity}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/disco#items
+#-----------------------------------------------------------------------------
+$ns = 'http://jabber.org/protocol/disco#items';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:disco:items:item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:disco:items:item'];
+$NAMESPACES{$ns}->{Items}->{XPath}->{Calls} = ['Get'];
+
+$NAMESPACES{$ns}->{DiscoItems}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:disco:items:item
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:disco:items:item';
+
+$NAMESPACES{$ns}->{Action}->{XPath}->{Path} = '@action';
+
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
+
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = '@name';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/feature-neg
+#-----------------------------------------------------------------------------
+$ns = 'http://jabber.org/protocol/feature-neg';
+
+$TAGS{$ns} = "feature";
+
+$NAMESPACES{$ns}->{FeatureNeg}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # http://jabber.org/protocol/muc#admin
 #-----------------------------------------------------------------------------
-$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Admin}->{XPath}->{Type}  = 'master';
+$ns = 'http://jabber.org/protocol/muc#admin';
 
-$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Item}->{XPath}->{Type}  = 'node';
-$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Item}->{XPath}->{Path}  = 'item';
-$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:muc:admin:item'];
-$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Item}->{XPath}->{Calls} = ['Add'];
+$NAMESPACES{$ns}->{Admin}->{XPath}->{Type} = 'master';
 
-$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Items}->{XPath}->{Type}  = 'children';
-$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Items}->{XPath}->{Path}  = 'item';
-$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:muc:admin:item'];
-$NAMESPACES{'http://jabber.org/protocol/muc#admin'}->{Items}->{XPath}->{Calls} = ['Get'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'node';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:muc:admin:item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:muc:admin:item'];
+$NAMESPACES{$ns}->{Items}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:iq:muc:admin:item
 #-----------------------------------------------------------------------------
-$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{ActorJID}->{XPath}->{Type} = 'jid';
-$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{ActorJID}->{XPath}->{Path} = 'actor/@jid';
+$ns = '__netjabber__:iq:muc:admin:item';
 
-$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Affiliation}->{XPath}->{Path} = '@affiliation';
+$NAMESPACES{$ns}->{ActorJID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{ActorJID}->{XPath}->{Path} = 'actor/@jid';
 
-$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{JID}->{XPath}->{Type} = 'jid';
-$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{JID}->{XPath}->{Path} = '@jid';
+$NAMESPACES{$ns}->{Affiliation}->{XPath}->{Path} = '@affiliation';
 
-$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Nick}->{XPath}->{Path} = '@nick';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
 
-$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Reason}->{XPath}->{Path} = 'reason/text()';
+$NAMESPACES{$ns}->{Nick}->{XPath}->{Path} = '@nick';
 
-$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Role}->{XPath}->{Path} = '@role';
+$NAMESPACES{$ns}->{Reason}->{XPath}->{Path} = 'reason/text()';
 
-$NAMESPACES{'__netjabber__:iq:muc:admin:item'}->{Item}->{XPath}->{Type} = "master";
+$NAMESPACES{$ns}->{Role}->{XPath}->{Path} = '@role';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = "master";
+
+#-----------------------------------------------------------------------------
+# http://www.jabber.org/protocol/pubsub
+#-----------------------------------------------------------------------------
+$ns = 'http://www.jabber.org/protocol/pubsub';
+
+$TAGS{$ns} = "pubsub";
+
+$NAMESPACES{$ns}->{Affiliations}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Affiliations}->{XPath}->{Path} = 'affiliations';
+$NAMESPACES{$ns}->{Affiliations}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:affiliations'];
+$NAMESPACES{$ns}->{Affiliations}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Path} = 'configure';
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:configure'];
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Create}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Create}->{XPath}->{Path} = 'create';
+$NAMESPACES{$ns}->{Create}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:create'];
+$NAMESPACES{$ns}->{Create}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Path} = 'delete';
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:delete'];
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Entities}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Entities}->{XPath}->{Path} = 'entities';
+$NAMESPACES{$ns}->{Entities}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:entities'];
+$NAMESPACES{$ns}->{Entities}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Path} = 'entity';
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:entity'];
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Path} = 'items';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:items'];
+$NAMESPACES{$ns}->{Items}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Options}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Options}->{XPath}->{Path} = 'options';
+$NAMESPACES{$ns}->{Options}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:options'];
+$NAMESPACES{$ns}->{Options}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Publish}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Publish}->{XPath}->{Path} = 'publish';
+$NAMESPACES{$ns}->{Publish}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:publish'];
+$NAMESPACES{$ns}->{Publish}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Purge}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Purge}->{XPath}->{Path} = 'purge';
+$NAMESPACES{$ns}->{Purge}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:purge'];
+$NAMESPACES{$ns}->{Purge}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Retract}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Retract}->{XPath}->{Path} = 'retract';
+$NAMESPACES{$ns}->{Retract}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:retract'];
+$NAMESPACES{$ns}->{Retract}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Subscribe}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Subscribe}->{XPath}->{Path} = 'subscribe';
+$NAMESPACES{$ns}->{Subscribe}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:subscribe'];
+$NAMESPACES{$ns}->{Subscribe}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Unsubscribe}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Unsubscribe}->{XPath}->{Path} = 'unsubscribe';
+$NAMESPACES{$ns}->{Unsubscribe}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:unsubscribe'];
+$NAMESPACES{$ns}->{Unsubscribe}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{PubSub}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:affiliations
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:affiliations';
+
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Path} = 'entity';
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:entity'];
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Affiliations}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:configure
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:configure';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:create
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:create';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Create}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:delete
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:delete';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:entities
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:entities';
+
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Path} = 'entity';
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:entity'];
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Entities}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:entity
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:entity';
+
+$NAMESPACES{$ns}->{Affiliation}->{XPath}->{Path} = '@affiliation';
+
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Subscription}->{XPath}->{Path} = '@subscription';
+
+$NAMESPACES{$ns}->{SubscribeOptions}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{SubscribeOptions}->{XPath}->{Path} = 'subscribe-options';
+$NAMESPACES{$ns}->{SubscribeOptions}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:subscribe-options'];
+$NAMESPACES{$ns}->{SubscribeOptions}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Entity}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:items
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:items';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{MaxItems}->{XPath}->{Path} = '@max_items';
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:item
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:item';
+
+$NAMESPACES{$ns}->{ID}->{XPath}->{Path} = '@id';
+
+$NAMESPACES{$ns}->{Payload}->{XPath}->{Type} = 'raw';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:options
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:options';
+
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Options}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:publish
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:publish';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Publish}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:purge
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:purge';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Purge}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:retract
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:retract';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Retract}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:subscribe
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:subscribe';
+
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Subscribe}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:subscribe-options
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:subscribe-options';
+
+$NAMESPACES{$ns}->{Required}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Required}->{XPath}->{Path} = 'required';
+
+$NAMESPACES{$ns}->{SubscribeOptions}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:unsubscribe
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:unsubscribe';
+
+$NAMESPACES{$ns}->{JID}->{XPath}->{Type} = 'jid';
+$NAMESPACES{$ns}->{JID}->{XPath}->{Path} = '@jid';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Unsubscribe}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# http://www.jabber.org/protocol/pubsub#event
+#-----------------------------------------------------------------------------
+$ns = 'http://www.jabber.org/protocol/pubsub#event';
+
+$TAGS{$ns} = "event";
+
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Path} = 'delete';
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:event:delete'];
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Path} = 'items';
+$NAMESPACES{$ns}->{Items}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:event:items'];
+$NAMESPACES{$ns}->{Items}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Event}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:event:delete
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:event:delete';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Delete}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:event:items
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:event:items';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Path} = 'item';
+$NAMESPACES{$ns}->{Item}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:event:item'];
+$NAMESPACES{$ns}->{Item}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Retract}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Retract}->{XPath}->{Path} = 'retract';
+$NAMESPACES{$ns}->{Retract}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:event:retract'];
+$NAMESPACES{$ns}->{Retract}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Items}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:event:item
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:event:item';
+
+$NAMESPACES{$ns}->{ID}->{XPath}->{Path} = '@id';
+
+$NAMESPACES{$ns}->{Payload}->{XPath}->{Type} = 'raw';
+
+$NAMESPACES{$ns}->{Item}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:event:retract
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:event:retract';
+
+$NAMESPACES{$ns}->{ID}->{XPath}->{Path} = '@id';
+
+$NAMESPACES{$ns}->{Publish}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# http://www.jabber.org/protocol/pubsub#owner
+#-----------------------------------------------------------------------------
+$ns = 'http://www.jabber.org/protocol/pubsub#owner';
+
+$TAGS{$ns} = "pubsub";
+
+$NAMESPACES{$ns}->{Action}->{XPath}->{Path} = '@action';
+
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Type} = 'children';
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Path} = 'configure';
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Child} = ['Query','__netjabber__:iq:pubsub:owner:configure'];
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Calls} = ['Add','Get'];
+
+$NAMESPACES{$ns}->{Owner}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:pubsub:owner:configure
+#-----------------------------------------------------------------------------
+$ns = '__netjabber__:iq:pubsub:owner:configure';
+
+$NAMESPACES{$ns}->{Node}->{XPath}->{Path} = '@node';
+
+$NAMESPACES{$ns}->{Configure}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/si
+#-----------------------------------------------------------------------------
+$ns = 'http://jabber.org/protocol/si';
+
+$TAGS{$ns} = "si";
+
+$NAMESPACES{$ns}->{ID}->{XPath}->{Path} = '@id';
+
+$NAMESPACES{$ns}->{MimeType}->{XPath}->{Path} = '@mime-type';
+
+$NAMESPACES{$ns}->{Profile}->{XPath}->{Path} = '@profile';
+
+$NAMESPACES{$ns}->{Stream}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# http://jabber.org/protocol/si/profile/file-transfer
+#-----------------------------------------------------------------------------
+$ns = 'http://jabber.org/protocol/si/profile/file-transfer';
+
+$TAGS{$ns} = "file";
+
+$NAMESPACES{$ns}->{Date}->{XPath}->{Path} = '@date';
+
+$NAMESPACES{$ns}->{Desc}->{XPath}->{Path} = 'desc/text()';
+
+$NAMESPACES{$ns}->{Hash}->{XPath}->{Path} = '@hash';
+
+$NAMESPACES{$ns}->{Name}->{XPath}->{Path} = '@name';
+
+$NAMESPACES{$ns}->{Range}->{XPath}->{Type} = 'flag';
+$NAMESPACES{$ns}->{Range}->{XPath}->{Path} = 'range';
+
+$NAMESPACES{$ns}->{RangeOffset}->{XPath}->{Path} = 'range/@offset';
+
+$NAMESPACES{$ns}->{RangeLength}->{XPath}->{Path} = 'range/@length';
+
+$NAMESPACES{$ns}->{Size}->{XPath}->{Path} = '@size';
+
+$NAMESPACES{$ns}->{File}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# http://www.jabber.org/protocol/soap
+#-----------------------------------------------------------------------------
+$ns = 'http://www.jabber.org/protocol/soap';
+
+$TAGS{$ns} = "soap";
+
+$NAMESPACES{$ns}->{Payload}->{XPath}->{Type} = 'raw';
+
+$NAMESPACES{$ns}->{Soap}->{XPath}->{Type} = 'master';
+
+
+
+
+
 
 
 ##############################################################################

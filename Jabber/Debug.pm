@@ -126,7 +126,7 @@ use FileHandle;
 use Carp;
 use vars qw($VERSION %HANDLES $DEFAULT $DEFAULTLEVEL $DEFAULTTIME $AUTOLOAD);
 
-$VERSION = "1.28";
+$VERSION = "1.29";
 
 sub new
 {

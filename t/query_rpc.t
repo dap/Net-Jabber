@@ -1,5 +1,5 @@
 use lib "t/lib";
-use Test::More tests=>180;
+use Test::More tests=>198;
 
 BEGIN{ use_ok( "Net::Jabber","Client" ); }
 
@@ -37,6 +37,7 @@ testScalar($value1_1, "Boolean", "value");
 testScalar($value1_1, "DateTime", "value");
 testScalar($value1_1, "Double", "value");
 testScalar($value1_1, "I4", "value");
+testScalar($value1_1, "Int", "value");
 testScalar($value1_1, "String", "value");
 testScalar($value1_1, "Value", "value");
 
@@ -57,6 +58,7 @@ testScalar($member1_value1, "Boolean", "boolean");
 testScalar($member1_value1, "DateTime", "datetime");
 testScalar($member1_value1, "Double", "double");
 testScalar($member1_value1, "I4", "i4");
+testScalar($member1_value1, "Int", "int");
 testScalar($member1_value1, "String", "string");
 testScalar($member1_value1, "Value", "value");
 
@@ -75,10 +77,11 @@ testScalar($data1_value1, "Boolean", "boolean");
 testScalar($data1_value1, "DateTime", "datetime");
 testScalar($data1_value1, "Double", "double");
 testScalar($data1_value1, "I4", "i4");
+testScalar($data1_value1, "Int", "int");
 testScalar($data1_value1, "String", "string");
 testScalar($data1_value1, "Value", "value");
 
-is( $query->GetXML(), "<query xmlns='jabber:iq:rpc'><methodCall><methodName>method_name</methodName><params><param><value><base64>value</base64><boolean>value</boolean><dateTime.iso8601>value</dateTime.iso8601><double>value</double><i4>value</i4><string>value</string><value>value</value><struct><member><name>name</name><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><string>string</string><value>value</value></value></member></struct><array><data><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><string>string</string><value>value</value></value></data></array></value></param></params></methodCall></query>", "GetXML()" );
+is( $query->GetXML(), "<query xmlns='jabber:iq:rpc'><methodCall><methodName>method_name</methodName><params><param><value><base64>value</base64><boolean>value</boolean><dateTime.iso8601>value</dateTime.iso8601><double>value</double><i4>value</i4><int>value</int><string>value</string><value>value</value><struct><member><name>name</name><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><int>int</int><string>string</string><value>value</value></value></member></struct><array><data><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><int>int</int><string>string</string><value>value</value></value></data></array></value></param></params></methodCall></query>", "GetXML()" );
 
 
 my $methodResponse = $query->AddMethodResponse();
@@ -102,6 +105,7 @@ testScalar($value2_1, "Boolean", "value");
 testScalar($value2_1, "DateTime", "value");
 testScalar($value2_1, "Double", "value");
 testScalar($value2_1, "I4", "value");
+testScalar($value2_1, "Int", "value");
 testScalar($value2_1, "String", "value");
 testScalar($value2_1, "Value", "value");
 
@@ -122,6 +126,7 @@ testScalar($member2_value1, "Boolean", "boolean");
 testScalar($member2_value1, "DateTime", "datetime");
 testScalar($member2_value1, "Double", "double");
 testScalar($member2_value1, "I4", "i4");
+testScalar($member2_value1, "Int", "int");
 testScalar($member2_value1, "String", "string");
 testScalar($member2_value1, "Value", "value");
 
@@ -140,6 +145,7 @@ testScalar($data2_value1, "Boolean", "boolean");
 testScalar($data2_value1, "DateTime", "datetime");
 testScalar($data2_value1, "Double", "double");
 testScalar($data2_value1, "I4", "i4");
+testScalar($data2_value1, "Int", "int");
 testScalar($data2_value1, "String", "string");
 testScalar($data2_value1, "Value", "value");
 
@@ -155,6 +161,6 @@ $faultStruct->AddMember(name=>"faultCode")->AddValue(i4=>404);
 $faultStruct->AddMember(name=>"faultString")->AddValue(string=>"not found");
 
 
-is( $query->GetXML(), "<query xmlns='jabber:iq:rpc'><methodCall><methodName>method_name</methodName><params><param><value><base64>value</base64><boolean>value</boolean><dateTime.iso8601>value</dateTime.iso8601><double>value</double><i4>value</i4><string>value</string><value>value</value><struct><member><name>name</name><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><string>string</string><value>value</value></value></member></struct><array><data><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><string>string</string><value>value</value></value></data></array></value></param></params></methodCall><methodResponse><params><param><value><base64>value</base64><boolean>value</boolean><dateTime.iso8601>value</dateTime.iso8601><double>value</double><i4>value</i4><string>value</string><value>value</value><struct><member><name>name</name><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><string>string</string><value>value</value></value></member></struct><array><data><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><string>string</string><value>value</value></value></data></array></value></param></params><fault><value><struct><member><name>faultCode</name><value><i4>404</i4></value></member><member><name>faultString</name><value><string>not found</string></value></member></struct></value></fault></methodResponse></query>", "GetXML()" );
+is( $query->GetXML(), "<query xmlns='jabber:iq:rpc'><methodCall><methodName>method_name</methodName><params><param><value><base64>value</base64><boolean>value</boolean><dateTime.iso8601>value</dateTime.iso8601><double>value</double><i4>value</i4><int>value</int><string>value</string><value>value</value><struct><member><name>name</name><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><int>int</int><string>string</string><value>value</value></value></member></struct><array><data><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><int>int</int><string>string</string><value>value</value></value></data></array></value></param></params></methodCall><methodResponse><params><param><value><base64>value</base64><boolean>value</boolean><dateTime.iso8601>value</dateTime.iso8601><double>value</double><i4>value</i4><int>value</int><string>value</string><value>value</value><struct><member><name>name</name><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><int>int</int><string>string</string><value>value</value></value></member></struct><array><data><value><base64>base64</base64><boolean>boolean</boolean><dateTime.iso8601>datetime</dateTime.iso8601><double>double</double><i4>i4</i4><int>int</int><string>string</string><value>value</value></value></data></array></value></param></params><fault><value><struct><member><name>faultCode</name><value><i4>404</i4></value></member><member><name>faultString</name><value><string>not found</string></value></member></struct></value></fault></methodResponse></query>", "GetXML()" );
 
 

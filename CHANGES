@@ -1,3 +1,29 @@
+1.29
+====
+  - Added PubSub (JEP-60)
+  - Added documentation for most of the below.
+  - Added in a basic basic support for SOAP (JEP-72).  You can
+    dump in rawxml and get it back out.
+  - Looking into using contants for the namespaces, but they
+    don't work in hashes. =(
+  - Removed jabber:x:sxpm (it was never used).
+  - Added initial (low level) support for Commands (JEP-50).
+  - Added initial (low level) support for FNeg (JEP-20),
+    Disco (JEP-30), Bytestream (JEP-65), SI (JEP-95), and
+    FT-Profile (JEP-96).
+  - Made Client, Component, and Server inherit from Protocol
+    instead of AUTOLOADing.  Why didn't I do this in the
+    beginning?
+  - Added function RosterRequest to let the user handle processing
+    the roster in their own callback and not return a hash.
+  - Added function PresenceDBClear that will clear out the
+    presence database.
+  - Added check to see if Process generated an error, and then
+    was called again (bad thing).
+  - Moved Process into Client.pm, Component.pm, and Server.pm.
+  - Locked version of XML::Stream to 1.17.
+  - Fixed typos in the Protocol help.
+
 1.28
 ====
   - Fixed bug in XPathDefined which caused the main iq callback

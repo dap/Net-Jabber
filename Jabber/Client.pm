@@ -62,6 +62,9 @@ Net::Jabber::Client - Jabber Client Library
       print "We are connected to the server...\n";
     }
 
+    $status = $Con->Process();
+    $status = $Con->Process(5);
+    
     #
     # For the list of available function see Net::Jabber::Protocol.
     #
@@ -82,7 +85,7 @@ Net::Jabber::Client - Jabber Client Library
                              Net::Jabber::Debug.
 
     Connect(hostname=>string,      - opens a connection to the server
-   	        port=>integer,           listed in the hostname (default
+            port=>integer,           listed in the hostname (default
             connectiontype=>string,  localhost), on the port (default
             ssl=>0|1)                5222) listed, using the
                                      connectiontype listed (default
@@ -94,6 +97,70 @@ Net::Jabber::Client - Jabber Client Library
                                               through a web proxy
                                      If you specify ssl, then it will
                                      be used to connect.
+
+    Execute(hostname=>string,       - Generic inner loop to handle
+            port=>int,                connecting to the server, calling
+            ssl=>0|1,                 Process, and reconnecting if the
+            username=>string,         connection is lost.  There are
+            password=>string,         five callbacks available that are
+            resource=>string,         called at various places:
+            register=>0|1,              onconnect - when the client has
+            connectiontype=>string,                 made a connection.
+            connectattempts=>int,       onauth - when the connection is
+            connectsleep=>int,                   made and user has been
+            processtimeout=>int)                 authed.  Essentially,
+                                                 this is when you can
+                                                 start doing things
+                                                 as a Client.  Like
+                                                 send presence, get your
+                                                 roster, etc...
+                                        onprocess - this is the most
+                                                    inner loop and so
+                                                    gets called the most.
+                                                    Be very very careful
+                                                    what you put here
+                                                    since it can
+                                                    *DRASTICALLY* affect
+                                                    performance.
+                                        ondisconnect - when the client
+                                                       disconnects from
+                                                       the server.
+                                        onexit - when the function gives
+                                                 up trying to connect and
+                                                 exits.
+                                      The arguments are passed straight on
+                                      to the Connect function, except for
+                                      connectattempts and connectsleep.
+                                      connectattempts is the number of
+                                      times that the Component should try
+                                      to connect before giving up.  -1
+                                      means try forever.  The default is
+                                      -1. connectsleep is the number of
+                                      seconds to sleep between each
+                                      connection attempt.
+
+                                      If you specify register=>1, then the
+                                      Client will attempt to register the
+                                      sepecified account for you, if it
+                                      does not exist.
+            
+    Process(integer) - takes the timeout period as an argument.  If no
+                       timeout is listed then the function blocks until
+                       a packet is received.  Otherwise it waits that
+                       number of seconds and then exits so your program
+                       can continue doing useful things.  NOTE: This is
+                       important for GUIs.  You need to leave time to
+                       process GUI commands even if you are waiting for
+                       packets.  The following are the possible return
+                       values, and what they mean:
+
+                           1   - Status ok, data received.
+                           0   - Status ok, no data received.
+                         undef - Status not ok, stop processing.
+                       
+                       IMPORTANT: You need to check the output of every
+                       Process.  If you get an undef then the connection
+                       died and you should behave accordingly.
 
     Disconnect() - closes the connection to the server.
 
@@ -112,9 +179,11 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-use vars qw($VERSION $AUTOLOAD);
+use Carp;
+use base qw( Net::Jabber::Protocol );
+use vars qw( $VERSION ); 
 
-$VERSION = "1.28";
+$VERSION = "1.29";
 
 sub new
 {
@@ -125,8 +194,6 @@ sub new
     while($#_ >= 0) { $args{ lc(pop(@_)) } = pop(@_); }
 
     bless($self, $proto);
-
-    $self->{DELEGATE} = new Net::Jabber::Protocol();
 
     $self->{DEBUG} =
         new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
@@ -156,21 +223,6 @@ sub new
     $self->callbackInit();
 
     return $self;
-}
-
-
-##############################################################################
-#
-# AUTOLOAD - This function calls the delegate with the appropriate function
-#            name and argument list.
-#
-##############################################################################
-sub AUTOLOAD
-{
-    my $self = $_[0];
-    return if ($AUTOLOAD =~ /::DESTROY$/);
-    $AUTOLOAD =~ s/^.*:://;
-    $self->{DELEGATE}->$AUTOLOAD(@_);
 }
 
 
@@ -212,6 +264,65 @@ sub Connect
     } else {
         $self->SetErrorCode($self->{STREAM}->GetErrorCode());
         return;
+    }
+}
+
+
+###############################################################################
+#
+#  Process - If a timeout value is specified then the function will wait
+#            that long before returning.  This is useful for apps that
+#            need to handle other processing while still waiting for
+#            packets.  If no timeout is listed then the function waits
+#            until a packet is returned.  Either way the function exits
+#            as soon as a packet is returned.
+#
+###############################################################################
+sub Process
+{
+    my $self = shift;
+    my ($timeout) = @_;
+    my %status;
+
+    if (exists($self->{PROCESSERROR}) && ($self->{PROCESSERROR} == 1))
+    {
+        croak("There was an error in the last call to Process that you did not check for and\nhandle.  You should always check the output of the Process call.  If it was\nundef then there was a fatal error that you need to check.  There is an error\nin your program");
+    }
+
+    $self->{DEBUG}->Log1("Process: timeout($timeout)") if defined($timeout);
+
+    if (!defined($timeout) || ($timeout eq ""))
+    {
+        while(1)
+        {
+            %status = $self->{STREAM}->Process();
+            $self->{DEBUG}->Log1("Process: status($status{$self->{SESSION}->{id}})");
+            last if ($status{$self->{SESSION}->{id}} != 0);
+            select(undef,undef,undef,.25);
+        }
+        $self->{DEBUG}->Log1("Process: return($status{$self->{SESSION}->{id}})");
+        if ($status{$self->{SESSION}->{id}} == -1)
+        {
+            $self->{PROCESSERROR} = 1;
+            return;
+        }
+        else
+        {
+            return $status{$self->{SESSION}->{id}};
+        }
+    }
+    else
+    {
+        %status = $self->{STREAM}->Process($timeout);
+        if ($status{$self->{SESSION}->{id}} == -1)
+        {
+            $self->{PROCESSERROR} = 1;
+            return;
+        }
+        else
+        {
+            return $status{$self->{SESSION}->{id}};
+        }
     }
 }
 
@@ -303,9 +414,12 @@ sub Execute
         if ($result[0] ne "ok")
         {
             $self->{DEBUG}->Log1("Execute: Could not auth with server: ($result[0]: $result[1])");
+            &{$self->{CB}->{onauthfail}}()
+                if exists($self->{CB}->{onauthfail});
+            
             if ($args{register} == 0)
             {
-                $self->{DEBUG}->Log1("Execute: Reigster turned off.  Exiting.");
+                $self->{DEBUG}->Log1("Execute: Register turned off.  Exiting.");
                 $self->Disconnect();
                 &{$self->{CB}->{ondisconnect}}()
                     if exists($self->{CB}->{ondisconnect});
@@ -328,6 +442,9 @@ sub Execute
                 if ($result[0] ne "ok")
                 {
                     $self->{DEBUG}->Log1("Execute: Register failed.  Exiting.");
+                    &{$self->{CB}->{onregisterfail}}()
+                        if exists($self->{CB}->{onregisterfail});
+            
                     $self->Disconnect();
                     &{$self->{CB}->{ondisconnect}}()
                         if exists($self->{CB}->{ondisconnect});

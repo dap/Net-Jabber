@@ -1,5 +1,5 @@
 use lib "t/lib";
-use Test::More tests=>80;
+use Test::More tests=>86;
 
 BEGIN{ use_ok( "Net::Jabber","Client" ); }
 
@@ -103,4 +103,30 @@ testPostJID($iq, "From", "user1", "server1", "resource1");
 testPostScalar($iq, "ID", "id");
 testPostJID($iq, "To", "user2", "server2", "resource2");
 testPostScalar($iq, "Type", "Type");
+
+
+my $iq3 = new Net::Jabber::IQ();
+ok( defined($iq3), "new()");
+isa_ok( $iq3, "Net::Jabber::IQ");
+
+$iq3->SetIQ(error=>"error",
+            errorcode=>"401",
+            from=>"user1\@server1/resource1",
+            id=>"id",
+            to=>"user2\@server2/resource2",
+            type=>"type");
+
+my $query = $iq3->NewQuery("jabber:iq:auth");
+ok( defined($query), "new()");
+isa_ok( $query, "Net::Jabber::Query");
+
+$query->SetAuth(username=>"user",
+                password=>"pass");
+
+is( $iq3->GetXML(), "<iq from='user1\@server1/resource1' id='id' to='user2\@server2/resource2' type='type'><error code='401'>error</error><query xmlns='jabber:iq:auth'><password>pass</password><username>user</username></query></iq>", "GetXML()");
+
+my $reply = $iq3->Reply();
+
+is( $reply->GetXML(), "<iq from='user2\@server2/resource2' id='id' to='user1\@server1/resource1' type='result'><query xmlns='jabber:iq:auth'/></iq>", "GetXML()");
+
 

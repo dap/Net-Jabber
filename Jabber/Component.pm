@@ -66,6 +66,9 @@ Net::Jabber::Component - Jabber Component Library
       print "We are connected to the server...\n";
     }
 
+    $status = $Con->Process();
+    $status = $Con->Process(5);
+
     #
     # For the list of available function see Net::Jabber::Protocol.
     #
@@ -110,6 +113,24 @@ Net::Jabber::Component - Jabber Component Library
                                       specified by the server admin and so
                                       it is assumed that they trust your
                                       script.
+
+    Process(integer) - takes the timeout period as an argument.  If no
+                       timeout is listed then the function blocks until
+                       a packet is received.  Otherwise it waits that
+                       number of seconds and then exits so your program
+                       can continue doing useful things.  NOTE: This is
+                       important for GUIs.  You need to leave time to
+                       process GUI commands even if you are waiting for
+                       packets.  The following are the possible return
+                       values, and what they mean:
+
+                           1   - Status ok, data received.
+                           0   - Status ok, no data received.
+                         undef - Status not ok, stop processing.
+                       
+                       IMPORTANT: You need to check the output of every
+                       Process.  If you get an undef then the connection
+                       died and you should behave accordingly.
 
     Execute(hostname=>string,       - Generic inner loop to handle
 	    port=>int,                connecting to the server, calling
@@ -159,9 +180,11 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-use vars qw($VERSION $AUTOLOAD);
+use Carp;
+use base qw( Net::Jabber::Protocol );
+use vars qw( $VERSION );
 
-$VERSION = "1.28";
+$VERSION = "1.29";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&
@@ -191,8 +214,6 @@ sub new
 
     bless($self, $proto);
 
-    $self->{DELEGATE} = new Net::Jabber::Protocol();
-
     $self->{DEBUG} =
         new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
                                file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
@@ -219,21 +240,6 @@ sub new
     $self->callbackInit();
 
     return $self;
-}
-
-
-##############################################################################
-#
-# AUTOLOAD - This function calls the delegate with the appropriate function
-#            name and argument list.
-#
-##############################################################################
-sub AUTOLOAD
-{
-    my $self = $_[0];
-    return if ($AUTOLOAD =~ /::DESTROY$/);
-    $AUTOLOAD =~ s/^.*:://;
-    $self->{DELEGATE}->$AUTOLOAD(@_);
 }
 
 
@@ -338,6 +344,65 @@ sub Connect
     $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
     $self->{CONNECTED} = 1;
     return 1;
+}
+
+
+###############################################################################
+#
+#  Process - If a timeout value is specified then the function will wait
+#            that long before returning.  This is useful for apps that
+#            need to handle other processing while still waiting for
+#            packets.  If no timeout is listed then the function waits
+#            until a packet is returned.  Either way the function exits
+#            as soon as a packet is returned.
+#
+###############################################################################
+sub Process
+{
+    my $self = shift;
+    my ($timeout) = @_;
+    my %status;
+
+    if (exists($self->{PROCESSERROR}) && ($self->{PROCESSERROR} == 1))
+    {
+        croak("There was an error in the last call to Process that you did not check for and\nhandle.  You should always check the output of the Process call.  If it was\nundef then there was a fatal error that you need to check.  There is an error\nin your program");
+    }
+
+    $self->{DEBUG}->Log1("Process: timeout($timeout)") if defined($timeout);
+
+    if (!defined($timeout) || ($timeout eq ""))
+    {
+        while(1)
+        {
+            %status = $self->{STREAM}->Process();
+            $self->{DEBUG}->Log1("Process: status($status{$self->{SESSION}->{id}})");
+            last if ($status{$self->{SESSION}->{id}} != 0);
+            select(undef,undef,undef,.25);
+        }
+        $self->{DEBUG}->Log1("Process: return($status{$self->{SESSION}->{id}})");
+        if ($status{$self->{SESSION}->{id}} == -1)
+        {
+            $self->{PROCESSERROR} = 1;
+            return;
+        }
+        else
+        {
+            return $status{$self->{SESSION}->{id}};
+        }
+    }
+    else
+    {
+        %status = $self->{STREAM}->Process($timeout);
+        if ($status{$self->{SESSION}->{id}} == -1)
+        {
+            $self->{PROCESSERROR} = 1;
+            return;
+        }
+        else
+        {
+            return $status{$self->{SESSION}->{id}};
+        }
+    }
 }
 
 

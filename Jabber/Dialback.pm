@@ -70,7 +70,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.28";
+$VERSION = "1.29";
 
 use Net::Jabber::Dialback::Result;
 ($Net::Jabber::Dialback::Result::VERSION < $VERSION) &&

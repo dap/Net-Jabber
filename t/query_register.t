@@ -1,5 +1,5 @@
 use lib "t/lib";
-use Test::More tests=>113;
+use Test::More tests=>151;
 
 BEGIN{ use_ok( "Net::Jabber","Client" ); }
 
@@ -84,4 +84,27 @@ testPostScalar($query2,"URL","url");
 testPostScalar($query2,"Zip","zip");
 
 is( $query2->GetXML(), "<query xmlns='jabber:iq:register'><address>address</address><city>city</city><date>date</date><email>email</email><first>first</first><instructions>instructions</instructions><key>key</key><last>last</last><misc>misc</misc><name>name</name><nick>nick</nick><password>password</password><phone>phone</phone><registered/><remove/><state>state</state><text>text</text><url>url</url><username>username</username><zip>zip</zip></query>", "GetXML()" );
+
+my %fields = $query2->GetRegister();
+
+testFieldScalar(\%fields,"Address","address");
+testFieldScalar(\%fields,"City","city");
+testFieldScalar(\%fields,"Date","date");
+testFieldScalar(\%fields,"Email","email");
+testFieldScalar(\%fields,"First","first");
+testFieldScalar(\%fields,"Instructions","instructions");
+testFieldScalar(\%fields,"Key","key");
+testFieldScalar(\%fields,"Last","last");
+testFieldScalar(\%fields,"Misc","misc");
+testFieldScalar(\%fields,"Name","name");
+testFieldScalar(\%fields,"Nick","nick");
+testFieldScalar(\%fields,"Password","password");
+testFieldScalar(\%fields,"Phone","phone");
+testFieldFlag(\%fields,"Registered");
+testFieldFlag(\%fields,"Remove");
+testFieldScalar(\%fields,"State","state");
+testFieldScalar(\%fields,"Text","text");
+testFieldScalar(\%fields,"URL","url");
+testFieldScalar(\%fields,"Zip","zip");
+
 

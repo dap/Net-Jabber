@@ -241,7 +241,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.28";
+$VERSION = "1.29";
 
 sub new
 {
@@ -349,7 +349,7 @@ sub Reply
     $reply->SetID($self->GetID()) if ($self->GetID() ne "");
     $reply->SetType("result");
 
-    $reply->AddQuery($self->GetQuery());
+    $reply->NewQuery($self->GetQueryXMLNS());
 
     $reply->SetIQ(to=>$self->GetFrom(),
                   from=>$self->GetTo(),

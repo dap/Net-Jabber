@@ -1,4 +1,4 @@
-##############################################################################
+###############################################################################
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Library General Public
@@ -18,7 +18,7 @@
 #  Jabber
 #  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
 #
-##############################################################################
+###############################################################################
 
 package Net::Jabber;
 
@@ -241,6 +241,53 @@ use Digest::SHA1;
 use POSIX;
 use vars qw($VERSION $DEBUG %CALLBACKS $TIMEZONE $PARSING);
 
+#------------------------------------------------------------------------------
+# Namespace constants
+#------------------------------------------------------------------------------
+#use constant
+#{
+#    NS_IQ_AGENT      , "jabber:iq:agent",      # deprecated
+#    NS_IQ_AGENTS     , "jabber:iq:agents",     # deprecated
+#    NS_IQ_AUTH       , "jabber:iq:auth",       # JEP-??
+#    NS_IQ_AUTOUPDATE , "jabber:iq:autoupdate", # deprecated
+#    NS_IQ_BROWSE     , "jabber:iq:browse",     # JEP-??
+#    NS_IQ_CONFERENCE , "jabber:iq:conference", # deprecated
+#    NS_IQ_FILTER     , "jabber:iq:filter",     # deprecated
+#    NS_IQ_GATEWAY    , "jabber:iq:gateway",    # ??
+#    NS_IQ_LAST       , "jabber:iq:last",       # core
+#    NS_IQ_OOB        , "jabber:iq:oob",        # core
+#    NS_IQ_PASS       , "jabber:iq:pass",       # JEP-03
+#    NS_IQ_REGISTER   , "jabber:iq:register",   # core
+#    NS_IQ_ROSTER     , "jabber:iq:roster",     # core
+#    NS_IQ_RPC        , "jabber:iq:rpc",        # JEP-??
+#    NS_IQ_SEARCH     , "jabber:iq:search",     # core
+#    NS_IQ_TIME       , "jabber:iq:time",       # core
+#    NS_IQ_VERSION    , "jabber:iq:version",    # core
+#
+#    NS_X_AUTOUPDATE , "jabber:x:autoupdate",  # core
+#    NS_X_CONFERENCE , "jabber:x:conference",  # deprecated
+#    NS_X_DATA       , "jabber:x:data",        # JEP-04
+#    NS_X_DELAY      , "jabber:x:delay",       # core
+#    NS_X_ENCRYPTED  , "jabber:x:encrypted",   # ??
+#    NS_X_EVENT      , "jabber:x:event",       # ??
+#    NS_X_EXPIRE     , "jabber:x:expire",      # ??
+#    NS_X_OOB        , "jabber:x:oob",         # core
+#    NS_X_ROSTER     , "jabber:x:roster",      # core
+#    NS_X_SIGNED     , "jabber:x:signed",      # ??
+#    
+#    NS_BYTESTREAMS , "http://jabber.org/protocol/bytestreams",    # JEP-65
+#    NS_COMMANDS    , "http://jabber.org/protocol/commands",       # JEP-??
+#    NS_DISCO_INFO  , "http://jabber.org/protocol/disco#info",     # JEP-30
+#    NS_DISCO_ITEMS , "http://jabber.org/protocol/disco#items",    # JEP-30
+#    NS_FILETRANS   , "http://jabber.org/protocol/si/profile/file-transfer",
+#                                                                   # JEP-96
+#    NS_FNEG        , "http://jabber.org/protocol/feature-neg",    # JEP-??
+#    NS_MUC_ADMIN   , "http://jabber.org/protocol/muc#admin",      # JEP-??
+#    NS_MUC_USER    , "http://jabber.org/protocol/muc#user",       # JEP-??
+#    NS_SI          , "http://jabber.org/protocol/si",             # JEP-95
+#};
+
+
 $CALLBACKS{XPathGet}     = sub{ return &Net::Jabber::XPathGet(@_); };
 $CALLBACKS{XPathSet}     = sub{ return &Net::Jabber::XPathSet(@_); };
 $CALLBACKS{XPathDefined} = sub{ return &Net::Jabber::XPathDefined(@_); };
@@ -258,7 +305,7 @@ else
     $TIMEZONE = 0;
 }
 
-$VERSION = "1.28";
+$VERSION = "1.29";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -288,6 +335,11 @@ use Net::Jabber::Presence;
 ($Net::Jabber::Presence::VERSION < $VERSION) &&
     croak("Net::Jabber::Presence $VERSION required--this is only version $Net::Jabber::Presence::VERSION");
 
+use Net::Jabber::Protocol;
+($Net::Jabber::Protocol::VERSION < $VERSION) &&
+    croak("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
+
+
 $DEBUG = new Net::Jabber::Debug(usedefault=>1,
                 header=>"NJ::Main");
 
@@ -309,15 +361,6 @@ sub import
         $pass = 1;
     }
     croak("Failed to load any schema for Net::Jabber from the use line.\n  ie. \"use Net::Jabber qw( Client );\"\n") if ($pass == 0);
-
-    #---------------------------------------------------------------------------
-    # Stupid "feature"... this has to be loaded last... or it can't see the
-    # other modules that were loaded.  So let's load it at the end of the
-    # import block.
-    #---------------------------------------------------------------------------
-    eval "use Net::Jabber::Protocol;";
-    ($Net::Jabber::Protocol::VERSION < $VERSION) &&
-        croak("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
 }
 
 
@@ -388,6 +431,22 @@ sub XPathGet
     
     my @results;
 
+    if ($type eq "raw")
+    {
+        my $rawXML = "";
+
+        return join("",@{$self->{RAWXML}}) if ($#{$self->{RAWXML}} > -1);
+
+        my @nodes = $self->{TREE}->XPath($xpath);
+        
+        foreach my $node (@nodes)
+        {
+            $rawXML .= $node->GetXML();
+        }
+
+        return $rawXML;
+    }
+
     if ($type eq "flag")
     {
         my @nodes = $self->{TREE}->XPath($xpath);
@@ -442,7 +501,34 @@ sub XPathGet
         #print "XPathGet: children: ",join(",",@results),"\n";
         return @results if (wantarray);
         return $results[0];
-     }
+    }
+
+    if ($type eq "master")
+    {
+        my %fields;
+        
+        foreach my $func (sort {$a cmp $b} @{$childtype})
+        {
+            my $defined;
+            eval "\$defined = \$self->Defined$func();";
+            if ($defined)
+            {
+                my @values;
+                eval "\@values = \$self->Get$func();";
+
+                if ($#values > 0)
+                {
+                    $fields{lc($func)} = \@values;
+                }
+                else
+                {
+                    $fields{lc($func)} = $values[0];
+                }
+            }
+        }
+
+        return %fields;
+    }
     
     @results = $self->{TREE}->XPath($xpath);
 
@@ -528,6 +614,13 @@ sub XPathSet
     }
 
     my $value = shift;
+
+    if ($type eq "raw")
+    {
+        $self->ClearRawXML();
+        $self->InsertRawXML($value);
+        return;
+    }
 
     if ($subType ne "")
     {
@@ -683,11 +776,19 @@ sub XPathDefined
 
     #print "XPathDefined: self($self) type($type) xpath($xpath) childtype($childtype)\n";
     #print "XPathDefined: ns($ns)\n" if defined($ns);
+    #print $self->{TREE}->GetXML(),"\n";
+
+    if ($type eq "raw")
+    {
+        if ($#{$self->{RAWXML}} > -1)
+        {
+            return 1;
+        }
+    }
 
     my @nodes = $self->{TREE}->XPath($xpath);
     my $defined = ($#nodes > -1);
     
-    #print $self->{TREE}->GetXML(),"\n";
     #print "nodes(",join(",",@nodes),")\n";
     #print $#nodes,"\n";
 
@@ -908,15 +1009,7 @@ sub ParseTree
 sub GetXML
 {
     my $self = shift;
-    my $rawXML = "";
-    if (exists($self->{RAWXML}))
-    {
-        foreach my $raw (@{$self->{RAWXML}})
-        {
-            $rawXML .= $raw;
-        }
-    }
-    return $self->GetTree()->GetXML($rawXML);
+    return $self->GetTree()->GetXML();
 }
 
 
@@ -975,6 +1068,9 @@ sub GetTree
             ($node->get_attrib("xmlns") =~ /^__netjabber__/) &&
             ($keepXMLNS == 0));
 
+    $node->add_raw_xml(@{$self->{RAWXML}})
+        if (exists($self->{RAWXML}) && ($#{$self->{RAWXML}} > -1));
+
     return $node;
 }
 
@@ -1018,6 +1114,8 @@ sub XPathAutoLoad
         $XPathPath = $FUNCTIONS->{$value}->{XPath}->{Path}
             if exists($FUNCTIONS->{$value}->{XPath}->{Path});
 
+        $XPathPath = "*" if ($XPathType eq "raw");
+
         my @calls = ('Get','Set','Defined','Remove');
         @calls = ('Get','Set') if ($XPathType eq "master");
         @calls = @{$FUNCTIONS->{$value}->{XPath}->{Calls}}
@@ -1035,7 +1133,28 @@ sub XPathAutoLoad
         if (($XPathType eq "master") ||
             ((ref($XPathType) eq "ARRAY") && ($XPathType->[0] eq "master")))
         {
-            $XPathChildType = $setFuncs;
+            if ($type eq "Get")
+            {
+                my @newSetFuncs;
+                foreach my $func (@{$setFuncs})
+                {
+                    push(@newSetFuncs,$func)
+                        if (exists($FUNCTIONS->{$func}->{XPath}) &&
+                            (!exists($FUNCTIONS->{$func}->{XPath}->{Type}) ||
+                             ($FUNCTIONS->{$func}->{XPath}->{Type} eq "scalar") ||
+                             ($FUNCTIONS->{$func}->{XPath}->{Type} eq "jid") ||
+                             ($FUNCTIONS->{$func}->{XPath}->{Type} eq "array") ||
+                             ($FUNCTIONS->{$func}->{XPath}->{Type} eq "timestamp") ||
+                             ($FUNCTIONS->{$func}->{XPath}->{Type} eq "flag") ||
+                             (ref($FUNCTIONS->{$func}->{XPath}->{Type}) eq "ARRAY")));
+                }
+                
+                $XPathChildType = \@newSetFuncs;
+            }
+            else
+            {
+                $XPathChildType = $setFuncs;
+            }
         }
         else
         {
@@ -1227,6 +1346,9 @@ sub NewQuery
 {
     my $self = shift;
     my ($xmlns,$tag) = @_;
+    $tag = $Net::Jabber::Query::TAGS{$xmlns}
+        unless (defined($tag) ||
+                !exists($Net::Jabber::Query::TAGS{$xmlns}));
     $tag = "query" unless defined($tag);
     $self->RemoveQuery();
     my $node = new XML::Stream::Node($tag);
