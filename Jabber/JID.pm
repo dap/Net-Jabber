@@ -69,6 +69,7 @@ Net::Jabber::JID - Jabber JID Module
 
     $JID      = $JID->GetJID();
     $fullJID  = $JID->GetJID("full");
+    $fullJID  = $JID->GetJID("base");
 
 =head2 Creation functions
 
@@ -97,8 +98,10 @@ Net::Jabber::JID - Jabber JID Module
 
   GetJID()       - returns a string that represents the JID stored
   GetJID("full")   within.  If the "full" string is specified, then
-                   you get the full JID, including Resource, which
-                   should be used to send to the server.
+  GetJID("base")   you get the full JID, including Resource, which
+                   should be used to send to the server.  If the "base",
+                   string is specified, then you will just get
+                   user@server, or the base JID.
 
 =head2 Creation functions
 
@@ -141,26 +144,31 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
-  
-  $self->{VERSION} = $VERSION;
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
+    
+    $self->{VERSION} = $VERSION;
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  if ("@_" ne ("")) {
-    my ($jid) = @_;
-    $self->{JID} = $jid;
-  } else {
-    $self->{JID} = "";
-  }
-  $self->ParseJID();
+    if ("@_" ne (""))
+    {
+        my ($jid) = @_;
+        return $jid if (ref($jid) eq "Net::Jabber::JID");
+        $self->{JID} = $jid;
+    }
+    else
+    {
+        $self->{JID} = "";
+    }
+    $self->ParseJID();
 
-  return $self;
+    return $self;
 }
 
 
@@ -170,17 +178,29 @@ sub new {
 #            the three parts of it.
 #
 ##############################################################################
-sub ParseJID {
-  my $self = shift;
-  if ($self->{JID} =~ /\@/) {
-    ($self->{USERID}) = ($self->{JID} =~ /^([^\@]+)\@[^\/]+\/?.*$/);
-    ($self->{SERVER}) = ($self->{JID} =~ /^[^\@]+\@([^\/]+)\/?.*$/);
-    ($self->{RESOURCE}) = ($self->{JID} =~ /^[^\@]+\@[^\/]+\/?(.*)$/);
-  } else {
-    $self->{USERID} = "";
-    ($self->{SERVER}) = ($self->{JID} =~ /^([^\/]+)\/?.*$/);
-    ($self->{RESOURCE}) = ($self->{JID} =~ /^[^\/]+\/?(.*)$/);
-  }
+sub ParseJID
+{
+    my $self = shift;
+
+    my $userid;
+    my $server;
+    my $resource;
+
+    ($userid,$server,$resource) =
+        ($self->{JID} =~ /^([^\@\/'"&:<>]*)\@([A-Za-z0-9\.-]+)\/?(.*?)$/);
+    if (!defined($server))
+    {
+        ($server,$resource) =
+            ($self->{JID} =~ /^([A-Za-z0-9\.-]+)\/?(.*?)$/);
+    }
+
+    $userid = "" unless defined($userid);
+    $server = "" unless defined($server);
+    $resource = "" unless defined($resource);
+
+    $self->{USERID} = $userid;
+    $self->{SERVER} = $server;
+    $self->{RESOURCE} = $resource;
 }
 
 
@@ -190,15 +210,16 @@ sub ParseJID {
 #            JID from them.
 #
 ##############################################################################
-sub BuildJID {
-  my $self = shift;
-  $self->{JID} = $self->{USERID};
-  $self->{JID} .= "\@" if ($self->{USERID} ne "");
-  $self->{JID} .= $self->{SERVER} if (exists($self->{SERVER}) &&
-				      defined($self->{SERVER}));
-  $self->{JID} .= "/".$self->{RESOURCE} if (exists($self->{RESOURCE}) &&
-					    defined($self->{RESOURCE}) &&
-					    ($self->{RESOURCE} ne ""));
+sub BuildJID
+{
+    my $self = shift;
+    $self->{JID} = $self->{USERID};
+    $self->{JID} .= "\@" if ($self->{USERID} ne "");
+    $self->{JID} .= $self->{SERVER} if (exists($self->{SERVER}) &&
+                        defined($self->{SERVER}));
+    $self->{JID} .= "/".$self->{RESOURCE} if (exists($self->{RESOURCE}) &&
+                        defined($self->{RESOURCE}) &&
+                        ($self->{RESOURCE} ne ""));
 }
 
 
@@ -207,11 +228,12 @@ sub BuildJID {
 # GetUserID - returns the userid of the JID.
 #
 ##############################################################################
-sub GetUserID {
-  my $self = shift;
-  my $userid = $self->{USERID};
-  $userid =~ s/\%/\@/;
-  return $userid;
+sub GetUserID
+{
+    my $self = shift;
+    my $userid = $self->{USERID};
+    $userid =~ s/\%/\@/;
+    return $userid;
 }
 
 
@@ -220,9 +242,10 @@ sub GetUserID {
 # GetServer - returns the server of the JID.
 #
 ##############################################################################
-sub GetServer {
-  my $self = shift;
-  return $self->{SERVER};
+sub GetServer
+{
+    my $self = shift;
+    return $self->{SERVER};
 }
 
 
@@ -231,9 +254,10 @@ sub GetServer {
 # GetResource - returns the resource of the JID.
 #
 ##############################################################################
-sub GetResource {
-  my $self = shift;
-  return $self->{RESOURCE};
+sub GetResource
+{
+    my $self = shift;
+    return $self->{RESOURCE};
 }
 
 
@@ -242,13 +266,14 @@ sub GetResource {
 # GetJID - returns the full jid of the JID.
 #
 ##############################################################################
-sub GetJID {
-  my $self = shift;
-  my $type = shift;
-  $type = "" unless defined($type);
-  return $self->{JID} if ($type eq "full");
-  return $self->{USERID}."\@".$self->{SERVER} if ($self->{USERID} ne "");
-  return $self->{SERVER};
+sub GetJID
+{
+    my $self = shift;
+    my $type = shift;
+    $type = "" unless defined($type);
+    return $self->{JID} if ($type eq "full");
+    return $self->{USERID}."\@".$self->{SERVER} if ($self->{USERID} ne "");
+    return $self->{SERVER};
 }
 
 
@@ -258,20 +283,21 @@ sub GetJID {
 #          each one.
 #
 ##############################################################################
-sub SetJID {
-  my $self = shift;
-  my %jid;
+sub SetJID
+{
+    my $self = shift;
+    my %jid;
 
-  if ($#_ > 0 ) { 
-    while($#_ >= 0) { $jid{ lc pop(@_) } = pop(@_); }
+    if ($#_ > 0 ) { 
+        while($#_ >= 0) { $jid{ lc pop(@_) } = pop(@_); }
 
-    $self->SetUserID($jid{userid}) if exists($jid{userid});
-    $self->SetServer($jid{server}) if exists($jid{server});
-    $self->SetResource($jid{resource}) if exists($jid{resource});
-  } else {
-    ($self->{JID}) = @_;
-    $self->ParseJID();
-  }
+        $self->SetUserID($jid{userid}) if exists($jid{userid});
+        $self->SetServer($jid{server}) if exists($jid{server});
+        $self->SetResource($jid{resource}) if exists($jid{resource});
+    } else {
+        ($self->{JID}) = @_;
+        $self->ParseJID();
+    }
 }
 
 
@@ -280,12 +306,13 @@ sub SetJID {
 # SetUserID - sets the userid of the JID.
 #
 ##############################################################################
-sub SetUserID {
-  my $self = shift;
-  my ($userid) = @_;
-  $userid =~ s/\@/\%/;
-  $self->{USERID} = $userid;
-  $self->BuildJID();
+sub SetUserID
+{
+    my $self = shift;
+    my ($userid) = @_;
+    $userid =~ s/\@/\%/;
+    $self->{USERID} = $userid;
+    $self->BuildJID();
 }
 
 
@@ -294,11 +321,12 @@ sub SetUserID {
 # SetServer - sets the server of the JID.
 #
 ##############################################################################
-sub SetServer {
-  my $self = shift;
-  my ($server) = @_;
-  $self->{SERVER} = $server;
-  $self->BuildJID();
+sub SetServer
+{
+    my $self = shift;
+    my ($server) = @_;
+    $self->{SERVER} = $server;
+    $self->BuildJID();
 }
 
 
@@ -307,11 +335,12 @@ sub SetServer {
 # SetResource - sets the resource of the JID.
 #
 ##############################################################################
-sub SetResource {
-  my $self = shift;
-  my ($resource) = @_;
-  $self->{RESOURCE} = $resource;
-  $self->BuildJID();
+sub SetResource
+{
+    my $self = shift;
+    my ($resource) = @_;
+    $self->{RESOURCE} = $resource;
+    $self->BuildJID();
 }
 
 
@@ -320,14 +349,15 @@ sub SetResource {
 # debug - prints out the contents of the JID
 #
 ##############################################################################
-sub debug {
-  my $self = shift;
+sub debug
+{
+    my $self = shift;
 
-  print "debug JID: $self\n";
-  print "UserID:   (",$self->{USERID},")\n";
-  print "Server:   (",$self->{SERVER},")\n";
-  print "Resource: (",$self->{RESOURCE},")\n";
-  print "JID:      (",$self->{JID},")\n";
+    print "debug JID: $self\n";
+    print "UserID:   (",$self->{USERID},")\n";
+    print "Server:   (",$self->{SERVER},")\n";
+    print "Resource: (",$self->{RESOURCE},")\n";
+    print "JID:      (",$self->{JID},")\n";
 }
 
 

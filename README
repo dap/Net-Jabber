@@ -1,4 +1,4 @@
-Net::Jabber v1.26
+Net::Jabber v1.27
 
 The Jabber Instant Messaging project is an Open Source project seeking
 to provide a complete cross protocol messaging solution.  The problem
@@ -15,7 +15,6 @@ interface to writing anything from a full client to a simple protocol
 tester.
 
 Ryan Eatmon
-Jabber Perl Team Leader
 reatmon@jabber.org
 
 
@@ -25,9 +24,6 @@ REQUIREMENTS
   - XML::Stream     - Handles the connection between the Client and the Server.
   - Digest::SHA1    - Encrypted authorization so that your password is not sent
                       over unsecure XML.
-  - Unicode::String - Handles the conversion of the text to Unicode so that it
-                      is valid XML.  (This is only required if you are running
-                      on pre Perl 5.6)
 
 SUGGESTIONS
   - Time::Timezone  - Automatic TimeZone calculation for the iq:time namespace.
@@ -40,10 +36,9 @@ INSTALLATION
 
 STATUS
 
-  This module has moved into release and debugging.  For the most part things
-are stable, but if you see a newer version, you should switch to it immediatly
-and read the CHANGES file to find out what has changed.
-
+    More and more stability.  This version has a few big changes, so I won't
+be surprised to get bug reports about it.
 
 Please send any bug reports to reatmon@jabber.org.
-2001/04/11
+2002/11/04
+

@@ -168,35 +168,39 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DEBUGHEADER} = "DB:Result";
+    $self->{DEBUGHEADER} = "DB:Result";
 
-  $self->{DATA} = {};
-  $self->{CHILDREN} = {};
+    $self->{DATA} = {};
+    $self->{CHILDREN} = {};
 
-  $self->{TAG} = "db:result";
+    $self->{TAG} = "db:result";
 
-  if ("@_" ne ("")) {
-    if (ref($_[0]) eq "Net::Jabber::Dialback::Result") {
-      return $_[0];
-    } else {
-      $self->{TREE} = shift;
-      $self->ParseTree();
-      delete($self->{TREE});
+    if ("@_" ne (""))
+    {
+        if (ref($_[0]) eq "Net::Jabber::Dialback::Result")
+        {
+            return $_[0];
+        }
+        else
+        {
+            $self->{TREE} = shift;
+            $self->ParseTree();
+        }
     }
-  }
 
-  return $self;
+    return $self;
 }
 
 
@@ -205,9 +209,10 @@ sub new {
 # AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = shift;
-  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
+sub AUTOLOAD
+{
+    my $self = shift;
+    &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
 $FUNCTIONS{From}->{Get}        = "from";

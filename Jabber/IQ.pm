@@ -241,35 +241,43 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DEBUGHEADER} = "IQ";
+    $self->{DEBUGHEADER} = "IQ";
 
-  $self->{DATA} = {};
-  $self->{CHILDREN} = {};
+    $self->{DATA} = {};
+    $self->{CHILDREN} = {};
 
-  $self->{TAG} = "iq";
+    $self->{TAG} = "iq";
 
-  if ("@_" ne ("")) {
-    if (ref($_[0]) eq "Net::Jabber::IQ") {
-      return $_[0];
-    } else {
-      $self->{TREE} = shift;
-      $self->ParseTree();
-      delete($self->{TREE});
+    if ("@_" ne (""))
+    {
+        if (ref($_[0]) eq "Net::Jabber::IQ")
+        {
+            return $_[0];
+        }
+        else
+        {
+            $self->{TREE} = shift;
+            $self->ParseTree();
+        }
     }
-  }
+    else
+    {
+        $self->{TREE} = new XML::Stream::Node($self->{TAG});
+    }
 
-  return $self;
+    return $self;
 }
 
 
@@ -278,49 +286,37 @@ sub new {
 # AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = shift;
-  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
+sub AUTOLOAD
+{
+    my $self = shift;
+    &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
-$FUNCTIONS{Error}->{Get}        = "error";
-$FUNCTIONS{Error}->{Set}        = ["scalar","error"];
-$FUNCTIONS{Error}->{Defined}    = "error";
-$FUNCTIONS{Error}->{Hash}       = "child-data";
+$FUNCTIONS{Error}->{XPath}->{Path} = 'error/text()';
 
-$FUNCTIONS{ErrorCode}->{Get}        = "errorcode";
-$FUNCTIONS{ErrorCode}->{Set}        = ["scalar","errorcode"];
-$FUNCTIONS{ErrorCode}->{Defined}    = "errorcode";
-$FUNCTIONS{ErrorCode}->{Hash}       = "att-error-code";
+$FUNCTIONS{ErrorCode}->{XPath}->{Path} = 'error/@code';
 
-$FUNCTIONS{From}->{Get}        = "from";
-$FUNCTIONS{From}->{Set}        = ["jid","from"];
-$FUNCTIONS{From}->{Defined}    = "from";
-$FUNCTIONS{From}->{Hash}       = "att";
+$FUNCTIONS{From}->{XPath}->{Type} = 'jid';
+$FUNCTIONS{From}->{XPath}->{Path} = '@from';
 
-$FUNCTIONS{ID}->{Get}        = "id";
-$FUNCTIONS{ID}->{Set}        = ["scalar","id"];
-$FUNCTIONS{ID}->{Defined}    = "id";
-$FUNCTIONS{ID}->{Hash}       = "att";
+$FUNCTIONS{ID}->{XPath}->{Path} = '@id';
 
-$FUNCTIONS{To}->{Get}        = "to";
-$FUNCTIONS{To}->{Set}        = ["jid","to"];
-$FUNCTIONS{To}->{Defined}    = "to";
-$FUNCTIONS{To}->{Hash}       = "att";
+$FUNCTIONS{To}->{XPath}->{Type} = 'jid';
+$FUNCTIONS{To}->{XPath}->{Path} = '@to';
 
-$FUNCTIONS{Type}->{Get}        = "type";
-$FUNCTIONS{Type}->{Set}        = ["scalar","type"];
-$FUNCTIONS{Type}->{Defined}    = "type";
-$FUNCTIONS{Type}->{Hash}       = "att";
+$FUNCTIONS{Type}->{XPath}->{Path} = '@type';
 
-$FUNCTIONS{Query}->{Get}        = "__netjabber__:children:query";
-$FUNCTIONS{Query}->{Defined}    = "__netjabber__:children:query";
+$FUNCTIONS{IQ}->{XPath}->{Type}  = 'master';
 
-$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
-$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
+$FUNCTIONS{Query}->{XPath}->{Type}  = 'node';
+$FUNCTIONS{Query}->{XPath}->{Path}  = '*[@xmlns]';
+$FUNCTIONS{Query}->{XPath}->{Child} = 'Query';
+$FUNCTIONS{Query}->{XPath}->{Calls} = ['Get','Defined'];
 
-$FUNCTIONS{IQ}->{Get} = "__netjabber__:master";
-$FUNCTIONS{IQ}->{Set} = ["master"];
+$FUNCTIONS{X}->{XPath}->{Type}  = 'node';
+$FUNCTIONS{X}->{XPath}->{Path}  = '*[@xmlns]';
+$FUNCTIONS{X}->{XPath}->{Child} = 'X';
+$FUNCTIONS{X}->{XPath}->{Calls} = ['Get','Defined'];
 
 
 ##############################################################################
@@ -328,9 +324,11 @@ $FUNCTIONS{IQ}->{Set} = ["master"];
 # GetQueryXMLNS - returns the xmlns of the <query/> tag
 #
 ##############################################################################
-sub GetQueryXMLNS {
-  my $self = shift;
-  return $self->{CHILDREN}->{query}->[0]->GetXMLNS() if exists($self->{CHILDREN}->{query});
+sub GetQueryXMLNS
+{
+    my $self = shift;
+    ### XXX fix this
+    return $self->{CHILDREN}->{query}->[0]->GetXMLNS() if exists($self->{CHILDREN}->{query});
 }
 
 
@@ -340,24 +338,25 @@ sub GetQueryXMLNS {
 #         already populated for you.
 #
 ##############################################################################
-sub Reply {
-  my $self = shift;
-  my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+sub Reply
+{
+    my $self = shift;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
-  my $reply = new Net::Jabber::IQ();
+    my $reply = new Net::Jabber::IQ();
 
-  $reply->SetID($self->GetID()) if ($self->GetID() ne "");
-  $reply->SetType("result");
+    $reply->SetID($self->GetID()) if ($self->GetID() ne "");
+    $reply->SetType("result");
 
-  $reply->AddQuery($self->GetQuery());
+    $reply->AddQuery($self->GetQuery());
 
-  $reply->SetIQ(to=>$self->GetFrom(),
-		from=>$self->GetTo(),
-		%args
-	       );
+    $reply->SetIQ(to=>$self->GetFrom(),
+                  from=>$self->GetTo(),
+                  %args
+                 );
 
-  return $reply;
+    return $reply;
 }
 
 

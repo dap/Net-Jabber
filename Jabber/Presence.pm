@@ -232,35 +232,43 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DEBUGHEADER} = "Presence";
+    $self->{DEBUGHEADER} = "Presence";
 
-  $self->{DATA} = {};
-  $self->{CHILDREN} = {};
+    $self->{DATA} = {};
+    $self->{CHILDREN} = {};
 
-  $self->{TAG} = "presence";
+    $self->{TAG} = "presence";
 
-  if ("@_" ne ("")) {
-    if (ref($_[0]) eq "Net::Jabber::Presence") {
-      return $_[0];
-    } else {
-      $self->{TREE} = shift;
-      $self->ParseTree();
-      delete($self->{TREE});
+    if ("@_" ne (""))
+    {
+        if (ref($_[0]) eq "Net::Jabber::Presence")
+        {
+            return $_[0];
+        }
+        else
+        {
+            $self->{TREE} = shift;
+            $self->ParseTree();
+        }
     }
-  }
+    else
+    {
+        $self->{TREE} = new XML::Stream::Node($self->{TAG});
+    }
 
-  return $self;
+    return $self;
 }
 
 
@@ -269,61 +277,38 @@ sub new {
 # AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = shift;
-  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
+sub AUTOLOAD
+{
+    my $self = shift;
+    &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
-$FUNCTIONS{Error}->{Get}        = "error";
-$FUNCTIONS{Error}->{Set}        = ["scalar","error"];
-$FUNCTIONS{Error}->{Defined}    = "error";
-$FUNCTIONS{Error}->{Hash}       = "child-data";
+$FUNCTIONS{Error}->{XPath}->{Path} = 'error/text()';
 
-$FUNCTIONS{ErrorCode}->{Get}        = "errorcode";
-$FUNCTIONS{ErrorCode}->{Set}        = ["scalar","errorcode"];
-$FUNCTIONS{ErrorCode}->{Defined}    = "errorcode";
-$FUNCTIONS{ErrorCode}->{Hash}       = "att-error-code";
+$FUNCTIONS{ErrorCode}->{XPath}->{Path} = 'error/@code';
 
-$FUNCTIONS{From}->{Get}        = "from";
-$FUNCTIONS{From}->{Set}        = ["jid","from"];
-$FUNCTIONS{From}->{Defined}    = "from";
-$FUNCTIONS{From}->{Hash}       = "att";
+$FUNCTIONS{From}->{XPath}->{Type} = 'jid';
+$FUNCTIONS{From}->{XPath}->{Path} = '@from';
 
-$FUNCTIONS{ID}->{Get}        = "id";
-$FUNCTIONS{ID}->{Set}        = ["scalar","id"];
-$FUNCTIONS{ID}->{Defined}    = "id";
-$FUNCTIONS{ID}->{Hash}       = "att";
+$FUNCTIONS{ID}->{XPath}->{Path} = '@id';
 
-$FUNCTIONS{Priority}->{Get}        = "priority";
-$FUNCTIONS{Priority}->{Set}        = ["scalar","priority"];
-$FUNCTIONS{Priority}->{Defined}    = "priority";
-$FUNCTIONS{Priority}->{Hash}       = "child-data";
+$FUNCTIONS{Priority}->{XPath}->{Path} = 'priority/text()';
 
-$FUNCTIONS{Show}->{Get}        = "show";
-$FUNCTIONS{Show}->{Set}        = ["scalar","show"];
-$FUNCTIONS{Show}->{Defined}    = "show";
-$FUNCTIONS{Show}->{Hash}       = "child-data";
+$FUNCTIONS{Show}->{XPath}->{Path} = 'show/text()';
 
-$FUNCTIONS{Status}->{Get}        = "status";
-$FUNCTIONS{Status}->{Set}        = ["scalar","status"];
-$FUNCTIONS{Status}->{Defined}    = "status";
-$FUNCTIONS{Status}->{Hash}       = "child-data";
+$FUNCTIONS{Status}->{XPath}->{Path} = 'status/text()';
 
-$FUNCTIONS{To}->{Get}        = "to";
-$FUNCTIONS{To}->{Set}        = ["jid","to"];
-$FUNCTIONS{To}->{Defined}    = "to";
-$FUNCTIONS{To}->{Hash}       = "att";
+$FUNCTIONS{To}->{XPath}->{Type} = 'jid';
+$FUNCTIONS{To}->{XPath}->{Path} = '@to';
 
-$FUNCTIONS{Type}->{Get}        = "type";
-$FUNCTIONS{Type}->{Set}        = ["scalar","type"];
-$FUNCTIONS{Type}->{Defined}    = "type";
-$FUNCTIONS{Type}->{Hash}       = "att";
+$FUNCTIONS{Type}->{XPath}->{Path} = '@type';
 
-$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
-$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
+$FUNCTIONS{Presence}->{XPath}->{Type}  = 'master';
 
-$FUNCTIONS{Presence}->{Get} = "__netjabber__:master";
-$FUNCTIONS{Presence}->{Set} = ["master"];
+$FUNCTIONS{X}->{XPath}->{Type}  = 'node';
+$FUNCTIONS{X}->{XPath}->{Path}  = '*[@xmlns]';
+$FUNCTIONS{X}->{XPath}->{Child} = 'X';
+$FUNCTIONS{X}->{XPath}->{Calls} = ['Get','Defined'];
 
 ##############################################################################
 #
@@ -331,28 +316,29 @@ $FUNCTIONS{Presence}->{Set} = ["master"];
 #         already populated for you.
 #
 ##############################################################################
-sub Reply {
-  my $self = shift;
-  my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+sub Reply
+{
+    my $self = shift;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
-  my $reply = new Net::Jabber::Presence();
+    my $reply = new Net::Jabber::Presence();
 
-  $reply->SetID($self->GetID()) if ($self->GetID() ne "");
+    $reply->SetID($self->GetID()) if ($self->GetID() ne "");
 
-  $reply->SetPresence((($self->GetFrom() ne "") ?
-		       (to=>$self->GetFrom()) :
-		       ()
-		      ),
-		      (($self->GetTo() ne "") ?
-		       (from=>$self->GetTo()) :
-		       ()
-		      ),
-		     );
+    $reply->SetPresence((($self->GetFrom() ne "") ?
+                         (to=>$self->GetFrom()) :
+                         ()
+                        ),
+                        (($self->GetTo() ne "") ?
+                         (from=>$self->GetTo()) :
+                         ()
+                        ),
+                       );
 
-  $reply->SetPresence(%args);
+    $reply->SetPresence(%args);
 
-  return $reply;
+    return $reply;
 }
 
 

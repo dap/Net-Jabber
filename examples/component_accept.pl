@@ -22,13 +22,13 @@ my $Component = new Net::Jabber::Component();
 $Component->SetCallBacks(message=>\&messageCB);
 
 my $status = $Component->Connect(hostname=>$server,
-				 port=>$port,
+                                 port=>$port,
                                  componentname=>$name,
-				 secret=>$secret);
+                                 secret=>$secret);
 
 if (!(defined($status))) {
   print "ERROR:  Jabber server is not answering.\n";
-  print "        ($!)\n";
+  print "        ($!) - (",$Component->GetErrorCode(),")\n";
   exit(0);
 }
 

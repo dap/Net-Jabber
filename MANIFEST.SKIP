@@ -1,2 +1,6 @@
 Makefile$
-^CVS
+TODO
+blib
+tests
+.swp$
+CVS

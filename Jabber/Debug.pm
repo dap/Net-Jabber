@@ -104,7 +104,7 @@ Net::Jabber::Debug - Jabber Debug Library
     Example: level 2 test
     Example: hashtest { a=>"atest" b=>"btest" }
 
-  If you has set the level to 1 instead of 2 you would get:
+  If you had set the level to 1 instead of 2 you would get:
 
     Example: test
     Example: hashtest { a=>"atest" b=>"btest" }
@@ -126,18 +126,19 @@ use FileHandle;
 use Carp;
 use vars qw($VERSION %HANDLES $DEFAULT $DEFAULTLEVEL $DEFAULTTIME $AUTOLOAD);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $self = { };
-  bless($self, $proto);
+sub new
+{
+    my $proto = shift;
+    my $self = { };
+    bless($self, $proto);
 
-  $self->Init(@_);
+    $self->Init(@_);
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  return $self;
+    return $self;
 }
 
 
@@ -146,75 +147,95 @@ sub new {
 # Init - opens the fielhandle and initializes the Debug object.
 #
 ##############################################################################
-sub Init {
-  my $self = shift;
+sub Init
+{
+    my $self = shift;
 
-  my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+    
+    delete($args{file}) if (lc($args{file}) eq "stdout");
 
+    $args{time} = 0 if !exists($args{time});
+    $args{setdefault} = 0 if !exists($args{setdefault});
+    $args{usedefault} = 0 if !exists($args{usedefault});
 
-  delete($args{file}) if (lc($args{file}) eq "stdout");
+    $self->{TIME} = $args{time};
 
-  $args{time} = 0 if !exists($args{time});
-  $args{setdefault} = 0 if !exists($args{setdefault});
-  $args{usedefault} = 0 if !exists($args{usedefault});
-
-  $self->{TIME} = $args{time};
-
-  if ($args{usedefault} == 1) {
-    $args{setdefault} = 0;
-    $self->{USEDEFAULT} = 1;
-  } else {
-    $self->{LEVEL} = 0;
-    $self->{LEVEL} = $args{level} if exists($args{level});
-
-    $self->{HANDLE} = new FileHandle(">&STDERR");
-    $self->{HANDLE}->autoflush(1);
-    if (exists($args{file})) {
-      if (exists($Net::Jabber::Debug::HANDLES{$args{file}})) {
-	$self->{HANDLE} = $Net::Jabber::Debug::HANDLES{$args{file}};
-	$self->{HANDLE}->autoflush(1);
-      } else {
-	if (-e $args{file}) {
-	  if (-w $args{file}) {
-	    $self->{HANDLE} = new FileHandle(">$args{file}");
-	    if (defined($self->{HANDLE})) {
-	      $self->{HANDLE}->autoflush(1);
-	      $Net::Jabber::Debug::HANDLES{$args{file}} = $self->{HANDLE};
-	    } else {
-	      print STDERR "ERROR: Debug filehandle could not be opened.\n";
-	      print STDERR"        Debugging disabled.\n";
-	      print STDERR "       ($!)\n";
-	      $self->{LEVEL} = -1;
-	    }
-	  } else {
-	    print STDERR "ERROR: You do not have permission to write to $args{file}.\n";
-	    print STDERR"        Debugging disabled.\n";
-	    $self->{LEVEL} = -1;
-	  }
-	} else {
-	  $self->{HANDLE} = new FileHandle(">$args{file}");
-	  if (defined($self->{HANDLE})) {
-	    $self->{HANDLE}->autoflush(1);
-	    $Net::Jabber::Debug::HANDLES{$args{file}} = $self->{HANDLE};
-	  } else {
-	    print STDERR "ERROR: Debug filehandle could not be opened.\n";
-	    print STDERR"        Debugging disabled.\n";
-	    print STDERR "       ($!)\n";
-	    $self->{LEVEL} = -1;
-	  }
-	}
-      }
+    if ($args{usedefault} == 1)
+    {
+        $args{setdefault} = 0;
+        $self->{USEDEFAULT} = 1;
     }
-  }
-  if ($args{setdefault} == 1) {
-    $Net::Jabber::Debug::DEFAULT = $self->{HANDLE};
-    $Net::Jabber::Debug::DEFAULTLEVEL = $self->{LEVEL};
-    $Net::Jabber::Debug::DEFAULTTIME = $self->{TIME};
-  }
+    else
+    {
+        $self->{LEVEL} = 0;
+        $self->{LEVEL} = $args{level} if exists($args{level});
 
-  $self->{HEADER} = "Debug";
-  $self->{HEADER} = $args{header} if exists($args{header});
+        $self->{HANDLE} = new FileHandle(">&STDERR");
+        $self->{HANDLE}->autoflush(1);
+        if (exists($args{file}))
+        {
+            if (exists($Net::Jabber::Debug::HANDLES{$args{file}}))
+            {
+                $self->{HANDLE} = $Net::Jabber::Debug::HANDLES{$args{file}};
+                $self->{HANDLE}->autoflush(1);
+            }
+            else
+            {
+                if (-e $args{file})
+                {
+                    if (-w $args{file})
+                    {
+                        $self->{HANDLE} = new FileHandle(">$args{file}");
+                        if (defined($self->{HANDLE}))
+                        {
+                            $self->{HANDLE}->autoflush(1);
+                            $Net::Jabber::Debug::HANDLES{$args{file}} = $self->{HANDLE};
+                        }
+                        else
+                        {
+                            print STDERR "ERROR: Debug filehandle could not be opened.\n";
+                            print STDERR"        Debugging disabled.\n";
+                            print STDERR "       ($!)\n";
+                            $self->{LEVEL} = -1;
+                        }
+                    }
+                    else
+                    {
+                        print STDERR "ERROR: You do not have permission to write to $args{file}.\n";
+                        print STDERR"        Debugging disabled.\n";
+                        $self->{LEVEL} = -1;
+                    }
+                }
+                else
+                {
+                    $self->{HANDLE} = new FileHandle(">$args{file}");
+                    if (defined($self->{HANDLE}))
+                    {
+                        $self->{HANDLE}->autoflush(1);
+                        $Net::Jabber::Debug::HANDLES{$args{file}} = $self->{HANDLE};
+                    }
+                    else
+                    {
+                        print STDERR "ERROR: Debug filehandle could not be opened.\n";
+                        print STDERR"        Debugging disabled.\n";
+                        print STDERR "       ($!)\n";
+                        $self->{LEVEL} = -1;
+                    }
+                }
+            }
+        }
+    }
+    if ($args{setdefault} == 1)
+    {
+        $Net::Jabber::Debug::DEFAULT = $self->{HANDLE};
+        $Net::Jabber::Debug::DEFAULTLEVEL = $self->{LEVEL};
+        $Net::Jabber::Debug::DEFAULTTIME = $self->{TIME};
+    }
+
+    $self->{HEADER} = "Debug";
+    $self->{HEADER} = $args{header} if exists($args{header});
 }
 
 
@@ -223,41 +244,49 @@ sub Init {
 # Log - takes the limit and the array to log and logs them
 #
 ##############################################################################
-sub Log {
-  my $self = shift;
-  my (@args) = @_;
+sub Log
+{
+    my $self = shift;
+    my (@args) = @_;
 
-  my $fh = $self->{HANDLE};
-  $fh = $Net::Jabber::Debug::DEFAULT if exists($self->{USEDEFAULT});
+    my $fh = $self->{HANDLE};
+    $fh = $Net::Jabber::Debug::DEFAULT if exists($self->{USEDEFAULT});
 
-  my $string = "";
+    my $string = "";
 
-  my $testTime = $self->{TIME};
-  $testTime = $Net::Jabber::Debug::DEFAULTTIME if exists($self->{USEDEFAULT});
+    my $testTime = $self->{TIME};
+    $testTime = $Net::Jabber::Debug::DEFAULTTIME if exists($self->{USEDEFAULT});
 
-  $string .= "[".&Net::Jabber::GetTimeStamp("local",time,"short")."] "
-    if ($testTime == 1);
-  $string .= $self->{HEADER}.": ";
+    $string .= "[".&Net::Jabber::GetTimeStamp("local",time,"short")."] "
+        if ($testTime == 1);
+    $string .= $self->{HEADER}.": ";
 
-  my $arg;
-  foreach $arg (@args) {
-    if (ref($arg) eq "HASH") {
-      $string .= " {";
-      my $key;
-      foreach $key (sort {$a cmp $b} keys(%{$arg})) {
-	$string .= " ".$key."=>'".$arg->{$key}."'";
-      }
-      $string .= " }";
-    } else {
-      if (ref($arg) eq "ARRAY") {
-	$string .= " [ ".join(" ",@{$arg})." ]";
-      }	else {
-	$string .= $arg;
-      }
+    my $arg;
+
+    foreach $arg (@args)
+    {
+        if (ref($arg) eq "HASH")
+        {
+            $string .= " {";
+            my $key;
+            foreach $key (sort {$a cmp $b} keys(%{$arg}))
+            {
+                $string .= " ".$key."=>'".$arg->{$key}."'";
+            }
+            $string .= " }";
+        }
+        else
+        {
+            if (ref($arg) eq "ARRAY")
+            {
+                $string .= " [ ".join(" ",@{$arg})." ]";
+            }  else {
+                $string .= $arg;
+            }
+        }
     }
-  }
-  print $fh "$string\n";
-  return 1;
+    print $fh "$string\n";
+    return 1;
 }
 
 
@@ -268,14 +297,15 @@ sub Log {
 #            the appropriate function.
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = shift;
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  my ($function) = ($AUTOLOAD =~ /\:\:(.*)$/);
-  croak("$function not defined") if !($function =~ /Log\d+/);
-  my ($level) = ($function =~ /Log(\d+)/);
-  return 0 if ($level > (exists($self->{USEDEFAULT}) ? $Net::Jabber::Debug::DEFAULTLEVEL : $self->{LEVEL}));
-  $self->Log(@_);
+sub AUTOLOAD
+{
+    my $self = shift;
+    return if ($AUTOLOAD =~ /::DESTROY$/);
+    my ($function) = ($AUTOLOAD =~ /\:\:(.*)$/);
+    croak("$function not defined") if !($function =~ /Log\d+/);
+    my ($level) = ($function =~ /Log(\d+)/);
+    return 0 if ($level > (exists($self->{USEDEFAULT}) ? $Net::Jabber::Debug::DEFAULTLEVEL : $self->{LEVEL}));
+    $self->Log(@_);
 }
 
 
@@ -284,9 +314,10 @@ sub AUTOLOAD {
 # GetHandle - returns the filehandle being used by this object.
 #
 ##############################################################################
-sub GetHandle {
-  my $self = shift;
-  return $self->{HANDLE};
+sub GetHandle
+{
+    my $self = shift;
+    return $self->{HANDLE};
 }
 
 
@@ -295,9 +326,10 @@ sub GetHandle {
 # GetLevel - returns the debug level used by this object.
 #
 ##############################################################################
-sub GetLevel {
-  my $self = shift;
-  return $self->{LEVEL};
+sub GetLevel
+{
+    my $self = shift;
+    return $self->{LEVEL};
 }
 
 
@@ -306,9 +338,10 @@ sub GetLevel {
 # GetTime - returns the debug time used by this object.
 #
 ##############################################################################
-sub GetTime {
-  my $self = shift;
-  return $self->{TIME};
+sub GetTime
+{
+    my $self = shift;
+    return $self->{TIME};
 }
 
 

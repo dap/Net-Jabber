@@ -264,35 +264,43 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DEBUGHEADER} = "XDB";
+    $self->{DEBUGHEADER} = "XDB";
 
-  $self->{DATA} = {};
-  $self->{CHILDREN} = {};
+    $self->{DATA} = {};
+    $self->{CHILDREN} = {};
 
-  $self->{TAG} = "xdb";
+    $self->{TAG} = "xdb";
 
-  if ("@_" ne ("")) {
-    if (ref($_[0]) eq "Net::Jabber::XDB") {
-      return $_[0];
-    } else {
-      $self->{TREE} = shift;
-      $self->ParseTree();
-      delete($self->{TREE});
+    if ("@_" ne (""))
+    {
+        if (ref($_[0]) eq "Net::Jabber::XDB")
+        {
+            return $_[0];
+        }
+        else
+        {
+            $self->{TREE} = shift;
+            $self->ParseTree();
+        }
     }
-  }
+    else
+    {
+        $self->{TREE} = new XML::Stream::Node($self->{TAG});
+    }
 
-  return $self;
+    return $self;
 }
 
 
@@ -301,61 +309,84 @@ sub new {
 # AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = shift;
-  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
+sub AUTOLOAD
+{
+    my $self = shift;
+    &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
-$FUNCTIONS{Action}->{Get}        = "action";
-$FUNCTIONS{Action}->{Set}        = ["scalar","action"];
-$FUNCTIONS{Action}->{Defined}    = "action";
-$FUNCTIONS{Action}->{Hash}       = "att";
+$FUNCTIONS{Action}->{Get}           = "action";
+$FUNCTIONS{Action}->{Set}           = ["scalar","action"];
+$FUNCTIONS{Action}->{Defined}       = "action";
+$FUNCTIONS{Action}->{Hash}          = "att";
+$FUNCTIONS{Action}->{XPath}->{Type} = 'scalar';
+$FUNCTIONS{Action}->{XPath}->{Path} = '@action';
 
-$FUNCTIONS{Error}->{Get}        = "error";
-$FUNCTIONS{Error}->{Set}        = ["scalar","error"];
-$FUNCTIONS{Error}->{Defined}    = "error";
-$FUNCTIONS{Error}->{Hash}       = "child-data";
+$FUNCTIONS{Error}->{Get}           = "error";
+$FUNCTIONS{Error}->{Set}           = ["scalar","error"];
+$FUNCTIONS{Error}->{Defined}       = "error";
+$FUNCTIONS{Error}->{Hash}          = "child-data";
+$FUNCTIONS{Error}->{XPath}->{Type} = 'scalar';
+$FUNCTIONS{Error}->{XPath}->{Path} = 'error/text()';
 
-$FUNCTIONS{ErrorCode}->{Get}        = "errorcode";
-$FUNCTIONS{ErrorCode}->{Set}        = ["scalar","errorcode"];
-$FUNCTIONS{ErrorCode}->{Defined}    = "errorcode";
-$FUNCTIONS{ErrorCode}->{Hash}       = "att-error-code";
+$FUNCTIONS{ErrorCode}->{Get}           = "errorcode";
+$FUNCTIONS{ErrorCode}->{Set}           = ["scalar","errorcode"];
+$FUNCTIONS{ErrorCode}->{Defined}       = "errorcode";
+$FUNCTIONS{ErrorCode}->{Hash}          = "att-error-code";
+$FUNCTIONS{ErrorCode}->{XPath}->{Type} = 'scalar';
+$FUNCTIONS{ErrorCode}->{XPath}->{Path} = 'error/@code';
 
-$FUNCTIONS{From}->{Get}        = "from";
-$FUNCTIONS{From}->{Set}        = ["jid","from"];
-$FUNCTIONS{From}->{Defined}    = "from";
-$FUNCTIONS{From}->{Hash}       = "att";
+$FUNCTIONS{From}->{Get}           = "from";
+$FUNCTIONS{From}->{Set}           = ["jid","from"];
+$FUNCTIONS{From}->{Defined}       = "from";
+$FUNCTIONS{From}->{Hash}          = "att";
+$FUNCTIONS{From}->{XPath}->{Type} = 'jid';
+$FUNCTIONS{From}->{XPath}->{Path} = '@from';
 
-$FUNCTIONS{Match}->{Get}        = "match";
-$FUNCTIONS{Match}->{Set}        = ["scalar","match"];
-$FUNCTIONS{Match}->{Defined}    = "match";
-$FUNCTIONS{Match}->{Hash}       = "att";
+$FUNCTIONS{Match}->{Get}           = "match";
+$FUNCTIONS{Match}->{Set}           = ["scalar","match"];
+$FUNCTIONS{Match}->{Defined}       = "match";
+$FUNCTIONS{Match}->{Hash}          = "att";
+$FUNCTIONS{Match}->{XPath}->{Type} = 'scalar';
+$FUNCTIONS{Match}->{XPath}->{Path} = '@match';
 
-$FUNCTIONS{NS}->{Get}        = "ns";
-$FUNCTIONS{NS}->{Set}        = ["scalar","ns"];
-$FUNCTIONS{NS}->{Defined}    = "ns";
-$FUNCTIONS{NS}->{Hash}       = "att";
+$FUNCTIONS{NS}->{Get}           = "ns";
+$FUNCTIONS{NS}->{Set}           = ["scalar","ns"];
+$FUNCTIONS{NS}->{Defined}       = "ns";
+$FUNCTIONS{NS}->{Hash}          = "att";
+$FUNCTIONS{NS}->{XPath}->{Type} = 'scalar';
+$FUNCTIONS{NS}->{XPath}->{Path} = '@ns';
 
-$FUNCTIONS{ID}->{Get}        = "id";
-$FUNCTIONS{ID}->{Set}        = ["scalar","id"];
-$FUNCTIONS{ID}->{Defined}    = "id";
-$FUNCTIONS{ID}->{Hash}       = "att";
+$FUNCTIONS{ID}->{Get}           = "id";
+$FUNCTIONS{ID}->{Set}           = ["scalar","id"];
+$FUNCTIONS{ID}->{Defined}       = "id";
+$FUNCTIONS{ID}->{Hash}          = "att";
+$FUNCTIONS{ID}->{XPath}->{Type} = 'scalar';
+$FUNCTIONS{ID}->{XPath}->{Path} = '@id';
 
-$FUNCTIONS{To}->{Get}        = "to";
-$FUNCTIONS{To}->{Set}        = ["jid","to"];
-$FUNCTIONS{To}->{Defined}    = "to";
-$FUNCTIONS{To}->{Hash}       = "att";
+$FUNCTIONS{To}->{Get}           = "to";
+$FUNCTIONS{To}->{Set}           = ["jid","to"];
+$FUNCTIONS{To}->{Defined}       = "to";
+$FUNCTIONS{To}->{Hash}          = "att";
+$FUNCTIONS{To}->{XPath}->{Type} = 'jid';
+$FUNCTIONS{To}->{XPath}->{Path} = '@to';
 
-$FUNCTIONS{Type}->{Get}        = "type";
-$FUNCTIONS{Type}->{Set}        = ["scalar","type"];
-$FUNCTIONS{Type}->{Defined}    = "type";
-$FUNCTIONS{Type}->{Hash}       = "att";
+$FUNCTIONS{Type}->{Get}           = "type";
+$FUNCTIONS{Type}->{Set}           = ["scalar","type"];
+$FUNCTIONS{Type}->{Defined}       = "type";
+$FUNCTIONS{Type}->{Hash}          = "att";
+$FUNCTIONS{Type}->{XPath}->{Type} = 'scalar';
+$FUNCTIONS{Type}->{XPath}->{Path} = '@type';
 
-$FUNCTIONS{Data}->{Get}        = "__netjabber__:children:data";
-$FUNCTIONS{Data}->{Defined}    = "__netjabber__:children:data";
+$FUNCTIONS{Data}->{Get}           = "__netjabber__:children:data";
+$FUNCTIONS{Data}->{Defined}       = "__netjabber__:children:data";
+$FUNCTIONS{Data}->{XPath}->{Type} = 'node';
+$FUNCTIONS{Data}->{XPath}->{Path} = '*[@xmlns]';
 
-$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
-$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
+$FUNCTIONS{X}->{Get}           = "__netjabber__:children:x";
+$FUNCTIONS{X}->{Defined}       = "__netjabber__:children:x";
+$FUNCTIONS{X}->{XPath}->{Type} = 'node';
+$FUNCTIONS{X}->{XPath}->{Path} = '*[@xmlns]';
 
 $FUNCTIONS{XDB}->{Get} = "__netjabber__:master";
 $FUNCTIONS{XDB}->{Set} = ["master"];
@@ -366,9 +397,11 @@ $FUNCTIONS{XDB}->{Set} = ["master"];
 # GetDataXMLNS - returns the xmlns of the <data/> tag
 #
 ##############################################################################
-sub GetDataXMLNS {
-  my $self = shift;
-  return $self->{CHILDREN}->{data}->[0]->GetXMLNS() if exists($self->{CHILDREN}->{data});
+sub GetDataXMLNS
+{
+    my $self = shift;
+    #XXX fix this
+    return $self->{CHILDREN}->{data}->[0]->GetXMLNS() if exists($self->{CHILDREN}->{data});
 }
 
 
@@ -378,26 +411,30 @@ sub GetDataXMLNS {
 #         already populated for you.
 #
 ##############################################################################
-sub Reply {
-  my $self = shift;
-  my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+sub Reply
+{
+    my $self = shift;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
-  my $reply = new Net::Jabber::XDB();
+    my $reply = new Net::Jabber::XDB();
 
-  $reply->SetID($self->GetID()) if ($self->GetID() ne "");
-  $reply->SetType("result");
+    $reply->SetID($self->GetID()) if ($self->GetID() ne "");
+    $reply->SetType("result");
 
-  my $selfData = $self->GetData();
-  $reply->NewData($selfData->GetXMLNS());
+    if ($self->DefinedData())
+    {
+        my $selfData = $self->GetData();
+        $reply->NewData($selfData->GetXMLNS());
+    }
 
-  $reply->SetXDB(to=>$self->GetFrom(),
-		 from=>$self->GetTo()
-		);
+    $reply->SetXDB(to=>$self->GetFrom(),
+                   from=>$self->GetTo()
+                  );
 
-  $reply->SetXDB(%args);
+    $reply->SetXDB(%args);
 
-  return $reply;
+    return $reply;
 }
 
 

@@ -70,7 +70,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
 use Net::Jabber::Dialback::Result;
 ($Net::Jabber::Dialback::Result::VERSION < $VERSION) &&
@@ -80,32 +80,39 @@ use Net::Jabber::Dialback::Verify;
 ($Net::Jabber::Dialback::Verify::VERSION < $VERSION) &&
   die("Net::Jabber::Dialback::Verify $VERSION required--this is only version $Net::Jabber::Dialback::Verify::VERSION");
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  if ("@_" ne ("")) {
-    if (ref($_[0]) =~ /Net::Jabber::Dialback/) {
-      return $_[0];
-    } else {
-      my ($temp) = @_;
-      return new Net::Jabber::Dialback::Result()
-	if ($temp eq "result");
-      return new Net::Jabber::Dialback::Verify()
-	if ($temp eq "verify");
+    if ("@_" ne (""))
+    {
+        if (ref($_[0]) =~ /Net::Jabber::Dialback/)
+        {
+            return $_[0];
+        }
+        else
+        {
+            my ($temp) = @_;
+            return new Net::Jabber::Dialback::Result()
+                if ($temp eq "result");
+            return new Net::Jabber::Dialback::Verify()
+                if ($temp eq "verify");
 
-      my @temp = @{$temp};
-      return new Net::Jabber::Dialback::Result(@temp)
-	if ($temp[0] eq "db:result");
-      return new Net::Jabber::Dialback::Verify(@temp)
-	if ($temp[0] eq "db:verify");
+            my @temp = @{$temp};
+            return new Net::Jabber::Dialback::Result(@temp)
+                if ($temp[0] eq "db:result");
+            return new Net::Jabber::Dialback::Verify(@temp)
+                if ($temp[0] eq "db:verify");
+        }
     }
-  } else {
-    carp "You must specify either \"result\" or \"verify\" as an argument";
-  }
+    else
+    {
+        carp "You must specify either \"result\" or \"verify\" as an argument";
+    }
 }
 
 1;

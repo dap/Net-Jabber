@@ -308,42 +308,50 @@ it under the same terms as Perl itself.
 
 =cut
 
-require 5.003;
+require 5.006_001;
 use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS %NAMESPACES);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DEBUGHEADER} = "X";
+    $self->{DEBUGHEADER} = "X";
 
-  $self->{DATA} = {};
-  $self->{CHILDREN} = {};
+    $self->{DATA} = {};
+    $self->{CHILDREN} = {};
 
-  $self->{TAG} = "x";
+    $self->{TAG} = "x";
 
-  if ("@_" ne ("")) {
-    if (ref($_[0]) eq "Net::Jabber::X") {
-      return $_[0];
-    } else {
-      $self->{TREE} = shift;
-      $self->{TAG} = $self->{TREE}->{$self->{TREE}->{root}."-tag"};
-      $self->ParseXMLNS();
-      $self->ParseTree();
-      delete($self->{TREE});
+    if ("@_" ne (""))
+    {
+        if (ref($_[0]) eq "Net::Jabber::X")
+        {
+            return $_[0];
+        }
+        else
+        {
+            $self->{TREE} = shift;
+            $self->{TAG} = $self->{TREE}->get_tag();
+            $self->ParseXMLNS();
+            $self->ParseTree();
+        }
     }
-  }
+    else
+    {
+        $self->{TREE} = new XML::Stream::Node($self->{TAG});
+    }
 
-  return $self;
+    return $self;
 }
 
 
@@ -352,333 +360,264 @@ sub new {
 # AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = shift;
-  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
+sub AUTOLOAD
+{
+    my $self = shift;
+    &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
-$FUNCTIONS{XMLNS}->{Get}        = "xmlns";
-$FUNCTIONS{XMLNS}->{Set}        = ["scalar","xmlns"];
-$FUNCTIONS{XMLNS}->{Defined}    = "xmlns";
-$FUNCTIONS{XMLNS}->{Hash}       = "att";
+#$FUNCTIONS{XMLNS}->{XPath}->{Type}  = 'scalar';
+$FUNCTIONS{XMLNS}->{XPath}->{Path}  = '@xmlns';
+#$FUNCTIONS{XMLNS}->{XPath}->{Calls} = ['Get','Set','Define'];
 
-$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
-$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
+$FUNCTIONS{X}->{XPath}->{Type}  = 'node';
+$FUNCTIONS{X}->{XPath}->{Path}  = '*[@xmlns]';
+$FUNCTIONS{X}->{XPath}->{Child} = 'X';
+$FUNCTIONS{X}->{XPath}->{Calls} = ['Get','Defined'];
 
 #-----------------------------------------------------------------------------
 # jabber:x:autoupdate
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:autoupdate"}->{JID}->{Get}        = "jid";
-$NAMESPACES{"jabber:x:autoupdate"}->{JID}->{Set}        = ["jid","jid"];
-$NAMESPACES{"jabber:x:autoupdate"}->{JID}->{Defined}    = "jid";
-$NAMESPACES{"jabber:x:autoupdate"}->{JID}->{Hash}       = "data";
+$NAMESPACES{"jabber:x:autoupdate"}->{JID}->{XPath}->{Type}  = 'jid';
+$NAMESPACES{"jabber:x:autoupdate"}->{JID}->{XPath}->{Path}  = '@jid';
 
-$NAMESPACES{"jabber:x:autoupdate"}->{Autoupdate}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:autoupdate"}->{Autoupdate}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:autoupdate"}->{Autoupdate}->{XPath}->{Type}  = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:conference
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:conference"}->{JID}->{Get}        = "jid";
-$NAMESPACES{"jabber:x:conference"}->{JID}->{Set}        = ["jid","jid"];
-$NAMESPACES{"jabber:x:conference"}->{JID}->{Defined}    = "jid";
-$NAMESPACES{"jabber:x:conference"}->{JID}->{Hash}       = "att";
+$NAMESPACES{"jabber:x:conference"}->{JID}->{XPath}->{Type}  = 'jid';
+$NAMESPACES{"jabber:x:conference"}->{JID}->{XPath}->{Path}  = '@jid';
 
-$NAMESPACES{"jabber:x:conference"}->{Conference}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:conference"}->{Conference}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:conference"}->{Conference}->{XPath}->{Type} = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:data
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:data"}->{Instructions}->{Get}     = "instructions";
-$NAMESPACES{"jabber:x:data"}->{Instructions}->{Set}     = ["scalar","instructions"];
-$NAMESPACES{"jabber:x:data"}->{Instructions}->{Defined} = "instructions";
-$NAMESPACES{"jabber:x:data"}->{Instructions}->{Hash}    = "child-data";
+$NAMESPACES{"jabber:x:data"}->{Instructions}->{XPath}->{Path}  = 'instructions/text()';
 
-$NAMESPACES{"jabber:x:data"}->{Form}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:data"}->{Form}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:data"}->{Form}->{XPath}->{Type}  = 'master';
 
-$NAMESPACES{"jabber:x:data"}->{Field}->{Get}     = "";
-$NAMESPACES{"jabber:x:data"}->{Field}->{Set}     = ["add","X","__netjabber__:x:data:field"];
-$NAMESPACES{"jabber:x:data"}->{Field}->{Defined} = "x";
-$NAMESPACES{"jabber:x:data"}->{Field}->{Hash}    = "child-add";
-$NAMESPACES{"jabber:x:data"}->{Field}->{Add}     = ["X","__netjabber__:x:data:field","Field","field"];
+$NAMESPACES{"jabber:x:data"}->{Field}->{XPath}->{Type}  = 'node';
+$NAMESPACES{"jabber:x:data"}->{Field}->{XPath}->{Path}  = 'field';
+$NAMESPACES{"jabber:x:data"}->{Field}->{XPath}->{Child} = ['X','__netjabber__:x:data:field'];
+$NAMESPACES{"jabber:x:data"}->{Field}->{XPath}->{Calls} = ['Add'];
 
-$NAMESPACES{"jabber:x:data"}->{Fields}->{Get} = ["__netjabber__:children:x","__netjabber__:x:data:field"];
+$NAMESPACES{"jabber:x:data"}->{Fields}->{XPath}->{Type}  = 'children';
+$NAMESPACES{"jabber:x:data"}->{Fields}->{XPath}->{Path}  = 'field';
+$NAMESPACES{"jabber:x:data"}->{Fields}->{XPath}->{Child} = ['X','__netjabber__:x:data:field'];
+$NAMESPACES{"jabber:x:data"}->{Fields}->{XPath}->{Calls} = ['Get'];
 
-$NAMESPACES{"jabber:x:data"}->{Reported}->{Get}     = ["__netjabber__:children:x","__netjabber__:x:data:reported"];
-$NAMESPACES{"jabber:x:data"}->{Reported}->{Set}     = ["add","X","__netjabber__:x:data:reported"];
-$NAMESPACES{"jabber:x:data"}->{Reported}->{Defined} = "x";
-$NAMESPACES{"jabber:x:data"}->{Reported}->{Hash}    = "child-add";
+$NAMESPACES{"jabber:x:data"}->{Item}->{XPath}->{Type}  = 'node';
+$NAMESPACES{"jabber:x:data"}->{Item}->{XPath}->{Path}  = 'item';
+$NAMESPACES{"jabber:x:data"}->{Item}->{XPath}->{Child} = ['X','__netjabber__:x:data:item'];
+$NAMESPACES{"jabber:x:data"}->{Item}->{XPath}->{Calls} = ['Add'];
 
-$NAMESPACES{"jabber:x:data"}->{Reported}->{Add}     = ["X","__netjabber__:x:data:reported","Reported","reported"];
+$NAMESPACES{"jabber:x:data"}->{Items}->{XPath}->{Type}  = 'children';
+$NAMESPACES{"jabber:x:data"}->{Items}->{XPath}->{Path}  = 'item';
+$NAMESPACES{"jabber:x:data"}->{Items}->{XPath}->{Child} = ['X','__netjabber__:x:data:item'];
+$NAMESPACES{"jabber:x:data"}->{Items}->{XPath}->{Calls} = ['Get'];
+
+$NAMESPACES{"jabber:x:data"}->{Reported}->{XPath}->{Type}  = 'children';
+$NAMESPACES{"jabber:x:data"}->{Reported}->{XPath}->{Path}  = 'reported';
+$NAMESPACES{"jabber:x:data"}->{Reported}->{XPath}->{Child} = ['X','__netjabber__:x:data:reported'];
+$NAMESPACES{"jabber:x:data"}->{Reported}->{XPath}->{Calls} = ['Add','Get','Defined'];
+
+$NAMESPACES{"jabber:x:data"}->{Title}->{XPath}->{Path}  = 'title/text()';
+
+$NAMESPACES{"jabber:x:data"}->{Type}->{XPath}->{Path}  = '@type';
+
+$NAMESPACES{"jabber:x:data"}->{Data}->{XPath}->{Type} = 'master';
+
+#-----------------------------------------------------------------------------
+# __netjabber__:x:data:item
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:x:data:item"}->{Field}->{XPath}->{Type}  = 'node';
+$NAMESPACES{"__netjabber__:x:data:item"}->{Field}->{XPath}->{Path}  = 'field';
+$NAMESPACES{"__netjabber__:x:data:item"}->{Field}->{XPath}->{Child} = ['X','__netjabber__:x:data:field'];
+$NAMESPACES{"__netjabber__:x:data:item"}->{Field}->{XPath}->{Calls} = ['Add'];
+
+$NAMESPACES{"__netjabber__:x:data:item"}->{Fields}->{XPath}->{Type}  = 'children';
+$NAMESPACES{"__netjabber__:x:data:item"}->{Fields}->{XPath}->{Path}  = 'field';
+$NAMESPACES{"__netjabber__:x:data:item"}->{Fields}->{XPath}->{Child} = ['X','__netjabber__:x:data:field'];
+$NAMESPACES{"__netjabber__:x:data:item"}->{Fields}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:x:data:reported
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Get}     = "";
-$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Set}     = ["add","X","__netjabber__:x:data:field"];
-$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Defined} = "x";
-$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Hash}    = "child-add";
-$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Add}     = ["X","__netjabber__:x:data:field","Field","field"];
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{XPath}->{Type}  = 'node';
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{XPath}->{Path}  = 'field';
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{XPath}->{Child} = ['X','__netjabber__:x:data:field'];
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{XPath}->{Calls} = ['Add'];
 
-$NAMESPACES{"__netjabber__:x:data:reported"}->{Fields}->{Get} = ["__netjabber__:children:x","__netjabber__:x:data:field"];
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Fields}->{XPath}->{Type}  = 'children';
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Fields}->{XPath}->{Path}  = 'field';
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Fields}->{XPath}->{Child} = ['X','__netjabber__:x:data:field'];
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Fields}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:x:data:field
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:x:data:field"}->{Desc}->{Get}        = "desc";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Desc}->{Set}        = ["scalar","desc"];
-$NAMESPACES{"__netjabber__:x:data:field"}->{Desc}->{Defined}    = "desc";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Desc}->{Hash}       = "child-data";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Desc}->{XPath}->{Path}  = 'desc/text()';
 
-$NAMESPACES{"__netjabber__:x:data:field"}->{Label}->{Get}        = "label";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Label}->{Set}        = ["scalar","label"];
-$NAMESPACES{"__netjabber__:x:data:field"}->{Label}->{Defined}    = "label";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Label}->{Hash}       = "att";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Label}->{XPath}->{Path}  = '@label';
 
-$NAMESPACES{"__netjabber__:x:data:field"}->{Type}->{Get}        = "type";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Type}->{Set}        = ["scalar","type"];
-$NAMESPACES{"__netjabber__:x:data:field"}->{Type}->{Defined}    = "type";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Type}->{Hash}       = "att";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Required}->{XPath}->{Type}  = 'flag';
+$NAMESPACES{"__netjabber__:x:data:field"}->{Required}->{XPath}->{Path}  = 'required';
 
-$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Get}        = "value";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Set}        = ["array","value"];
-$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Defined}    = "value";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Hash}       = "child-data";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Remove}     = "value";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Type}->{XPath}->{Path}  = '@type';
 
-$NAMESPACES{"__netjabber__:x:data:field"}->{Var}->{Get}        = "var";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Var}->{Set}        = ["scalar","var"];
-$NAMESPACES{"__netjabber__:x:data:field"}->{Var}->{Defined}    = "var";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Var}->{Hash}       = "att";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{XPath}->{Type}  = 'array';
+$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{XPath}->{Path}  = 'value/text()';
 
-$NAMESPACES{"__netjabber__:x:data:field"}->{Field}->{Get} = "__netjabber__:master";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Field}->{Set} = ["master"];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Var}->{XPath}->{Path}  = '@var';
 
-$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Get}        = "";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Set}        = ["add","X","__netjabber__:x:data:field:option"];
-$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Defined}    = "x";
-$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Hash}       = "child-add";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Field}->{XPath}->{Type}  = 'master';
 
-$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Add} = ["X","__netjabber__:x:data:field:option","Option","option"];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{XPath}->{Type}  = 'node';
+$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{XPath}->{Path}  = 'option';
+$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{XPath}->{Child} = ['X','__netjabber__:x:data:field:option'];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{XPath}->{Calls} = ['Add'];
 
-$NAMESPACES{"__netjabber__:x:data:field"}->{Options}->{Get} = ["__netjabber__:children:x","__netjabber__:x:data:field:option"];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Options}->{XPath}->{Type}  = 'children';
+$NAMESPACES{"__netjabber__:x:data:field"}->{Options}->{XPath}->{Path}  = 'option';
+$NAMESPACES{"__netjabber__:x:data:field"}->{Options}->{XPath}->{Child} = ['X','__netjabber__:x:data:field:option'];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Options}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:x:data:field:option
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Label}->{Get}        = "label";
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Label}->{Set}        = ["scalar","label"];
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Label}->{Defined}    = "label";
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Label}->{Hash}       = "att";
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Label}->{XPath}->{Path}  = '@label';
 
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Value}->{Get}        = "value";
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Value}->{Set}        = ["scalar","value"];
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Value}->{Defined}    = "value";
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Value}->{Hash}       = "child-data";
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Value}->{XPath}->{Path}  = 'value/text()';
 
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Option}->{Get} = "__netjabber__:master";
-$NAMESPACES{"__netjabber__:x:data:field:option"}->{Option}->{Set} = ["master"];
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Option}->{XPath}->{Type}  = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:delay
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:delay"}->{From}->{Get}        = "from";
-$NAMESPACES{"jabber:x:delay"}->{From}->{Set}        = ["jid","from"];
-$NAMESPACES{"jabber:x:delay"}->{From}->{Defined}    = "from";
-$NAMESPACES{"jabber:x:delay"}->{From}->{Hash}       = "att";
+$NAMESPACES{"jabber:x:delay"}->{From}->{XPath}->{Type}  = 'jid';
+$NAMESPACES{"jabber:x:delay"}->{From}->{XPath}->{Path}  = '@from';
 
-$NAMESPACES{"jabber:x:delay"}->{Message}->{Get}        = "message";
-$NAMESPACES{"jabber:x:delay"}->{Message}->{Set}        = ["scalar","message"];
-$NAMESPACES{"jabber:x:delay"}->{Message}->{Defined}    = "message";
-$NAMESPACES{"jabber:x:delay"}->{Message}->{Hash}       = "data";
+$NAMESPACES{"jabber:x:delay"}->{Message}->{XPath}->{Path}  = 'text()';
 
-$NAMESPACES{"jabber:x:delay"}->{Stamp}->{Get}        = "stamp";
-$NAMESPACES{"jabber:x:delay"}->{Stamp}->{Set}        = ["timestamp","stamp"];
-$NAMESPACES{"jabber:x:delay"}->{Stamp}->{Defined}    = "stamp";
-$NAMESPACES{"jabber:x:delay"}->{Stamp}->{Hash}       = "att";
+$NAMESPACES{"jabber:x:delay"}->{Stamp}->{XPath}->{Type} = 'timestamp';
+$NAMESPACES{"jabber:x:delay"}->{Stamp}->{XPath}->{Path} = '@stamp';
 
-$NAMESPACES{"jabber:x:delay"}->{Delay}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:delay"}->{Delay}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:delay"}->{Delay}->{XPath}->{Type}  = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:encrypted
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:encrypted"}->{Message}->{Get}        = "message";
-$NAMESPACES{"jabber:x:encrypted"}->{Message}->{Set}        = ["scalar","message"];
-$NAMESPACES{"jabber:x:encrypted"}->{Message}->{Defined}    = "message";
-$NAMESPACES{"jabber:x:encrypted"}->{Message}->{Hash}       = "data";
+$NAMESPACES{"jabber:x:encrypted"}->{Message}->{XPath}->{Path}  = 'text()';
 
-$NAMESPACES{"jabber:x:encrypted"}->{Encrypted}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:encrypted"}->{Encrypted}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:encrypted"}->{Encrypted}->{XPath}->{Type}  = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:event
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:event"}->{Composing}->{Get}        = "composing";
-$NAMESPACES{"jabber:x:event"}->{Composing}->{Set}        = ["flag","composing"];
-$NAMESPACES{"jabber:x:event"}->{Composing}->{Defined}    = "composing";
-$NAMESPACES{"jabber:x:event"}->{Composing}->{Hash}       = "child-flag";
+$NAMESPACES{"jabber:x:event"}->{Composing}->{XPath}->{Type}  = 'flag';
+$NAMESPACES{"jabber:x:event"}->{Composing}->{XPath}->{Path}  = 'composing';
 
-$NAMESPACES{"jabber:x:event"}->{Delivered}->{Get}        = "delivered";
-$NAMESPACES{"jabber:x:event"}->{Delivered}->{Set}        = ["flag","delivered"];
-$NAMESPACES{"jabber:x:event"}->{Delivered}->{Defined}    = "delivered";
-$NAMESPACES{"jabber:x:event"}->{Delivered}->{Hash}       = "child-flag";
+$NAMESPACES{"jabber:x:event"}->{Delivered}->{XPath}->{Type}  = 'flag';
+$NAMESPACES{"jabber:x:event"}->{Delivered}->{XPath}->{Path}  = 'delivered';
 
-$NAMESPACES{"jabber:x:event"}->{Displayed}->{Get}        = "displayed";
-$NAMESPACES{"jabber:x:event"}->{Displayed}->{Set}        = ["flag","displayed"];
-$NAMESPACES{"jabber:x:event"}->{Displayed}->{Defined}    = "displayed";
-$NAMESPACES{"jabber:x:event"}->{Displayed}->{Hash}       = "child-flag";
+$NAMESPACES{"jabber:x:event"}->{Displayed}->{XPath}->{Type}  = 'flag';
+$NAMESPACES{"jabber:x:event"}->{Displayed}->{XPath}->{Path}  = 'displayed';
 
-$NAMESPACES{"jabber:x:event"}->{ID}->{Get}        = "id";
-$NAMESPACES{"jabber:x:event"}->{ID}->{Set}        = ["scalar","id"];
-$NAMESPACES{"jabber:x:event"}->{ID}->{Defined}    = "id";
-$NAMESPACES{"jabber:x:event"}->{ID}->{Hash}       = "child-data";
+$NAMESPACES{"jabber:x:event"}->{ID}->{XPath}->{Type}  = 'scalar';
+$NAMESPACES{"jabber:x:event"}->{ID}->{XPath}->{Path}  = 'id/text()';
 
-$NAMESPACES{"jabber:x:event"}->{Offline}->{Get}        = "offline";
-$NAMESPACES{"jabber:x:event"}->{Offline}->{Set}        = ["flag","offline"];
-$NAMESPACES{"jabber:x:event"}->{Offline}->{Defined}    = "offline";
-$NAMESPACES{"jabber:x:event"}->{Offline}->{Hash}       = "child-flag";
+$NAMESPACES{"jabber:x:event"}->{Offline}->{XPath}->{Type}  = 'flag';
+$NAMESPACES{"jabber:x:event"}->{Offline}->{XPath}->{Path}  = 'offline';
 
-$NAMESPACES{"jabber:x:event"}->{Event}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:event"}->{Event}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:event"}->{Event}->{XPath}->{Type}  = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:expire
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:expire"}->{Seconds}->{Get}        = "seconds";
-$NAMESPACES{"jabber:x:expire"}->{Seconds}->{Set}        = ["scalar","seconds"];
-$NAMESPACES{"jabber:x:expire"}->{Seconds}->{Defined}    = "seconds";
-$NAMESPACES{"jabber:x:expire"}->{Seconds}->{Hash}       = "att";
+$NAMESPACES{"jabber:x:expire"}->{Seconds}->{XPath}->{Path}  = '@seconds';
 
-$NAMESPACES{"jabber:x:expire"}->{Expire}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:expire"}->{Expire}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:expire"}->{Expire}->{XPath}->{Type}  = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:oob
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:oob"}->{Desc}->{Get}        = "desc";
-$NAMESPACES{"jabber:x:oob"}->{Desc}->{Set}        = ["scalar","desc"];
-$NAMESPACES{"jabber:x:oob"}->{Desc}->{Defined}    = "desc";
-$NAMESPACES{"jabber:x:oob"}->{Desc}->{Hash}       = "child-data";
+$NAMESPACES{"jabber:x:oob"}->{Desc}->{XPath}->{Path}  = 'desc/text()';
 
-$NAMESPACES{"jabber:x:oob"}->{URL}->{Get}        = "url";
-$NAMESPACES{"jabber:x:oob"}->{URL}->{Set}        = ["scalar","url"];
-$NAMESPACES{"jabber:x:oob"}->{URL}->{Defined}    = "url";
-$NAMESPACES{"jabber:x:oob"}->{URL}->{Hash}       = "child-data";
+$NAMESPACES{"jabber:x:oob"}->{URL}->{XPath}->{Path}  = 'url/text()';
 
-$NAMESPACES{"jabber:x:oob"}->{Oob}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:oob"}->{Oob}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:oob"}->{Oob}->{XPath}->{Type}  = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:roster
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:roster"}->{Item}->{Get}        = "";
-$NAMESPACES{"jabber:x:roster"}->{Item}->{Set}        = ["add","X","__netjabber__:x:roster:item"];
-$NAMESPACES{"jabber:x:roster"}->{Item}->{Defined}    = "x";
-$NAMESPACES{"jabber:x:roster"}->{Item}->{Hash}       = "child-add";
+$NAMESPACES{"jabber:x:roster"}->{Item}->{XPath}->{Type}  = 'node';
+$NAMESPACES{"jabber:x:roster"}->{Item}->{XPath}->{Path}  = 'item';
+$NAMESPACES{"jabber:x:roster"}->{Item}->{XPath}->{Child} = ['X','__netjabber__:x:roster:item'];
+$NAMESPACES{"jabber:x:roster"}->{Item}->{XPath}->{Calls} = ['Add'];
 
-$NAMESPACES{"jabber:x:roster"}->{Item}->{Add} = ["X","__netjabber__:x:roster:item","Item","item"];
-
-$NAMESPACES{"jabber:x:roster"}->{Items}->{Get} = ["__netjabber__:children:x","__netjabber__:x:roster:item"];
+$NAMESPACES{"jabber:x:roster"}->{Items}->{XPath}->{Type}  = 'children';
+$NAMESPACES{"jabber:x:roster"}->{Items}->{XPath}->{Path}  = 'item';
+$NAMESPACES{"jabber:x:roster"}->{Items}->{XPath}->{Child} = ['X','__netjabber__:x:roster:item'];
+$NAMESPACES{"jabber:x:roster"}->{Items}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:x:roster:item
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Group}->{Get}        = "group";
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Group}->{Set}        = ["array","group"];
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Group}->{Defined}    = "group";
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Group}->{Hash}       = "child-data";
+$NAMESPACES{"__netjabber__:x:roster:item"}->{Group}->{XPath}->{Type}  = 'array';
+$NAMESPACES{"__netjabber__:x:roster:item"}->{Group}->{XPath}->{Path}  = 'group/text()';
 
-$NAMESPACES{"__netjabber__:x:roster:item"}->{JID}->{Get}        = "jid";
-$NAMESPACES{"__netjabber__:x:roster:item"}->{JID}->{Set}        = ["jid","jid"];
-$NAMESPACES{"__netjabber__:x:roster:item"}->{JID}->{Defined}    = "jid";
-$NAMESPACES{"__netjabber__:x:roster:item"}->{JID}->{Hash}       = "att";
+$NAMESPACES{"__netjabber__:x:roster:item"}->{JID}->{XPath}->{Type}  = 'jid';
+$NAMESPACES{"__netjabber__:x:roster:item"}->{JID}->{XPath}->{Path}  = '@jid';
 
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Name}->{Get}        = "name";
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Name}->{Set}        = ["scalar","name"];
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Name}->{Defined}    = "name";
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Name}->{Hash}       = "att";
+$NAMESPACES{"__netjabber__:x:roster:item"}->{Name}->{XPath}->{Path}  = '@name';
 
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Item}->{Get} = "__netjabber__:master";
-$NAMESPACES{"__netjabber__:x:roster:item"}->{Item}->{Set} = ["master"];
+$NAMESPACES{"__netjabber__:x:roster:item"}->{Item}->{XPath}->{Type}  = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:signed
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:signed"}->{Signature}->{Get}        = "signature";
-$NAMESPACES{"jabber:x:signed"}->{Signature}->{Set}        = ["scalar","signature"];
-$NAMESPACES{"jabber:x:signed"}->{Signature}->{Defined}    = "signature";
-$NAMESPACES{"jabber:x:signed"}->{Signature}->{Hash}       = "data";
+$NAMESPACES{"jabber:x:signed"}->{Signature}->{XPath}->{Path}  = 'text()';
 
-$NAMESPACES{"jabber:x:signed"}->{Signed}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:signed"}->{Signed}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:signed"}->{Signed}->{XPath}->{Type}  = 'master';
 
 #-----------------------------------------------------------------------------
 # jabber:x:sxpm
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:sxpm"}->{Data}->{Get}        = "data";
-$NAMESPACES{"jabber:x:sxpm"}->{Data}->{Set}        = ["scalar","data"];
-$NAMESPACES{"jabber:x:sxpm"}->{Data}->{Defined}    = "data";
-$NAMESPACES{"jabber:x:sxpm"}->{Data}->{Hash}       = "child-data";
+$NAMESPACES{"jabber:x:sxpm"}->{Data}->{XPath}->{Path}  = 'data/text()';
 
-$NAMESPACES{"jabber:x:sxpm"}->{DataWidth}->{Get}        = "datawidth";
-$NAMESPACES{"jabber:x:sxpm"}->{DataWidth}->{Set}        = ["scalar","datawidth"];
-$NAMESPACES{"jabber:x:sxpm"}->{DataWidth}->{Defined}    = "datawidth";
-$NAMESPACES{"jabber:x:sxpm"}->{DataWidth}->{Hash}       = "att-data-width";
+$NAMESPACES{"jabber:x:sxpm"}->{DataWidth}->{XPath}->{Path}  = 'data/@width';
 
-$NAMESPACES{"jabber:x:sxpm"}->{DataX}->{Get}        = "datax";
-$NAMESPACES{"jabber:x:sxpm"}->{DataX}->{Set}        = ["scalar","datax"];
-$NAMESPACES{"jabber:x:sxpm"}->{DataX}->{Defined}    = "datax";
-$NAMESPACES{"jabber:x:sxpm"}->{DataX}->{Hash}       = "att-data-x";
+$NAMESPACES{"jabber:x:sxpm"}->{DataX}->{XPath}->{Path}  = 'data/@x';
 
-$NAMESPACES{"jabber:x:sxpm"}->{DataY}->{Get}        = "datay";
-$NAMESPACES{"jabber:x:sxpm"}->{DataY}->{Set}        = ["scalar","datay"];
-$NAMESPACES{"jabber:x:sxpm"}->{DataY}->{Defined}    = "datay";
-$NAMESPACES{"jabber:x:sxpm"}->{DataY}->{Hash}       = "att-data-y";
+$NAMESPACES{"jabber:x:sxpm"}->{DataY}->{XPath}->{Path}  = 'data/@y';
 
-$NAMESPACES{"jabber:x:sxpm"}->{Board}->{Get}        = "board";
-$NAMESPACES{"jabber:x:sxpm"}->{Board}->{Set}        = ["scalar","board"];
-$NAMESPACES{"jabber:x:sxpm"}->{Board}->{Defined}    = "board";
-$NAMESPACES{"jabber:x:sxpm"}->{Board}->{Hash}       = "child-data";
+$NAMESPACES{"jabber:x:sxpm"}->{Board}->{XPath}->{Path}  = 'board/text()';
 
-$NAMESPACES{"jabber:x:sxpm"}->{BoardHeight}->{Get}        = "boardheight";
-$NAMESPACES{"jabber:x:sxpm"}->{BoardHeight}->{Set}        = ["scalar","boardheight"];
-$NAMESPACES{"jabber:x:sxpm"}->{BoardHeight}->{Defined}    = "boardheight";
-$NAMESPACES{"jabber:x:sxpm"}->{BoardHeight}->{Hash}       = "att-board-height";
+$NAMESPACES{"jabber:x:sxpm"}->{BoardHeight}->{XPath}->{Path}  = 'board/@height';
 
-$NAMESPACES{"jabber:x:sxpm"}->{BoardWidth}->{Get}        = "boardwidth";
-$NAMESPACES{"jabber:x:sxpm"}->{BoardWidth}->{Set}        = ["scalar","boardwidth"];
-$NAMESPACES{"jabber:x:sxpm"}->{BoardWidth}->{Defined}    = "boardwidth";
-$NAMESPACES{"jabber:x:sxpm"}->{BoardWidth}->{Hash}       = "att-board-width";
+$NAMESPACES{"jabber:x:sxpm"}->{BoardWidth}->{XPath}->{Path}  = 'board/@width';
 
-$NAMESPACES{"jabber:x:sxpm"}->{SXPM}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:sxpm"}->{SXPM}->{Set} = ["master"];
+$NAMESPACES{"jabber:x:sxpm"}->{SXPM}->{XPath}->{Type}  = 'master';
 
-$NAMESPACES{"jabber:x:sxpm"}->{Map}->{Get}        = "";
-$NAMESPACES{"jabber:x:sxpm"}->{Map}->{Set}        = ["add","X","__netjabber__:x:sxpm:map"];
-$NAMESPACES{"jabber:x:sxpm"}->{Map}->{Defined}    = "x";
-$NAMESPACES{"jabber:x:sxpm"}->{Map}->{Hash}       = "child-add";
+$NAMESPACES{"jabber:x:sxpm"}->{Map}->{XPath}->{Type}  = 'node';
+$NAMESPACES{"jabber:x:sxpm"}->{Map}->{XPath}->{Path}  = 'map';
+$NAMESPACES{"jabber:x:sxpm"}->{Map}->{XPath}->{Child} = ['X','__netjabber__:x:sxpm:map'];
+$NAMESPACES{"jabber:x:sxpm"}->{Map}->{XPath}->{Calls} = ['Add'];
 
-$NAMESPACES{"jabber:x:sxpm"}->{Map}->{Add} = ["X","__netjabber__:x:sxpm:map","Map","map"];
-
-$NAMESPACES{"jabber:x:sxpm"}->{Maps}->{Get} = ["__netjabber__:children:x","__netjabber__:x:sxpm:map"];
+$NAMESPACES{"jabber:x:sxpm"}->{Maps}->{XPath}->{Type}  = 'children';
+$NAMESPACES{"jabber:x:sxpm"}->{Maps}->{XPath}->{Path}  = 'map';
+$NAMESPACES{"jabber:x:sxpm"}->{Maps}->{XPath}->{Child} = ['X','__netjabber__:x:sxpm:map'];
+$NAMESPACES{"jabber:x:sxpm"}->{Maps}->{XPath}->{Calls} = ['Get'];
 
 #-----------------------------------------------------------------------------
 # __netjabber__:x:sxpm:map
 #-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Char}->{Get}        = "char";
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Char}->{Set}        = ["scalar","char"];
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Char}->{Defined}    = "char";
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Char}->{Hash}       = "att";
+$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Char}->{XPath}->{Path}  = '@char';
 
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Color}->{Get}        = "color";
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Color}->{Set}        = ["scalar","color"];
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Color}->{Defined}    = "color";
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Color}->{Hash}       = "att";
+$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Color}->{XPath}->{Path}  = '@color';
 
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Map}->{Get} = "__netjabber__:master";
-$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Map}->{Set} = ["master"];
+$NAMESPACES{"__netjabber__:x:sxpm:map"}->{Map}->{XPath}->{Type}  = 'master';
 
 1;

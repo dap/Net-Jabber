@@ -291,36 +291,42 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
 
-  $self->{VERSION} = $VERSION;
-  $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("local");
+    $self->{VERSION} = $VERSION;
+    $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("local");
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DEBUGHEADER} = "Message";
+    $self->{DEBUGHEADER} = "Message";
 
-  $self->{DATA} = {};
-  $self->{CHILDREN} = {};
+    $self->{DATA} = {};
+    $self->{CHILDREN} = {};
 
-  $self->{TAG} = "message";
+    $self->{TAG} = "message";
 
-  if ("@_" ne ("")) {
-    if (ref($_[0]) eq "Net::Jabber::Message") {
-      return $_[0];
-    } else {
-      $self->{TREE} = shift;
-      $self->ParseTree();
-      delete($self->{TREE});
+    if ("@_" ne (""))
+    {
+        if (ref($_[0]) eq "Net::Jabber::Message")
+        {
+            return $_[0];
+        } else {
+            $self->{TREE} = shift;
+            $self->ParseTree();
+        }
     }
-  }
+    else
+    {
+        $self->{TREE} = new XML::Stream::Node($self->{TAG});
+    }
 
-  return $self;
+    return $self;
 }
 
 
@@ -329,62 +335,39 @@ sub new {
 # AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = shift;
-  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
+sub AUTOLOAD
+{
+    my $self = shift;
+    &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
 
-$FUNCTIONS{Body}->{Get}        = "body";
-$FUNCTIONS{Body}->{Set}        = ["scalar","body"];
-$FUNCTIONS{Body}->{Defined}    = "body";
-$FUNCTIONS{Body}->{Hash}       = "child-data";
+$FUNCTIONS{Body}->{XPath}->{Path}  = 'body/text()';
 
-$FUNCTIONS{Error}->{Get}        = "error";
-$FUNCTIONS{Error}->{Set}        = ["scalar","error"];
-$FUNCTIONS{Error}->{Defined}    = "error";
-$FUNCTIONS{Error}->{Hash}       = "child-data";
+$FUNCTIONS{Error}->{XPath}->{Path} = 'error/text()';
 
-$FUNCTIONS{ErrorCode}->{Get}        = "errorcode";
-$FUNCTIONS{ErrorCode}->{Set}        = ["scalar","errorcode"];
-$FUNCTIONS{ErrorCode}->{Defined}    = "errorcode";
-$FUNCTIONS{ErrorCode}->{Hash}       = "att-error-code";
+$FUNCTIONS{ErrorCode}->{XPath}->{Path} = 'error/@code';
 
-$FUNCTIONS{From}->{Get}        = "from";
-$FUNCTIONS{From}->{Set}        = ["jid","from"];
-$FUNCTIONS{From}->{Defined}    = "from";
-$FUNCTIONS{From}->{Hash}       = "att";
+$FUNCTIONS{From}->{XPath}->{Type} = 'jid';
+$FUNCTIONS{From}->{XPath}->{Path} = '@from';
 
-$FUNCTIONS{ID}->{Get}        = "id";
-$FUNCTIONS{ID}->{Set}        = ["scalar","id"];
-$FUNCTIONS{ID}->{Defined}    = "id";
-$FUNCTIONS{ID}->{Hash}       = "att";
+$FUNCTIONS{ID}->{XPath}->{Path} = '@id';
 
-$FUNCTIONS{Subject}->{Get}        = "subject";
-$FUNCTIONS{Subject}->{Set}        = ["scalar","subject"];
-$FUNCTIONS{Subject}->{Defined}    = "subject";
-$FUNCTIONS{Subject}->{Hash}       = "child-data";
+$FUNCTIONS{Subject}->{XPath}->{Path} = 'subject/text()';
 
-$FUNCTIONS{Thread}->{Get}        = "thread";
-$FUNCTIONS{Thread}->{Set}        = ["scalar","thread"];
-$FUNCTIONS{Thread}->{Defined}    = "thread";
-$FUNCTIONS{Thread}->{Hash}       = "child-data";
+$FUNCTIONS{Thread}->{XPath}->{Path} = 'thread/text()';
 
-$FUNCTIONS{To}->{Get}        = "to";
-$FUNCTIONS{To}->{Set}        = ["jid","to"];
-$FUNCTIONS{To}->{Defined}    = "to";
-$FUNCTIONS{To}->{Hash}       = "att";
+$FUNCTIONS{To}->{XPath}->{Type} = 'jid';
+$FUNCTIONS{To}->{XPath}->{Path} = '@to';
 
-$FUNCTIONS{Type}->{Get}        = "type";
-$FUNCTIONS{Type}->{Set}        = ["scalar","type"];
-$FUNCTIONS{Type}->{Defined}    = "type";
-$FUNCTIONS{Type}->{Hash}       = "att";
+$FUNCTIONS{Type}->{XPath}->{Path} = '@type';
 
-$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
-$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
+$FUNCTIONS{Message}->{XPath}->{Type}  = 'master';
 
-$FUNCTIONS{Message}->{Get} = "__netjabber__:master";
-$FUNCTIONS{Message}->{Set} = ["master"];
+$FUNCTIONS{X}->{XPath}->{Type}  = 'node';
+$FUNCTIONS{X}->{XPath}->{Path}  = '*[@xmlns]';
+$FUNCTIONS{X}->{XPath}->{Child} = 'X';
+$FUNCTIONS{X}->{XPath}->{Calls} = ['Get','Defined'];
 
 
 ##############################################################################
@@ -393,16 +376,17 @@ $FUNCTIONS{Message}->{Set} = ["master"];
 #                was created.
 #
 ##############################################################################
-sub GetTimeStamp {
-  my $self = shift;
+sub GetTimeStamp
+{
+    my $self = shift;
 
-  if ($self->DefinedX("jabber:x:delay")) {
-    my @xTags = $self->GetX("jabber:x:delay");
-    my $xTag = $xTags[0];
-    $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("utcdelaylocal",$xTag->GetStamp());
-  }
+    if ($self->DefinedX("jabber:x:delay")) {
+        my @xTags = $self->GetX("jabber:x:delay");
+        my $xTag = $xTags[0];
+        $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("utcdelaylocal",$xTag->GetStamp());
+    }
 
-  return $self->{TIMESTAMP};
+    return $self->{TIMESTAMP};
 }
 
 
@@ -412,55 +396,63 @@ sub GetTimeStamp {
 #         already populated for you.
 #
 ##############################################################################
-sub Reply {
-  my $self = shift;
-  my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+sub Reply
+{
+    my $self = shift;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
-  $args{template} = "normal" unless exists($args{template});
-  my $template = delete($args{template});
-  my $replytransport = delete($args{replytransport});
+    $args{template} = "normal" unless exists($args{template});
+    my $template = delete($args{template});
+    my $replytransport = delete($args{replytransport});
 
-  my $reply = new Net::Jabber::Message();
+    my $reply = new Net::Jabber::Message();
 
-  if (($self->GetType() eq "") || ($self->GetType() eq "normal")) {
-    my $subject = $self->GetSubject();
-    $subject =~ s/re\:\s+//i;
-    $reply->SetSubject("re: $subject");
-  }
-  $reply->SetThread($self->GetThread()) if ($self->GetThread() ne "");
-  $reply->SetID($self->GetID()) if ($self->GetID() ne "");
-  $reply->SetType($self->GetType()) if ($self->GetType() ne "");
-
-  if ($template eq "transport-filter") {
-    my $toJID = $self->GetTo("jid");
-    my $fromJID = $self->GetFrom("jid");
-
-    my $filterToJID = new Net::Jabber::JID($toJID->GetUserID());
-
-    $reply->SetMessage(to=>$filterToJID,
-		       from=>$fromJID
-		      );
-  } else {
-    if ($template eq "transport-filter-reply") {
-      my $toJID = $self->GetTo("jid");
-      my $fromJID = $self->GetFrom("jid");
-
-      my $filterToJID = new Net::Jabber::JID($toJID->GetUserID());
-      my $filterFromJID = new Net::Jabber::JID($fromJID->GetUserID()."\%".$fromJID->GetServer()."\@".$replytransport);
-
-      $reply->SetMessage(to=>$filterToJID,
-			 from=>$filterFromJID
-			);
-    } else {
-      $reply->SetMessage(to=>$self->GetFrom(),
-			 from=>$self->GetTo());
+    if (($self->GetType() eq "") || ($self->GetType() eq "normal"))
+    {
+        my $subject = $self->GetSubject();
+        $subject =~ s/re\:\s+//i;
+        $reply->SetSubject("re: $subject");
     }
-  }
+    $reply->SetThread($self->GetThread()) if ($self->GetThread() ne "");
+    $reply->SetID($self->GetID()) if ($self->GetID() ne "");
+    $reply->SetType($self->GetType()) if ($self->GetType() ne "");
 
-  $reply->SetMessage(%args);
+    if ($template eq "transport-filter")
+    {
+        my $toJID = $self->GetTo("jid");
+        my $fromJID = $self->GetFrom("jid");
 
-  return $reply;
+        my $filterToJID = new Net::Jabber::JID($toJID->GetUserID());
+
+        $reply->SetMessage(to=>$filterToJID,
+                     from=>$fromJID
+                    );
+    }
+    else
+    {
+        if ($template eq "transport-filter-reply")
+        {
+            my $toJID = $self->GetTo("jid");
+            my $fromJID = $self->GetFrom("jid");
+
+            my $filterToJID = new Net::Jabber::JID($toJID->GetUserID());
+            my $filterFromJID = new Net::Jabber::JID($fromJID->GetUserID()."\%".$fromJID->GetServer()."\@".$replytransport);
+
+            $reply->SetMessage(to=>$filterToJID,
+             from=>$filterFromJID
+            );
+        }
+        else
+        {
+            $reply->SetMessage(to=>$self->GetFrom(),
+             from=>$self->GetTo());
+        }
+    }
+
+    $reply->SetMessage(%args);
+
+    return $reply;
 }
 
 

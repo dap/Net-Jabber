@@ -82,7 +82,7 @@ Net::Jabber::Client - Jabber Client Library
                              Net::Jabber::Debug.
 
     Connect(hostname=>string,      - opens a connection to the server
-	    port=>integer,           listed in the hostname (default
+   	        port=>integer,           listed in the hostname (default
             connectiontype=>string,  localhost), on the port (default
             ssl=>0|1)                5222) listed, using the
                                      connectiontype listed (default
@@ -112,51 +112,50 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-use XML::Stream 1.15 qw(Hash);
-use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $self = { };
+sub new
+{
+    my $proto = shift;
+    my $self = { };
 
-  my %args;
-  while($#_ >= 0) { $args{ lc(pop(@_)) } = pop(@_); }
+    my %args;
+    while($#_ >= 0) { $args{ lc(pop(@_)) } = pop(@_); }
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DELEGATE} = new Net::Jabber::Protocol();
+    $self->{DELEGATE} = new Net::Jabber::Protocol();
 
-  $self->{DEBUG} =
-    new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
-			   file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
-			   time=>exists($args{debugtime}) ? $args{debugtime} : 0,
-			   setdefault=>1,
-			   header=>"NJ::Client"
-			  );
+    $self->{DEBUG} =
+        new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
+                               file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
+                               time=>exists($args{debugtime}) ? $args{debugtime} : 0,
+                               setdefault=>1,
+                               header=>"NJ::Client"
+                    );
 
-  $self->{SERVER} = {hostname => "localhost",
-		     port => 5222 ,
-		     ssl=>(exists($args{ssl}) ? $args{ssl} : 0),
-		     connectiontype=>(exists($args{connectiontype}) ? $args{connectiontype} : "tcpip")
-		    };
+    $self->{SERVER} = {hostname => "localhost",
+                       port => 5222 ,
+                       ssl=>(exists($args{ssl}) ? $args{ssl} : 0),
+                       connectiontype=>(exists($args{connectiontype}) ? $args{connectiontype} : "tcpip")
+                      };
 
-  $self->{CONNECTED} = 0;
+    $self->{CONNECTED} = 0;
 
-  $self->{STREAM} = new XML::Stream(style=>"hash",
-				    debugfh=>$self->{DEBUG}->GetHandle(),
-				    debuglevel=>$self->{DEBUG}->GetLevel(),
-				    debugtime=>$self->{DEBUG}->GetTime());
+    $self->{STREAM} = new XML::Stream(style=>"node",
+                                      debugfh=>$self->{DEBUG}->GetHandle(),
+                                      debuglevel=>$self->{DEBUG}->GetLevel(),
+                                      debugtime=>$self->{DEBUG}->GetTime());
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  $self->{LIST}->{currentID} = 0;
+    $self->{LIST}->{currentID} = 0;
 
-  $self->callbackInit();
+    $self->callbackInit();
 
-  return $self;
+    return $self;
 }
 
 
@@ -166,11 +165,12 @@ sub new {
 #            name and argument list.
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = $_[0];
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  $AUTOLOAD =~ s/^.*:://;
-  $self->{DELEGATE}->$AUTOLOAD(@_);
+sub AUTOLOAD
+{
+    my $self = $_[0];
+    return if ($AUTOLOAD =~ /::DESTROY$/);
+    $AUTOLOAD =~ s/^.*:://;
+    $self->{DELEGATE}->$AUTOLOAD(@_);
 }
 
 
@@ -184,34 +184,35 @@ sub AUTOLOAD {
 #           not made because the server hostname is wrong or whatnot.
 #
 ###########################################################################
-sub Connect {
-  my $self = shift;
+sub Connect
+{
+    my $self = shift;
 
-  while($#_ >= 0) { $self->{SERVER}{ lc pop(@_) } = pop(@_); }
+    while($#_ >= 0) { $self->{SERVER}{ lc pop(@_) } = pop(@_); }
 
-  $self->{DEBUG}->Log1("Connect: hostname($self->{SERVER}->{hostname})");
+    $self->{DEBUG}->Log1("Connect: hostname($self->{SERVER}->{hostname})");
 
-  delete($self->{SESSION});
-  $self->{SESSION} =
-    $self->{STREAM}->
-      Connect(hostname=>$self->{SERVER}->{hostname},
-	      port=>$self->{SERVER}->{port},
-	      namespace=>"jabber:client",
-	      connectiontype=>$self->{SERVER}->{connectiontype},
-	      ssl=>$self->{SERVER}->{ssl},
-	      timeout=>10
-	     );
+    delete($self->{SESSION});
+    $self->{SESSION} =
+        $self->{STREAM}->
+            Connect(hostname=>$self->{SERVER}->{hostname},
+                    port=>$self->{SERVER}->{port},
+                    namespace=>"jabber:client",
+                    connectiontype=>$self->{SERVER}->{connectiontype},
+                    ssl=>$self->{SERVER}->{ssl},
+                    timeout=>10
+                   );
 
-  if ($self->{SESSION}) {
-    $self->{DEBUG}->Log1("Connect: connection made");
+    if ($self->{SESSION}) {
+        $self->{DEBUG}->Log1("Connect: connection made");
 
-    $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
-    $self->{CONNECTED} = 1;
-    return 1;
-  } else {
-    $self->SetErrorCode($self->{STREAM}->GetErrorCode());
-    return;
-  }
+        $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
+        $self->{CONNECTED} = 1;
+        return 1;
+    } else {
+        $self->SetErrorCode($self->{STREAM}->GetErrorCode());
+        return;
+    }
 }
 
 
@@ -220,13 +221,14 @@ sub Connect {
 # Disconnect - Sends the string to close the connection cleanly.
 #
 ###########################################################################
-sub Disconnect {
-  my $self = shift;
+sub Disconnect
+{
+    my $self = shift;
 
-  $self->{STREAM}->Disconnect($self->{SESSION}->{id})
-    if ($self->{CONNECTED} == 1);
-  $self->{CONNECTED} = 0;
-  $self->{DEBUG}->Log1("Disconnect: bye bye");
+    $self->{STREAM}->Disconnect($self->{SESSION}->{id})
+        if ($self->{CONNECTED} == 1);
+    $self->{CONNECTED} = 0;
+    $self->{DEBUG}->Log1("Disconnect: bye bye");
 }
 
 
@@ -236,11 +238,138 @@ sub Disconnect {
 #             otherwise.
 #
 ###########################################################################
-sub Connected {
-  my $self = shift;
+sub Connected
+{
+    my $self = shift;
 
-  $self->{DEBUG}->Log1("Connected: ($self->{CONNECTED})");
-  return $self->{CONNECTED};
+    $self->{DEBUG}->Log1("Connected: ($self->{CONNECTED})");
+    return $self->{CONNECTED};
+}
+
+
+###########################################################################
+#
+# Execute - generic inner loop to listen for incoming messages, stay
+#           connected to the server, and do all the right things.  It
+#           calls a couple of callbacks for the user to put hooks into
+#           place if they choose to.
+#
+###########################################################################
+sub Execute
+{
+    my $self = shift;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+    $args{connectattempts} = -1 unless exists($args{connectattempts});
+    $args{connectsleep} = 5 unless exists($args{connectsleep});
+    $args{register} = 0 unless exists($args{register});
+
+    my %connect;
+    $connect{hostname} = $args{hostname};
+    $connect{port} = $args{port} if exists($args{port});
+    $connect{connectiontype} = $args{connectiontype}
+        if exists($args{connectiontype});
+    $connect{ssl} = $args{ssl} if exists($args{ssl});
+    
+    $self->{DEBUG}->Log1("Execute: begin");
+
+    my $connectAttempt = $args{connectattempts};
+
+    while(($connectAttempt == -1) || ($connectAttempt > 0))
+    {
+
+        $self->{DEBUG}->Log1("Execute: Attempt to connect ($connectAttempt)");
+
+        my $status = $self->Connect(%connect);
+
+        if (!(defined($status)))
+        {
+            $self->{DEBUG}->Log1("Execute: Jabber server is not answering.  (".$self->GetErrorCode().")");
+            $self->{CONNECTED} = 0;
+
+            $connectAttempt-- unless ($connectAttempt == -1);
+            sleep($args{connectsleep});
+            next;
+        }
+
+        $self->{DEBUG}->Log1("Execute: Connected...");
+        &{$self->{CB}->{onconnect}}() if exists($self->{CB}->{onconnect});
+
+        my @result = $self->AuthSend(username=>$args{username},
+                                     password=>$args{password},
+                                     resource=>$args{resource}
+                                     );
+        if ($result[0] ne "ok")
+        {
+            $self->{DEBUG}->Log1("Execute: Could not auth with server: ($result[0]: $result[1])");
+            if ($args{register} == 0)
+            {
+                $self->{DEBUG}->Log1("Execute: Reigster turned off.  Exiting.");
+                $self->Disconnect();
+                &{$self->{CB}->{ondisconnect}}()
+                    if exists($self->{CB}->{ondisconnect});
+                $connectAttempt = 0;
+            }
+            else
+            {
+                my %fields = $self->RegisterRequest();
+
+                $fields{username} = $args{username};
+                $fields{password} = $args{password};
+
+                $self->RegisterSend(%fields);
+                
+                @result = $self->AuthSend(username=>$args{username},
+                                          password=>$args{password},
+                                          resource=>$args{resource}
+                                         );
+
+                if ($result[0] ne "ok")
+                {
+                    $self->{DEBUG}->Log1("Execute: Register failed.  Exiting.");
+                    $self->Disconnect();
+                    &{$self->{CB}->{ondisconnect}}()
+                        if exists($self->{CB}->{ondisconnect});
+                    $connectAttempt = 0;
+                }
+                else
+                {
+                    &{$self->{CB}->{onauth}}()
+                        if exists($self->{CB}->{onauth});
+                }
+            }
+        }
+        else
+        {
+            &{$self->{CB}->{onauth}}()
+                if exists($self->{CB}->{onauth});
+        }
+ 
+        while($self->Connected())
+        {
+
+            while(defined($status = $self->Process($args{processtimeout})))
+            {
+                &{$self->{CB}->{onprocess}}()
+                    if exists($self->{CB}->{onprocess});
+            }
+
+            if (!defined($status))
+            {
+                $self->Disconnect();
+                $self->{DEBUG}->Log1("Execute: Connection to server lost...");
+                &{$self->{CB}->{ondisconnect}}()
+                    if exists($self->{CB}->{ondisconnect});
+
+                $connectAttempt = $args{connectattempts};
+                next;
+            }
+        }
+    }
+
+    $self->{DEBUG}->Log1("Execute: end");
+    &{$self->{CB}->{onexit}}() if exists($self->{CB}->{onexit});
 }
 
 

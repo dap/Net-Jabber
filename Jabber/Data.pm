@@ -195,37 +195,41 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS %NAMESPACES);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DEBUGHEADER} = "Data";
+    $self->{DEBUGHEADER} = "Data";
 
-  $self->{DATA} = {};
-  $self->{CHILDREN} = {};
+    $self->{DATA} = {};
+    $self->{CHILDREN} = {};
 
-  $self->{TAG} = "data";
+    $self->{TAG} = "data";
 
-  if ("@_" ne ("")) {
-    if (ref($_[0]) eq "Net::Jabber::Data") {
-      return $_[0];
-    } else {
-      $self->{TREE} = shift;
-      $self->{TAG} = $self->{TREE}->{$self->{TREE}->{root}."-tag"};
-      $self->ParseXMLNS();
-      $self->ParseTree();
-      delete($self->{TREE});
+    if ("@_" ne (""))
+    {
+        if (ref($_[0]) eq "Net::Jabber::Data")
+        {
+            return $_[0];
+        }
+        else
+        {
+            $self->{TREE} = shift;
+            $self->{TAG} = $self->{TREE}->get_tag();
+            $self->ParseXMLNS();
+            $self->ParseTree();
+        }
     }
-  }
 
-  return $self;
+    return $self;
 }
 
 
@@ -234,9 +238,10 @@ sub new {
 # AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = shift;
-  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
+sub AUTOLOAD
+{
+    my $self = shift;
+    &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
 $FUNCTIONS{XMLNS}->{Get}     = "xmlns";

@@ -162,33 +162,40 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  my $proto = shift;
-  my $class = ref($proto) || $proto;
-  my $self = { };
-  
-  $self->{VERSION} = $VERSION;
-  $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("local");
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = { };
+    
+    $self->{VERSION} = $VERSION;
+    $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("local");
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
-                                          header=>"NJ::Log");
+    $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
+                                                    header=>"NJ::Log");
 
-  if ("@_" ne ("")) {
-    if (ref($_[0]) eq "Net::Jabber::Log") {
-      return $_[0];
-    } else {
-      my @temp = @_;
-      $self->{LOG} = \@temp;
+    if ("@_" ne (""))
+    {
+        if (ref($_[0]) eq "Net::Jabber::Log")
+        {
+            return $_[0];
+        }
+        else
+        {
+            my @temp = @_;
+            $self->{LOG} = \@temp;
+        }
     }
-  } else {
-    $self->{LOG} = [ "log" , [{}]];
-  }
+    else
+    {
+        $self->{LOG} = [ "log" , [{}]];
+    }
 
-  return $self;
+    return $self;
 }
 
 
@@ -198,22 +205,23 @@ sub new {
 #            name and argument list.
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = shift;
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  $AUTOLOAD =~ s/^.*:://;
-  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
-  $type = "" unless defined($type);
-  my $treeName = "LOG";
-  
-  return "log" if ($AUTOLOAD eq "GetTag");
-  return &XML::Stream::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
-  return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
-  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
-  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
-  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
-  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
-  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
+sub AUTOLOAD
+{
+    my $self = shift;
+    return if ($AUTOLOAD =~ /::DESTROY$/);
+    $AUTOLOAD =~ s/^.*:://;
+    my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
+    $type = "" unless defined($type);
+    my $treeName = "LOG";
+    
+    return "log" if ($AUTOLOAD eq "GetTag");
+    return &XML::Stream::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
+    return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
+    return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
+    return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
+    return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
+    return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
+    &Net::Jabber::MissingFunction($self,$AUTOLOAD);
 }
 
 
@@ -234,10 +242,11 @@ $FUNCTIONS{defined}->{Type} = ["existence","","type"];
 #          Tree.
 #
 ##############################################################################
-sub GetXML {
-  my $self = shift;
-  $self->MergeX();
-  return &XML::Stream::BuildXML(@{$self->{LOG}});
+sub GetXML
+{
+    my $self = shift;
+    $self->MergeX();
+    return &XML::Stream::BuildXML(@{$self->{LOG}});
 }
 
 
@@ -247,10 +256,11 @@ sub GetXML {
 #              the object.
 #
 ##############################################################################
-sub GetTree {
-  my $self = shift;
-  $self->MergeX();
-  return %{$self->{LOG}};
+sub GetTree
+{
+    my $self = shift;
+    $self->MergeX();
+    return %{$self->{LOG}};
 }
 
 
@@ -260,14 +270,15 @@ sub GetTree {
 #              and sets each one.
 #
 ##############################################################################
-sub SetLog {
-  my $self = shift;
-  my %log;
-  while($#_ >= 0) { $log{ lc pop(@_) } = pop(@_); }
+sub SetLog
+{
+    my $self = shift;
+    my %log;
+    while($#_ >= 0) { $log{ lc pop(@_) } = pop(@_); }
 
-  $self->SetFrom($log{from}) if exists($log{from});
-  $self->SetType($log{type}) if exists($log{type});
-  $self->SetData($log{data}) if exists($log{data});
+    $self->SetFrom($log{from}) if exists($log{from});
+    $self->SetType($log{type}) if exists($log{type});
+    $self->SetData($log{data}) if exists($log{data});
 }
 
 
@@ -276,14 +287,17 @@ sub SetLog {
 # SetFrom - sets the from attribute in the <log/>
 #
 ##############################################################################
-sub SetFrom {
-  my $self = shift;
-  my ($from) = @_;
-  if (ref($from) eq "Net::Jabber::JID") {
-    $from = $from->GetJID("full");
-  }
-  return unless ($from ne "");
-  &XML::Stream::SetXMLData("single",$self->{LOG},"","",{from=>$from});
+sub SetFrom
+{
+    my $self = shift;
+    my ($from) = @_;
+    if (ref($from) eq "Net::Jabber::JID")
+    {
+        $from = $from->GetJID("full");
+    }
+    return unless ($from ne "");
+    &XML::Stream::SetXMLData("single",$self->{LOG},"","",{from=>$from});
 }
+
 
 1;

@@ -95,10 +95,9 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-use XML::Stream 1.15 qw(Hash);
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&
@@ -120,44 +119,45 @@ use Net::Jabber::Key;
 ($Net::Jabber::Key::VERSION < $VERSION) &&
   die("Net::Jabber::Key $VERSION required--this is only version $Net::Jabber::Key::VERSION");
 
-sub new {
-  srand( time() ^ ($$ + ($$ << 15)));
+sub new
+{
+    srand( time() ^ ($$ + ($$ << 15)));
 
-  my $proto = shift;
-  my $self = { };
+    my $proto = shift;
+    my $self = { };
 
-  my %args;
-  while($#_ >= 0) { $args{ lc(pop(@_)) } = pop(@_); }
+    my %args;
+    while($#_ >= 0) { $args{ lc(pop(@_)) } = pop(@_); }
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{KEY} = new Net::Jabber::Key();
+    $self->{KEY} = new Net::Jabber::Key();
 
-  $self->{DELEGATE} = new Net::Jabber::Protocol();
+    $self->{DELEGATE} = new Net::Jabber::Protocol();
 
-  $self->{DEBUG} =
-    new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
-			   file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
-			   time=>exists($args{debugtime}) ? $args{debugtime} : 0,
-			   setdefault=>1,
-			   header=>"NJ::Server"
-			  );
+    $self->{DEBUG} =
+        new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
+                               file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
+                               time=>exists($args{debugtime}) ? $args{debugtime} : 0,
+                               setdefault=>1,
+                               header=>"NJ::Server"
+                              );
 
-  $self->{SERVER} = {hostname => "localhost",
-		     port => 5269,
-		     servername => ""};
+    $self->{SERVER} = { hostname => "localhost",
+                        port => 5269,
+                        servername => ""};
 
-  $self->{STREAM} = new XML::Stream(style=>"hash",
-				    debugfh=>$self->{DEBUG}->GetHandle(),
-				    debuglevel=>$self->{DEBUG}->GetLevel(),
-				    debugtime=>$self->{DEBUG}->GetTime());
+    $self->{STREAM} = new XML::Stream(style=>"node",
+                                      debugfh=>$self->{DEBUG}->GetHandle(),
+                                      debuglevel=>$self->{DEBUG}->GetLevel(),
+                                      debugtime=>$self->{DEBUG}->GetTime());
 
-  $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) },
-				sid=>sub{ return $self->{KEY}->Generate()});
+    $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) },
+                                  sid=>sub{ return $self->{KEY}->Generate()});
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  return $self;
+    return $self;
 }
 
 
@@ -167,11 +167,12 @@ sub new {
 #            name and argument list.
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = $_[0];
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  $AUTOLOAD =~ s/^.*:://;
-  $self->{DELEGATE}->$AUTOLOAD(@_);
+sub AUTOLOAD
+{
+    my $self = $_[0];
+    return if ($AUTOLOAD =~ /::DESTROY$/);
+    $AUTOLOAD =~ s/^.*:://;
+    $self->{DELEGATE}->$AUTOLOAD(@_);
 }
 
 
@@ -180,31 +181,32 @@ sub AUTOLOAD {
 # Start - starts the server running
 #
 ##############################################################################
-sub Start {
-  my $self = shift;
-  my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+sub Start
+{
+    my $self = shift;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
-  $self->{STOP} = 0;
+    $self->{STOP} = 0;
 
-  $self->SetCallBacks('message'=>sub{ $self->messageHandler(@_); },
-		      'presence'=>sub{ $self->presenceHandler(@_); },
-		      'iq'=>sub{ $self->iqHandler(@_); },
-		      'db:result'=>sub{ $self->dbresultHandler(@_); },
-		      'db:verify'=>sub{ $self->dbverifyHandler(@_); },
-		     );
+    $self->SetCallBacks('message'=>sub{ $self->messageHandler(@_); },
+                        'presence'=>sub{ $self->presenceHandler(@_); },
+                        'iq'=>sub{ $self->iqHandler(@_); },
+                        'db:result'=>sub{ $self->dbresultHandler(@_); },
+                        'db:verify'=>sub{ $self->dbverifyHandler(@_); },
+                       );
 
-  my $hostname = $self->{SERVER}->{hostname};
-  $hostname = $args{hostname} if exists($args{hostname});
+    my $hostname = $self->{SERVER}->{hostname};
+    $hostname = $args{hostname} if exists($args{hostname});
 
-  my $status = $self->{STREAM}->Listen(hostname=>$hostname,
-				       port=>$self->{SERVER}->{port},
-				       namespace=>"jabber:server");
+    my $status = $self->{STREAM}->Listen(hostname=>$hostname,
+                         port=>$self->{SERVER}->{port},
+                         namespace=>"jabber:server");
 
-  while($self->{STOP} == 0) {
-    while(($self->{STOP} == 0) && defined($self->{STREAM}->Process())) {
+    while($self->{STOP} == 0) {
+        while(($self->{STOP} == 0) && defined($self->{STREAM}->Process())) {
+        }
     }
-  }
 }
 
 
@@ -213,98 +215,108 @@ sub Start {
 # Stop - shuts down the server
 #
 ##############################################################################
-sub Stop {
-  my $self = shift;
-  $self->{STOP} = 1;
+sub Stop
+{
+    my $self = shift;
+    $self->{STOP} = 1;
 }
 
 
-sub messageHandler {
-  my $self = shift;
-  my $sid = shift;
-  my ($message) = @_;
+sub messageHandler
+{
+    my $self = shift;
+    my $sid = shift;
+    my ($message) = @_;
 
-  $self->{DEBUG}->Log2("messageHandler: message(",$message->GetXML(),")");
+    $self->{DEBUG}->Log2("messageHandler: message(",$message->GetXML(),")");
 
-  my $reply = $message->Reply();
-  $self->Send($reply);
+    my $reply = $message->Reply();
+    $self->Send($reply);
 }
 
 
-sub presenceHandler {
-  my $self = shift;
-  my $sid = shift;
-  my ($presence) = @_;
+sub presenceHandler
+{
+    my $self = shift;
+    my $sid = shift;
+    my ($presence) = @_;
 
-  $self->{DEBUG}->Log2("presenceHandler: presence(",$presence->GetXML(),")");
+    $self->{DEBUG}->Log2("presenceHandler: presence(",$presence->GetXML(),")");
 }
 
 
-sub iqHandler {
-  my $self = shift;
-  my $sid = shift;
-  my ($iq) = @_;
+sub iqHandler
+{
+    my $self = shift;
+    my $sid = shift;
+    my ($iq) = @_;
 
-  $self->{DEBUG}->Log2("iqHandler: iq(",$iq->GetXML(),")");
+    $self->{DEBUG}->Log2("iqHandler: iq(",$iq->GetXML(),")");
 }
 
 
-sub dbresultHandler {
-  my $self = shift;
-  my $sid = shift;
-  my ($dbresult) = @_;
+sub dbresultHandler
+{
+    my $self = shift;
+    my $sid = shift;
+    my ($dbresult) = @_;
 
-  $self->{DEBUG}->Log2("dbresultHandler: dbresult(",$dbresult->GetXML(),")");
+    $self->{DEBUG}->Log2("dbresultHandler: dbresult(",$dbresult->GetXML(),")");
 
-  my $dbverify = new Net::Jabber::Dialback::Verify();
-  $dbverify->SetVerify(to=>$dbresult->GetFrom(),
-		       from=>$dbresult->GetTo(),
-		       id=>$self->{STREAM}->GetRoot($sid)->{id},
-		       data=>$dbresult->GetData());
-  $self->Send($dbverify);
+    my $dbverify = new Net::Jabber::Dialback::Verify();
+    $dbverify->SetVerify(to=>$dbresult->GetFrom(),
+                         from=>$dbresult->GetTo(),
+                         id=>$self->{STREAM}->GetRoot($sid)->{id},
+                         data=>$dbresult->GetData());
+    $self->Send($dbverify);
 }
 
 
-sub dbverifyHandler {
-  my $self = shift;
-  my $sid = shift;
-  my ($dbverify) = @_;
+sub dbverifyHandler
+{
+    my $self = shift;
+    my $sid = shift;
+    my ($dbverify) = @_;
 
-  $self->{DEBUG}->Log2("dbverifyHandler: dbverify(",$dbverify->GetXML(),")");
+    $self->{DEBUG}->Log2("dbverifyHandler: dbverify(",$dbverify->GetXML(),")");
 }
 
 
-sub Send {
-  my $self = shift;
-  my $object = shift;
+sub Send
+{
+    my $self = shift;
+    my $object = shift;
 
-  if (ref($object) eq "") {
-    my ($server) = ($object =~ /to=[\"\']([^\"\']+)[\"\']/);
-    $server =~ s/^\S*\@?(\S+)\/?.*$/$1/;
-    $self->SendXML($server,$object);
-  } else {
-    $self->SendXML($object->GetTo("jid")->GetServer(),$object->GetXML());
-  }
-}
+    if (ref($object) eq "")
+    {
+        my ($server) = ($object =~ /to=[\"\']([^\"\']+)[\"\']/);
+        $server =~ s/^\S*\@?(\S+)\/?.*$/$1/;
+        $self->SendXML($server,$object);
+    }
+    else
+    {
+        $self->SendXML($object->GetTo("jid")->GetServer(),$object->GetXML());
+    }
+ }
 
 
 sub SendXML {
-  my $self = shift;
-  my $server = shift;
-  my $xml = shift;
-  $self->{DEBUG}->Log1("SendXML: server($server) sent($xml)");
+    my $self = shift;
+    my $server = shift;
+    my $xml = shift;
+    $self->{DEBUG}->Log1("SendXML: server($server) sent($xml)");
 
-  my $sid = $self->{STREAM}->Host2SID($server);
-  if (!defined($sid)) {
-    $self->{STREAM}->Connect(hostname=>$server,
-			     port=>5269,
-			     connectiontype=>"tcpip",
-			     namespace=>"jabber:server");
-    $sid = $self->{STREAM}->Host2SID($server);
-  }
-  $self->{DEBUG}->Log1("SendXML: sid($sid)");
-  &{$self->{CB}->{send}}($sid,$xml) if exists($self->{CB}->{send});
-  $self->{STREAM}->Send($sid,$xml);
+    my $sid = $self->{STREAM}->Host2SID($server);
+    if (!defined($sid)) {
+        $self->{STREAM}->Connect(hostname=>$server,
+                     port=>5269,
+                     connectiontype=>"tcpip",
+                     namespace=>"jabber:server");
+        $sid = $self->{STREAM}->Host2SID($server);
+    }
+    $self->{DEBUG}->Log1("SendXML: sid($sid)");
+    &{$self->{CB}->{send}}($sid,$xml) if exists($self->{CB}->{send});
+    $self->{STREAM}->Send($sid,$xml);
 }
 
 

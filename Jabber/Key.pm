@@ -87,31 +87,35 @@ use strict;
 use FileHandle;
 use vars qw($VERSION);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
-sub new {
-  srand( time() ^ ($$ + ($$ << 15)));
+sub new
+{
+    srand( time() ^ ($$ + ($$ << 15)));
 
-  my $proto = shift;
-  my $self = { };
+    my $proto = shift;
+    my $self = { };
 
-  $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
-					  header=>"NJ::Key");
+    $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
+                      header=>"NJ::Key");
 
-  $self->{VERSION} = $VERSION;
-  
-  $self->{CACHE} = {};
+    $self->{VERSION} = $VERSION;
+    
+    $self->{CACHE} = {};
 
-  if (eval "require Digest::SHA1") {
-    $self->{DIGEST} = 1;
-    Digest::SHA1->import(qw(sha1 sha1_hex sha1_base64));
-  } else {
-    print "ERROR:  You cannot use Key.pm unless you have Digest::SHA1 installed.\n";
-    exit(0);
-  }
+    if (eval "require Digest::SHA1")
+    {
+        $self->{DIGEST} = 1;
+        Digest::SHA1->import(qw(sha1 sha1_hex sha1_base64));
+    }
+    else
+    {
+        print "ERROR:  You cannot use Key.pm unless you have Digest::SHA1 installed.\n";
+        exit(0);
+    }
 
-  bless($self, $proto);
-  return $self;
+    bless($self, $proto);
+    return $self;
 }
 
 
@@ -122,13 +126,14 @@ sub new {
 #            string and returns it.
 #
 ###########################################################################
-sub Generate {
-  my $self = shift;
+sub Generate
+{
+    my $self = shift;
 
-  my $string = $$.time.rand(1000000);
-  $string = Digest::SHA1::sha1_hex($string);
-  $self->{DEBUG}->Log1("Generate: key($string)");
-  return $string;
+    my $string = $$.time.rand(1000000);
+    $string = Digest::SHA1::sha1_hex($string);
+    $self->{DEBUG}->Log1("Generate: key($string)");
+    return $string;
 }
 
 
@@ -137,15 +142,16 @@ sub Generate {
 # Create - Creates a key and caches the id for comparison later.
 #
 ##############################################################################
-sub Create {
-  my $self = shift;
-  my ($cacheString) = @_;
+sub Create
+{
+    my $self = shift;
+    my ($cacheString) = @_;
 
-  $self->{DEBUG}->Log1("Create: cacheString($cacheString)");
-  my $key = $self->Generate();
-  $self->{DEBUG}->Log1("Create: key($key)");
-  $self->{CACHE}->{$cacheString} = $key;
-  return $key;
+    $self->{DEBUG}->Log1("Create: cacheString($cacheString)");
+    my $key = $self->Generate();
+    $self->{DEBUG}->Log1("Create: key($key)");
+    $self->{CACHE}->{$cacheString} = $key;
+    return $key;
 }
 
 
@@ -154,14 +160,15 @@ sub Create {
 # Compare - Compares the key with the key in the cache.
 #
 ##############################################################################
-sub Compare {
-  my $self = shift;
-  my ($cacheString,$key) = @_;
+sub Compare
+{
+    my $self = shift;
+    my ($cacheString,$key) = @_;
 
-  $self->{DEBUG}->Log1("Compare: cacheString($cacheString) key($key)");
-  my $cacheKey = delete($self->{CACHE}->{$cacheString});
-  $self->{DEBUG}->Log1("Compare: cacheKey($cacheKey)");
-  return ($key eq $cacheKey);
+    $self->{DEBUG}->Log1("Compare: cacheString($cacheString) key($key)");
+    my $cacheKey = delete($self->{CACHE}->{$cacheString});
+    $self->{DEBUG}->Log1("Compare: cacheKey($cacheKey)");
+    return ($key eq $cacheKey);
 }
 
 

@@ -159,11 +159,9 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-use XML::Stream 1.15 qw( Hash );
-use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.26";
+$VERSION = "1.27";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&
@@ -181,45 +179,46 @@ use Net::Jabber::Key;
 ($Net::Jabber::Key::VERSION < $VERSION) &&
   die("Net::Jabber::Key $VERSION required--this is only version $Net::Jabber::Key::VERSION");
 
-sub new {
-  srand( time() ^ ($$ + ($$ << 15)));
+sub new
+{
+    srand( time() ^ ($$ + ($$ << 15)));
 
-  my $proto = shift;
-  my $self = { };
+    my $proto = shift;
+    my $self = { };
 
-  my %args;
-  while($#_ >= 0) { $args{ lc(pop(@_)) } = pop(@_); }
+    my %args;
+    while($#_ >= 0) { $args{ lc(pop(@_)) } = pop(@_); }
 
-  bless($self, $proto);
+    bless($self, $proto);
 
-  $self->{DELEGATE} = new Net::Jabber::Protocol();
+    $self->{DELEGATE} = new Net::Jabber::Protocol();
 
-  $self->{DEBUG} =
-    new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
-			   file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
-			   time=>exists($args{debugtime}) ? $args{debugtime} : 0,
-			   setdefault=>1,
-			   header=>"NJ::Component"
-			  );
+    $self->{DEBUG} =
+        new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
+                               file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
+                               time=>exists($args{debugtime}) ? $args{debugtime} : 0,
+                               setdefault=>1,
+                               header=>"NJ::Component"
+                              );
 
-  $self->{SERVER} = {hostname => "localhost",
-		     port => 5269,
-		     componentname => ""};
+    $self->{SERVER} = {hostname => "localhost",
+                       port => 5269,
+                       componentname => ""};
 
-  $self->{CONNECTED} = 0;
+    $self->{CONNECTED} = 0;
 
-  $self->{STREAM} = new XML::Stream(style=>"hash",
-				    debugfh=>$self->{DEBUG}->GetHandle(),
-				    debuglevel=>$self->{DEBUG}->GetLevel(),
-				    debugtime=>$self->{DEBUG}->GetTime());
+    $self->{STREAM} = new XML::Stream(style=>"node",
+                                      debugfh=>$self->{DEBUG}->GetHandle(),
+                                      debuglevel=>$self->{DEBUG}->GetLevel(),
+                                      debugtime=>$self->{DEBUG}->GetTime());
 
-  $self->{VERSION} = $VERSION;
+    $self->{VERSION} = $VERSION;
 
-  $self->{LIST}->{currentID} = 0;
+    $self->{LIST}->{currentID} = 0;
 
-  $self->callbackInit();
+    $self->callbackInit();
 
-  return $self;
+    return $self;
 }
 
 
@@ -229,11 +228,12 @@ sub new {
 #            name and argument list.
 #
 ##############################################################################
-sub AUTOLOAD {
-  my $self = $_[0];
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  $AUTOLOAD =~ s/^.*:://;
-  $self->{DELEGATE}->$AUTOLOAD(@_);
+sub AUTOLOAD
+{
+    my $self = $_[0];
+    return if ($AUTOLOAD =~ /::DESTROY$/);
+    $AUTOLOAD =~ s/^.*:://;
+    $self->{DELEGATE}->$AUTOLOAD(@_);
 }
 
 
@@ -247,84 +247,97 @@ sub AUTOLOAD {
 #           not made because the server hostname is wrong or whatnot.
 #
 ###########################################################################
-sub Connect {
-  my $self = shift;
-  my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+sub Connect
+{
+    my $self = shift;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
-  $self->{DEBUG}->Log1("Connect: type($args{connectiontype})");
+    $args{connectiontype} = "accept" unless exists($args{connectiontype});
+    $self->{CONNECTIONTYPE} = $args{connectiontype};
+    
+    $self->{DEBUG}->Log1("Connect: type($self->{CONNECTIONTYPE})");
 
-  $args{connectiontype} = "accept" unless exists($args{connectiontype});
-  $self->{CONNECTIONTYPE} = $args{connectiontype};
+    if (($args{connectiontype} eq "exec") ||
+            ($args{connectiontype} eq "stdinout"))
+    {
 
-  if (($args{connectiontype} eq "exec") ||
-      ($args{connectiontype} eq "stdinout")) {
-
-    if (!($self->{SESSION} =
-	    $self->{STREAM}->
-	      Connect(connectiontype=>"stdinout",
-		      namespace=>"jabber:component:exec",
-		      timeout=>10,
-		     ))) {
-      $self->SetErrorCode($self->{STREAM}->GetErrorCode());
-      return;
-    }
-  }
-
-  if (($args{connectiontype} eq "accept") ||
-      ($args{connectiontype} eq "tcpip")) {
-
-    $self->{DEBUG}->Log1("Connect: hostname($args{hostname}) secret($args{secret}) componentname($args{componentname})");
-
-    if (!exists($args{hostname})) {
-      $self->SetErrorCode("No hostname specified.");
-      return;
-    }
-
-    if (!exists($args{secret})) {
-      $self->SetErrorCode("No secret specified.");
-      return;
-    }
-
-    if (!exists($args{componentname})) {
-      $self->SetErrorCode("No component specified.");
-      return;
-    }
-
-    $self->{SERVER}->{hostname} = delete($args{hostname});
-    $self->{SERVER}->{port} = delete($args{port}) if exists($args{port});
-
-    if (!($self->{SESSION} =
+        if (!($self->{SESSION} =
             $self->{STREAM}->
-	      Connect(hostname=>$self->{SERVER}->{hostname},
-		      port=>$self->{SERVER}->{port},
-		      to=>$args{componentname},
-		      namespace=>"jabber:component:accept",
-		      (defined($args{myhostname}) ?
-		       (myhostname=>$args{myhostname}) :
-		       ()
-		      ),
-		      timeout=>10
-		     ))) {
-      $self->SetErrorCode($self->{STREAM}->GetErrorCode());
-      return;
+                Connect(connectiontype=>"stdinout",
+                        namespace=>"jabber:component:exec",
+                        timeout=>10,
+                        )))
+        {
+            $self->SetErrorCode($self->{STREAM}->GetErrorCode());
+            return;
+        }
     }
-  }
 
-  $self->{DEBUG}->Log1("Connect: connection made");
+    if (($args{connectiontype} eq "accept") ||
+        ($args{connectiontype} eq "tcpip"))
+    {
 
-  if (($args{connectiontype} eq "accept") ||
-      ($args{connectiontype} eq "tcpip")) {
-    $self->Send("<handshake>".Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$args{secret})."</handshake>");
-    my $handshake = $self->Process();
+        $self->{DEBUG}->Log1("Connect: hostname($args{hostname}) secret($args{secret}) componentname($args{componentname})");
 
-    return if ($$handshake[0] eq "");
-    return if (&XML::Stream::GetXMLData("value",$$handshake[0],"","") ne "");
-  }
+        if (!exists($args{hostname})) {
+            $self->SetErrorCode("No hostname specified.");
+            return;
+        }
 
-  $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
-  $self->{CONNECTED} = 1;
-  return 1;
+        if (!exists($args{secret}))
+        {
+            $self->SetErrorCode("No secret specified.");
+            return;
+        }
+
+        if (!exists($args{componentname}))
+        {
+            $self->SetErrorCode("No component specified.");
+            return;
+        }
+
+        $self->{SERVER}->{hostname} = delete($args{hostname});
+        $self->{SERVER}->{port} = delete($args{port}) if exists($args{port});
+
+        if (!($self->{SESSION} =
+                    $self->{STREAM}->
+                        Connect(hostname=>$self->{SERVER}->{hostname},
+                                port=>$self->{SERVER}->{port},
+                                to=>$args{componentname},
+                                namespace=>"jabber:component:accept",
+                                (defined($args{myhostname}) ?
+                                 (myhostname=>$args{myhostname}) :
+                                 ()
+                                ),
+                                timeout=>10
+                                )))
+        {
+            $self->SetErrorCode($self->{STREAM}->GetErrorCode());
+            return;
+        }
+    }
+
+    $self->{DEBUG}->Log1("Connect: connection made");
+
+    if (($args{connectiontype} eq "accept") ||
+        ($args{connectiontype} eq "tcpip"))
+    {
+        $self->Send("<handshake>".Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$args{secret})."</handshake>");
+        my $handshake = $self->Process();
+
+        if (!defined($handshake) ||
+            ($$handshake[0] eq "") ||
+            (&XML::Stream::GetXMLData("value",$$handshake[0],"","") ne ""))
+        {
+            $self->SetErrorCode("Bad handshake.");
+            return;
+        }
+    }
+
+    $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
+    $self->{CONNECTED} = 1;
+    return 1;
 }
 
 
@@ -333,12 +346,14 @@ sub Connect {
 # Disconnect - Sends the string to close the connection cleanly.
 #
 ###########################################################################
-sub Disconnect {
-  my $self = shift;
-  $self->{STREAM}->Disconnect($self->{SESSION}->{id}) if ($self->{CONNECTED} == 1);
-  $self->{STREAM}->SetCallBacks(node=>undef);
-  $self->{CONNECTED} = 0;
-  $self->{DEBUG}->Log1("Disconnect: bye bye");
+sub Disconnect
+{
+    my $self = shift;
+    $self->{STREAM}->Disconnect($self->{SESSION}->{id})
+        if ($self->{CONNECTED} == 1);
+    $self->{STREAM}->SetCallBacks(node=>undef);
+    $self->{CONNECTED} = 0;
+    $self->{DEBUG}->Log1("Disconnect: bye bye");
 }
 
 
@@ -348,11 +363,12 @@ sub Disconnect {
 #             otherwise.
 #
 ###########################################################################
-sub Connected {
-  my $self = shift;
+sub Connected
+{
+    my $self = shift;
 
-  $self->{DEBUG}->Log1("Connected: ($self->{CONNECTED})");
-  return $self->{CONNECTED};
+    $self->{DEBUG}->Log1("Connected: ($self->{CONNECTED})");
+    return $self->{CONNECTED};
 }
 
 
@@ -364,64 +380,76 @@ sub Connected {
 #           place if they choose to.
 #
 ###########################################################################
-sub Execute {
-  my $self = shift;
-  my %args;
-  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+sub Execute
+{
+    my $self = shift;
+    my %args;
+    while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
-  $args{connectattempts} = -1 unless exists($args{connectattempts});
-  $args{connectsleep} = 5 unless exists($args{connectsleep});
+    $args{connectiontype} = "accept" unless exists($args{connectiontype});
+    $args{connectattempts} = -1 unless exists($args{connectattempts});
+    $args{connectsleep} = 5 unless exists($args{connectsleep});
 
-  $self->{DEBUG}->Log1("Execute: begin");
+    $self->{DEBUG}->Log1("Execute: begin");
 
-  my $connectAttempt = $args{connectattempts};
+    my $connectAttempt = $args{connectattempts};
 
-  while(($connectAttempt == -1) || ($connectAttempt > 0)) {
+    while(($connectAttempt == -1) || ($connectAttempt > 0))
+    {
 
-    $self->{DEBUG}->Log1("Execute: Attempt to connect ($connectAttempt)");
+        $self->{DEBUG}->Log1("Execute: Attempt to connect ($connectAttempt)");
 
-    my $status;
-    if ($args{connectiontype} eq "accept") {
-      $status = $self->Connect(hostname=>$args{hostname},
-			       port=>$args{port},
-			       secret=>$args{secret},
-			       componentname=>$args{componentname});
+        my $status;
+        if ($args{connectiontype} eq "accept")
+        {
+            $status = $self->Connect(hostname=>$args{hostname},
+                                     port=>$args{port},
+                                     secret=>$args{secret},
+                                     connectiontype=>$args{connectiontype},
+                                     componentname=>$args{componentname});
+        }
+        if ($args{connectiontype} eq "exec")
+        {
+            $status = $self->Connect(connectiontype=>"exec");
+        }
+
+        if (!(defined($status)))
+        {
+            $self->{DEBUG}->Log1("Execute: Jabber server is not answering.  (".$self->GetErrorCode().")");
+            $self->{CONNECTED} = 0;
+
+            $connectAttempt-- unless ($connectAttempt == -1);
+            sleep($args{connectsleep});
+            next;
+        }
+
+        $self->{DEBUG}->Log1("Execute: Connected...");
+        &{$self->{CB}->{onconnect}}()
+            if exists($self->{CB}->{onconnect});
+
+        while($self->Connected())
+        {
+            while(defined($status = $self->Process($args{processtimeout})))
+            {
+                &{$self->{CB}->{onprocess}}()
+                    if exists($self->{CB}->{onprocess});
+            }
+
+            if (!defined($status))
+            {
+                $self->Disconnect();
+                $self->{DEBUG}->Log1("Execute: Connection to server lost...");
+                &{$self->{CB}->{ondisconnect}}()
+                    if exists($self->{CB}->{ondisconnect});
+
+                $connectAttempt = $args{connectattempts};
+                next;
+            }
+        }
     }
-    if ($args{connectiontype} eq "exec") {
-      $status = $self->Connect(connectiontype=>"exec");
-    }
 
-    if (!(defined($status))) {
-      $self->{DEBUG}->Log1("Execute: Jabber server is not answering.  (".$self->GetErrorCode().")");
-      $self->{CONNECTED} = 0;
-
-      $connectAttempt-- unless ($connectAttempt == -1);
-      sleep($args{connectsleep});
-      next;
-    }
-
-    $self->{DEBUG}->Log1("Execute: Connected...");
-    &{$self->{CB}->{onconnect}}() if exists($self->{CB}->{onconnect});
-
-    while($self->Connected()) {
-
-      while($status = $self->Process()) {
-	&{$self->{CB}->{onprocess}}() if exists($self->{CB}->{onprocess});
-      }
-
-      if (!defined($status)) {
-	$self->Disconnect();
-	$self->{DEBUG}->Log1("Execute: Connection to server lost...");
-	&{$self->{CB}->{ondisconnect}}() if exists($self->{CB}->{ondisconnect});
-
-	$connectAttempt = $args{connectattempts};
-	next;
-      }
-    }
-  }
-
-  $self->{DEBUG}->Log1("Execute: end");
-  &{$self->{CB}->{onexit}}() if exists($self->{CB}->{onexit});
+    $self->{DEBUG}->Log1("Execute: end");
+    &{$self->{CB}->{onexit}}() if exists($self->{CB}->{onexit});
 }
 
 

@@ -1,3 +1,22 @@
+1.27
+====
+  - Update examples/client scripts to include an xpath based
+    example.
+  - Added support for XPath based callbacks.
+  - Updated x:data to match the call for experience.
+  - Requires perl 5.6 in an attempt to get Unicode support.
+  - Added finer callback support for presence and message
+    based on type.
+  - Minor tweak to NOT remove an unknown xmlns packet (duh...)
+  - Fixed bug in JID.
+  - Updated DefineNamespace to handle most old style, and all
+    new style.
+  - Locked version of XML::Stream to 1.16.
+  - Major recore due to XML::Stream::Node and XPath.
+  - Moved from XML::Stream::Hash to XML::Stream::Node.
+  - Fixed XDB Reply error.
+  - Uninitialized value round up.
+
 1.26
 ====
   - Changed to a more sane version scheme.
