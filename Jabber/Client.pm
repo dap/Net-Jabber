@@ -116,7 +116,7 @@ use XML::Stream 1.12 qw(Hash);
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0024";
+$VERSION = "1.0025";
 
 sub new {
   my $proto = shift;
@@ -154,6 +154,8 @@ sub new {
 
   $self->{LIST}->{currentID} = 0;
 
+  $self->callbackInit();
+
   return $self;
 }
 
@@ -189,15 +191,18 @@ sub Connect {
 
   $self->{DEBUG}->Log1("Connect: hostname($self->{SERVER}->{hostname})");
 
-  if ($self->{SESSION} =
-        $self->{STREAM}->
-          Connect(hostname=>$self->{SERVER}->{hostname},
-		  port=>$self->{SERVER}->{port},
-		  namespace=>"jabber:client",
-		  connectiontype=>$self->{SERVER}->{connectiontype},
-		  ssl=>$self->{SERVER}->{ssl},
-		  timeout=>10
-		 )) {
+  delete($self->{SESSION});
+  $self->{SESSION} =
+    $self->{STREAM}->
+      Connect(hostname=>$self->{SERVER}->{hostname},
+	      port=>$self->{SERVER}->{port},
+	      namespace=>"jabber:client",
+	      connectiontype=>$self->{SERVER}->{connectiontype},
+	      ssl=>$self->{SERVER}->{ssl},
+	      timeout=>10
+	     );
+
+  if ($self->{SESSION}) {
     $self->{DEBUG}->Log1("Connect: connection made");
 
     $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });

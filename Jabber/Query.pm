@@ -51,6 +51,7 @@ Net::Jabber::Query - Jabber Query Library
     jabber:iq:pass
     jabber:iq:register
     jabber:iq:roster
+    jabber:iq:rpc
     jabber:iq:search
     jabber:iq:time
     jabber:iq:version
@@ -356,6 +357,12 @@ types I will use:
   string   GetSubscription() SetSubscription() DefinedSubscription()
   master   GetItem()         SetItem()
 
+=head1 jabber:iq:rpc
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+TODO
+
 =head1 jabber:iq:search
 
   Type     Get               Set               Defined
@@ -429,7 +436,7 @@ use strict;
 use Carp;
 use vars qw($VERSION %FUNCTIONS %NAMESPACES $AUTOLOAD);
 
-$VERSION = "1.0024";
+$VERSION = "1.0025";
 
 sub new {
   my $proto = shift;
@@ -477,6 +484,9 @@ $FUNCTIONS{XMLNS}->{Get}     = "xmlns";
 $FUNCTIONS{XMLNS}->{Set}     = ["scalar","xmlns"];
 $FUNCTIONS{XMLNS}->{Defined} = "xmlns";
 $FUNCTIONS{XMLNS}->{Hash}    = "att";
+
+$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
+$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
 
 $FUNCTIONS{Query}->{Get}     = "__netjabber__:children:query";
 $FUNCTIONS{Query}->{Defined} = "__netjabber__:children:query";
@@ -535,9 +545,9 @@ $NAMESPACES{"jabber:iq:agent"}->{Agent}->{Set} = ["master"];
 #-----------------------------------------------------------------------------
 # jabber:iq:agents
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:agents"}->{Agent}->{Get}     = "";
+$NAMESPACES{"jabber:iq:agents"}->{Agent}->{Get}     = ["__netjabber__:children:query","jabber:iq:agent"];
 $NAMESPACES{"jabber:iq:agents"}->{Agent}->{Set}     = ["add","Query","jabber:iq:agent"];
-$NAMESPACES{"jabber:iq:agents"}->{Agent}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"jabber:iq:agents"}->{Agent}->{Defined} = ["__netjabber__:children:query","jabber:iq:agent"];
 $NAMESPACES{"jabber:iq:agents"}->{Agent}->{Hash}    = "child-add";
 
 $NAMESPACES{"jabber:iq:agents"}->{Agent}->{Add} = ["Query","jabber:iq:agent","Agent","agent"];
@@ -588,21 +598,21 @@ $NAMESPACES{"jabber:iq:auth"}->{Auth}->{Set} = ["master"];
 #-----------------------------------------------------------------------------
 # jabber:iq:autoupdate
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{Get}     = "";
+$NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:autoupdate:release",0];
 $NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{Set}     = ["add","Query","__netjabber__:iq:autoupdate:release"];
-$NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:autoupdate:release"];
 $NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{Hash}    = "child-add";
 $NAMESPACES{"jabber:iq:autoupdate"}->{Beta}->{Add} = ["Query","__netjabber__:iq:autoupdate:release","Release","beta"];
 
-$NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{Get}     = "";
+$NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:autoupdate:release",0];
 $NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{Set}     = ["add","Query","__netjabber__:iq:autoupdate:release"];
-$NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:autoupdate:release"];
 $NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{Hash}    = "child-add";
 $NAMESPACES{"jabber:iq:autoupdate"}->{Dev}->{Add} = ["Query","__netjabber__:iq:autoupdate:release","Release","dev"];
 
-$NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{Get}     = "";
+$NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:autoupdate:release",0];
 $NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{Set}     = ["add","Query","__netjabber__:iq:autoupdate:release"];
-$NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:autoupdate:release"];
 $NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{Hash}    = "child-add";
 $NAMESPACES{"jabber:iq:autoupdate"}->{Release}->{Add} = ["Query","__netjabber__:iq:autoupdate:release","Release","release"];
 
@@ -660,9 +670,9 @@ $NAMESPACES{"jabber:iq:browse"}->{NS}->{Hash}    = "child-data";
 $NAMESPACES{"jabber:iq:browse"}->{Browse}->{Get} = "__netjabber__:master";
 $NAMESPACES{"jabber:iq:browse"}->{Browse}->{Set} = ["master"];
 
-$NAMESPACES{"jabber:iq:browse"}->{Item}->{Get}     = "";
+$NAMESPACES{"jabber:iq:browse"}->{Item}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:browse"];
 $NAMESPACES{"jabber:iq:browse"}->{Item}->{Set}     = ["add","Query","__netjabber__:iq:browse","ns"];
-$NAMESPACES{"jabber:iq:browse"}->{Item}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"jabber:iq:browse"}->{Item}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:browse"];
 $NAMESPACES{"jabber:iq:browse"}->{Item}->{Hash}    = "child-add";
 
 $NAMESPACES{"jabber:iq:browse"}->{Item}->{Add} = ["Query","__netjabber__:iq:browse","Browse"];
@@ -695,9 +705,9 @@ $NAMESPACES{"__netjabber__:iq:browse"}->{NS}->{Hash}    = "child-data";
 $NAMESPACES{"__netjabber__:iq:browse"}->{Browse}->{Get} = "__netjabber__:master";
 $NAMESPACES{"__netjabber__:iq:browse"}->{Browse}->{Set} = ["master"];
 
-$NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{Get}     = "";
+$NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:browse"];
 $NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{Set}     = ["add","Query","__netjabber__:iq:browse","ns"];
-$NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:browse"];
 $NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{Hash}    = "child-add";
 
 $NAMESPACES{"__netjabber__:iq:browse"}->{Item}->{Add} = ["Query","__netjabber__:iq:browse","Browse"];
@@ -738,9 +748,9 @@ $NAMESPACES{"jabber:iq:conference"}->{Conference}->{Set} = ["master"];
 #-----------------------------------------------------------------------------
 # jabber:iq:filter
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:filter"}->{Rule}->{Get}     = "";
+$NAMESPACES{"jabber:iq:filter"}->{Rule}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:filter:rule"];
 $NAMESPACES{"jabber:iq:filter"}->{Rule}->{Set}     = ["add","Query","__netjabber__:iq:filter:rule"];
-$NAMESPACES{"jabber:iq:filter"}->{Rule}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"jabber:iq:filter"}->{Rule}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:filter:rule"];
 $NAMESPACES{"jabber:iq:filter"}->{Rule}->{Hash}    = "child-add";
 
 $NAMESPACES{"jabber:iq:filter"}->{Rule}->{Add} = ["Query","__netjabber__:iq:filter:rule","Rule","rule"];
@@ -1041,9 +1051,9 @@ $NAMESPACES{"jabber:iq:register"}->{Register}->{Set} = ["master"];
 #-----------------------------------------------------------------------------
 # jabber:iq:roster
 #-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:iq:roster"}->{Item}->{Get}     = "";
+$NAMESPACES{"jabber:iq:roster"}->{Item}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:roster:item"];
 $NAMESPACES{"jabber:iq:roster"}->{Item}->{Set}     = ["add","Query","__netjabber__:iq:roster:item"];
-$NAMESPACES{"jabber:iq:roster"}->{Item}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"jabber:iq:roster"}->{Item}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:roster:item"];
 $NAMESPACES{"jabber:iq:roster"}->{Item}->{Hash}    = "child-add";
 
 $NAMESPACES{"jabber:iq:roster"}->{Item}->{Add} = ["Query","__netjabber__:iq:roster:item","Item","item"];
@@ -1080,6 +1090,185 @@ $NAMESPACES{"__netjabber__:iq:roster:item"}->{Subscription}->{Hash}    = "att";
 
 $NAMESPACES{"__netjabber__:iq:roster:item"}->{Item}->{Get} = "__netjabber__:master";
 $NAMESPACES{"__netjabber__:iq:roster:item"}->{Item}->{Set} = ["master"];
+
+#-----------------------------------------------------------------------------
+# jabber:iq:rpc
+#-----------------------------------------------------------------------------
+$NAMESPACES{"jabber:iq:rpc"}->{MethodCall}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:methodCall",0];
+$NAMESPACES{"jabber:iq:rpc"}->{MethodCall}->{Set}     = ["add","Query","__netjabber__:iq:rpc:methodCall"];
+$NAMESPACES{"jabber:iq:rpc"}->{MethodCall}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:methodCall"];
+$NAMESPACES{"jabber:iq:rpc"}->{MethodCall}->{Hash}    = "child-add";
+$NAMESPACES{"jabber:iq:rpc"}->{MethodCall}->{Add}     = ["Query","__netjabber__:iq:rpc:methodCall","MethodCall","methodCall"];
+
+$NAMESPACES{"jabber:iq:rpc"}->{MethodResponse}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:methodResponse",0];
+$NAMESPACES{"jabber:iq:rpc"}->{MethodResponse}->{Set}     = ["add","Query","__netjabber__:iq:rpc:methodResponse"];
+$NAMESPACES{"jabber:iq:rpc"}->{MethodResponse}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:methodResponse"];
+$NAMESPACES{"jabber:iq:rpc"}->{MethodResponse}->{Hash}    = "child-add";
+$NAMESPACES{"jabber:iq:rpc"}->{MethodResponse}->{Add}     = ["Query","__netjabber__:iq:rpc:methodResponse","MethodResponse","methodResponse"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:methodCall
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{MethodName}->{Get}     = "methodName";
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{MethodName}->{Set}     = ["scalar","methodName"];
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{MethodName}->{Defined} = "methodName";
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{MethodName}->{Hash}    = "child-data";
+
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{Params}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:params",0];
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{Params}->{Set}     = ["add","Query","__netjabber__:iq:rpc:params"];
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{Params}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:params"];
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{Params}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{Params}->{Add}     = ["Query","__netjabber__:iq:rpc:params","Params","params"];
+
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{MethodCall}->{Get} = "__netjabber__:master";
+$NAMESPACES{"__netjabber__:iq:rpc:methodCall"}->{MethodCall}->{Set} = ["master"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:methodResponse
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Params}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:params",0];
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Params}->{Set}     = ["add","Query","__netjabber__:iq:rpc:params"];
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Params}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Params}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Params}->{Add}     = ["Query","__netjabber__:iq:rpc:params","Params","params"];
+
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Fault}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:fault",0];
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Fault}->{Set}     = ["add","Query","__netjabber__:iq:rpc:fault"];
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Fault}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:fault"];
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Fault}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:methodResponse"}->{Fault}->{Add}     = ["Query","__netjabber__:iq:rpc:fault","Fault","fault"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:fault
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:fault"}->{Value}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:value",0];
+$NAMESPACES{"__netjabber__:iq:rpc:fault"}->{Value}->{Set}     = ["add","Query","__netjabber__:iq:rpc:value"];
+$NAMESPACES{"__netjabber__:iq:rpc:fault"}->{Value}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:value"];
+$NAMESPACES{"__netjabber__:iq:rpc:fault"}->{Value}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:fault"}->{Value}->{Add}     = ["Query","__netjabber__:iq:rpc:value","Value","value"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:params
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Param}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:param"];
+$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Param}->{Set}     = ["add","Query","__netjabber__:iq:rpc:param"];
+$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Param}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:param"];
+$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Param}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Param}->{Add}     = ["Query","__netjabber__:iq:rpc:param","Param","param"];
+
+$NAMESPACES{"__netjabber__:iq:rpc:params"}->{Params}->{Get} = ["__netjabber__:children:query","__netjabber__:iq:rpc:param"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:param
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:param"}->{Value}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:value",0];
+$NAMESPACES{"__netjabber__:iq:rpc:param"}->{Value}->{Set}     = ["add","Query","__netjabber__:iq:rpc:value"];
+$NAMESPACES{"__netjabber__:iq:rpc:param"}->{Value}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:value"];
+$NAMESPACES{"__netjabber__:iq:rpc:param"}->{Value}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:param"}->{Value}->{Add}     = ["Query","__netjabber__:iq:rpc:value","Value","value"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:value
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Value}->{Get}     = "value";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Value}->{Set}     = ["scalar","value"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Value}->{Defined} = "value";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Value}->{Hash}    = "data";
+
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{I4}->{Get}     = "i4";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{I4}->{Set}     = ["scalar","i4"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{I4}->{Defined} = "i4";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{I4}->{Hash}    = "child-data";
+
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Boolean}->{Get}     = "boolean";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Boolean}->{Set}     = ["scalar","boolean"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Boolean}->{Defined} = "boolean";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Boolean}->{Hash}    = "child-data";
+
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{String}->{Get}     = "string";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{String}->{Set}     = ["scalar","string"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{String}->{Defined} = "string";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{String}->{Hash}    = "child-data";
+
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Double}->{Get}     = "double";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Double}->{Set}     = ["scalar","double"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Double}->{Defined} = "double";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Double}->{Hash}    = "child-data";
+
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{DateTime}->{Get}     = "dateTime.iso8601";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{DateTime}->{Set}     = ["scalar","dateTime.iso8601"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{DateTime}->{Defined} = "dateTime.iso8601";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{DateTime}->{Hash}    = "child-data";
+
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Base64}->{Get}     = "base64";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Base64}->{Set}     = ["scalar","base64"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Base64}->{Defined} = "base64";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Base64}->{Hash}    = "child-data";
+
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Struct}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:struct",0];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Struct}->{Set}     = ["add","Query","__netjabber__:iq:rpc:struct"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Struct}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:struct"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Struct}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Struct}->{Add}     = ["Query","__netjabber__:iq:rpc:struct","Struct","struct"];
+
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Array}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:array",0];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Array}->{Set}     = ["add","Query","__netjabber__:iq:rpc:array"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Array}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:array"];
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Array}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Array}->{Add}     = ["Query","__netjabber__:iq:rpc:array","Array","array"];
+
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Value}->{Get} = "__netjabber__:master";
+$NAMESPACES{"__netjabber__:iq:rpc:value"}->{Value}->{Set} = ["master"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:struct
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Member}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:struct:member"];
+$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Member}->{Set}     = ["add","Query","__netjabber__:iq:rpc:struct:member"];
+$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Member}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:struct:member"];
+$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Member}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Member}->{Add}     = ["Query","__netjabber__:iq:rpc:struct:member","Member","member"];
+
+$NAMESPACES{"__netjabber__:iq:rpc:struct"}->{Members}->{Get} = ["__netjabber__:children:query","__netjabber__:iq:rpc:struct:member"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:struct:member
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Name}->{Get}     = "name";
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Name}->{Set}     = ["scalar","name"];
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Name}->{Defined} = "name";
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Name}->{Hash}    = "child-data";
+
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Value}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:value",0];
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Value}->{Set}     = ["add","Query","__netjabber__:iq:rpc:value"];
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Value}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:value"];
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Value}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Value}->{Add}     = ["Query","__netjabber__:iq:rpc:value","Value","value"];
+
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Member}->{Get} = "__netjabber__:master";
+$NAMESPACES{"__netjabber__:iq:rpc:struct:member"}->{Member}->{Set} = ["master"];
+
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:array
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Data}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:array:data"];
+$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Data}->{Set}     = ["add","Query","__netjabber__:iq:rpc:array:data"];
+$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Data}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:array:data"];
+$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Data}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Data}->{Add}     = ["Query","__netjabber__:iq:rpc:array:data","Data","data"];
+
+$NAMESPACES{"__netjabber__:iq:rpc:array"}->{Datas}->{Get} = ["__netjabber__:children:query","__netjabber__:iq:rpc:array:data"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:rpc:array:data
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:rpc:array:data"}->{Value}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:rpc:value",0];
+$NAMESPACES{"__netjabber__:iq:rpc:array:data"}->{Value}->{Set}     = ["add","Query","__netjabber__:iq:rpc:value"];
+$NAMESPACES{"__netjabber__:iq:rpc:array:data"}->{Value}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:rpc:value"];
+$NAMESPACES{"__netjabber__:iq:rpc:array:data"}->{Value}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:iq:rpc:array:data"}->{Value}->{Add}     = ["Query","__netjabber__:iq:rpc:value","Value","value"];
+
 
 #-----------------------------------------------------------------------------
 # jabber:iq:search
@@ -1139,7 +1328,7 @@ $NAMESPACES{"jabber:iq:search"}->{Search}->{Set} = ["master"];
 
 $NAMESPACES{"jabber:iq:search"}->{Item}->{Get}     = ["__netjabber__:children:query","__netjabber__:iq:search:item"];
 $NAMESPACES{"jabber:iq:search"}->{Item}->{Set}     = ["add","Query","__netjabber__:iq:search:item"];
-$NAMESPACES{"jabber:iq:search"}->{Item}->{Defined} = "__netjabber__:children:query";
+$NAMESPACES{"jabber:iq:search"}->{Item}->{Defined} = ["__netjabber__:children:query","__netjabber__:iq:search:item"];
 $NAMESPACES{"jabber:iq:search"}->{Item}->{Hash}    = "child-add";
 
 $NAMESPACES{"jabber:iq:search"}->{Item}->{Add} = ["Query","__netjabber__:iq:search:item","Item","item"];
@@ -1250,7 +1439,15 @@ sub GetResults {
   my $self = shift;
   my %results;
   foreach my $item ($self->GetItems()) {
-    my %result = $item->GetItem();
+    my %result;
+    my @xData = $item->GetX("jabber:x:data");
+    if ($#xData == -1) {
+      %result = $item->GetItem();
+    } else {
+      foreach my $field ($xData[0]->GetFields()) {
+	$result{$field->GetVar()} = $field->GetValue();
+      }
+    }
     $results{$item->GetJID()} = \%result;
   }
   return %results;

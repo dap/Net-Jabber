@@ -111,6 +111,37 @@ Net::Jabber::Component - Jabber Component Library
                                       it is assumed that they trust your
                                       script.
 
+    Execute(hostname=>string,       - Generic inner loop to handle
+	    port=>int,                connecting to the server, calling
+	    secret=>string,           Process, and reconnecting if the
+	    componentname=>string,    connection is lost.  There are four
+	    connectiontype=>string,   callbacks available that are called
+            connectattempts=>int,     at various places in the loop.
+            connectsleep=>int)          onconnect - when the component
+                                                    connects to the server.
+                                        onprocess - this is the most inner
+                                                    loop and so gets called
+                                                    the most.  Be very very
+                                                    careful what you put
+                                                    here since it can
+                                                    *DRASTICALLY* affect
+                                                    performance.
+                                        ondisconnect - when the connection
+                                                       is lost.
+                                        onexit - when the function gives
+                                                 up trying to connect and
+                                                 exits.
+                                      The arguments are passed straight on
+                                      to the Connect function, except for
+                                      connectattempts and connectsleep.
+                                      connectattempts is the number of
+                                      time that the Component should try to
+                                      connect before giving up.  -1 means
+                                      try forever.  The default is -1.
+                                      connectsleep is the number of seconds
+                                      to sleep between each connection
+                                      attempt.
+
     Disconnect() - closes the connection to the server.
 
     Connected() - returns 1 if the Component is connected to the server,
@@ -132,7 +163,7 @@ use XML::Stream 1.12 qw( Hash );
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0024";
+$VERSION = "1.0025";
 
 use Net::Jabber::Data;
 ($Net::Jabber::Data::VERSION < $VERSION) &&
@@ -185,6 +216,8 @@ sub new {
   $self->{VERSION} = $VERSION;
 
   $self->{LIST}->{currentID} = 0;
+
+  $self->callbackInit();
 
   return $self;
 }
@@ -303,6 +336,7 @@ sub Connect {
 sub Disconnect {
   my $self = shift;
   $self->{STREAM}->Disconnect($self->{SESSION}->{id}) if ($self->{CONNECTED} == 1);
+  $self->{STREAM}->SetCallBacks(node=>undef);
   $self->{CONNECTED} = 0;
   $self->{DEBUG}->Log1("Disconnect: bye bye");
 }
@@ -319,6 +353,75 @@ sub Connected {
 
   $self->{DEBUG}->Log1("Connected: ($self->{CONNECTED})");
   return $self->{CONNECTED};
+}
+
+
+###########################################################################
+#
+# Execute - generic inner loop to listen for incoming messages, stay
+#           connected to the server, and do all the right things.  It
+#           calls a couple of callbacks for the user to put hooks into
+#           place if they choose to.
+#
+###########################################################################
+sub Execute {
+  my $self = shift;
+  my %args;
+  while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
+
+  $args{connectattempts} = -1 unless exists($args{connectattempts});
+  $args{connectsleep} = 5 unless exists($args{connectsleep});
+
+  $self->{DEBUG}->Log1("Execute: begin");
+
+  my $connectAttempt = $args{connectattempts};
+
+  while(($connectAttempt == -1) || ($connectAttempt > 0)) {
+
+    $self->{DEBUG}->Log1("Execute: Attempt to connect ($connectAttempt)");
+
+    my $status;
+    if ($args{connectiontype} eq "accept") {
+      $status = $self->Connect(hostname=>$args{hostname},
+			       port=>$args{port},
+			       secret=>$args{secret},
+			       componentname=>$args{componentname});
+    }
+    if ($args{connectiontype} eq "exec") {
+      $status = $self->Connect(connectiontype=>"exec");
+    }
+
+    if (!(defined($status))) {
+      $self->{DEBUG}->Log1("Execute: Jabber server is not answering.  (".$self->GetErrorCode().")");
+      $self->{CONNECTED} = 0;
+
+      $connectAttempt-- unless ($connectAttempt == -1);
+      sleep($args{connectsleep});
+      next;
+    }
+
+    $self->{DEBUG}->Log1("Execute: Connected...");
+    &{$self->{CB}->{onconnect}}() if exists($self->{CB}->{onconnect});
+
+    while($self->Connected()) {
+
+      while($status = $self->Process()) {
+	&{$self->{CB}->{onprocess}}() if exists($self->{CB}->{onprocess});
+      }
+
+      if (!defined($status)) {
+	$self->Disconnect();
+	$self->{DEBUG}->Log1("Execute: Connection to server lost...");
+	&{$self->{CB}->{ondisconnect}}() if exists($self->{CB}->{ondisconnect});
+
+	$connectAttempt = $args{connectattempts};
+	next;
+      }
+    }
+  }
+
+  $self->{DEBUG}->Log1("Execute: end");
+  &{$self->{CB}->{onexit}}() if exists($self->{CB}->{onexit});
 }
 
 

@@ -264,7 +264,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0024";
+$VERSION = "1.0025";
 
 sub new {
   my $proto = shift;
@@ -351,11 +351,11 @@ $FUNCTIONS{Type}->{Set}        = ["scalar","type"];
 $FUNCTIONS{Type}->{Defined}    = "type";
 $FUNCTIONS{Type}->{Hash}       = "att";
 
-$FUNCTIONS{Data}->{Get}        = "data";
-$FUNCTIONS{Data}->{Defined}    = "data";
+$FUNCTIONS{Data}->{Get}        = "__netjabber__:children:data";
+$FUNCTIONS{Data}->{Defined}    = "__netjabber__:children:data";
 
-$FUNCTIONS{X}->{Get}     = "x";
-$FUNCTIONS{X}->{Defined} = "x";
+$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
+$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
 
 $FUNCTIONS{XDB}->{Get} = "__netjabber__:master";
 $FUNCTIONS{XDB}->{Set} = ["master"];

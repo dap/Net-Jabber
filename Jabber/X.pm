@@ -40,11 +40,11 @@ Net::Jabber::X - Jabber X Module
 
     jabber:x:autoupdate
     jabber:x:conference
+    jabber:x:data
     jabber:x:delay
     jabber:x:encrypted
     jabber:x:event
     jabber:x:expire
-    jabber:x:form
     jabber:x:oob
     jabber:x:roster
     jabber:x:signed
@@ -164,6 +164,44 @@ types I will use:
   JID      GetJID()          SetJID()          DefinedJID()
   master   GetConference()   SetConference()
 
+=head1 jabber:x:data
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetInstructions() SetInstructions() DefinedInstructions()
+  master   GetForm()         SetForm()
+  objects                    AddField()
+  objects                    AddReported()
+  objects  GetFields()
+  objects  GetReported()
+
+=head1 jabber:x:data - field objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetDesc()         SetDesc()         DefinedDesc()
+  string   GetLabel()        SetLabel()        DefinedLabel()
+  string   GetType()         SetType()         DefinedType()
+  string   GetValue()        SetValue()        DefinedValue()
+  string   GetVar()          SetVar()          DefinedVar()
+  master   GetField()        SetField()
+  objects                    AddOption()
+  objects  GetOptions()
+
+=head1 jabber:x:data - reported field objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  objects  GetFields()
+
+=head1 jabber:x:data - field option objects
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+  string   GetLabel()        SetLabel()        DefinedLabel()
+  string   GetValue()        SetValue()        DefinedValue()
+  master   GetOption()       SetOption()
+
 =head1 jabber:x:delay
 
   Type     Get               Set               Defined
@@ -197,36 +235,6 @@ types I will use:
   =======  ================  ================  ==================
   string   GetSeconds()      SetSeconds()      DefinedSeconds()
   master   GetExpire()       SetExpire()
-
-=head1 jabber:x:form
-
-  Type     Get               Set               Defined
-  =======  ================  ================  ==================
-  string   GetInstructions() SetInstructions() DefinedInstructions()
-  master   GetForm()         SetForm()
-  objects                    AddField()
-  objects  GetFields()
-
-=head1 jabber:x:form - field objects
-
-  Type     Get               Set               Defined
-  =======  ================  ================  ================== 
-  string   GetLabel()        SetLabel()        DefinedLabel()
-  string   GetOrder()        SetOrder()        DefinedOrder()
-  string   GetType()         SetType()         DefinedType()
-  string   GetValue()        SetValue()        DefinedValue()
-  string   GetVar()          SetVar()          DefinedVar()
-  master   GetField()        SetField()
-  objects                    AddOption()
-  objects  GetOptions()
-
-=head1 jabber:x:form - field option objects
-
-  Type     Get               Set               Defined
-  =======  ================  ================  ==================
-  string   GetLabel()        SetLabel()        DefinedLabel()
-  string   GetValue()        SetValue()        DefinedValue()
-  master   GetOption()       SetOption()
 
 =head1 jabber:x:oob
 
@@ -305,7 +313,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS %NAMESPACES);
 
-$VERSION = "1.0024";
+$VERSION = "1.0025";
 
 sub new {
   my $proto = shift;
@@ -354,8 +362,8 @@ $FUNCTIONS{XMLNS}->{Set}        = ["scalar","xmlns"];
 $FUNCTIONS{XMLNS}->{Defined}    = "xmlns";
 $FUNCTIONS{XMLNS}->{Hash}       = "att";
 
-$FUNCTIONS{X}->{Get}     = "x";
-$FUNCTIONS{X}->{Defined} = "x";
+$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
+$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
 
 #-----------------------------------------------------------------------------
 # jabber:x:autoupdate
@@ -378,6 +386,100 @@ $NAMESPACES{"jabber:x:conference"}->{JID}->{Hash}       = "att";
 
 $NAMESPACES{"jabber:x:conference"}->{Conference}->{Get} = "__netjabber__:master";
 $NAMESPACES{"jabber:x:conference"}->{Conference}->{Set} = ["master"];
+
+#-----------------------------------------------------------------------------
+# jabber:x:data
+#-----------------------------------------------------------------------------
+$NAMESPACES{"jabber:x:data"}->{Instructions}->{Get}     = "instructions";
+$NAMESPACES{"jabber:x:data"}->{Instructions}->{Set}     = ["scalar","instructions"];
+$NAMESPACES{"jabber:x:data"}->{Instructions}->{Defined} = "instructions";
+$NAMESPACES{"jabber:x:data"}->{Instructions}->{Hash}    = "child-data";
+
+$NAMESPACES{"jabber:x:data"}->{Form}->{Get} = "__netjabber__:master";
+$NAMESPACES{"jabber:x:data"}->{Form}->{Set} = ["master"];
+
+$NAMESPACES{"jabber:x:data"}->{Field}->{Get}     = "";
+$NAMESPACES{"jabber:x:data"}->{Field}->{Set}     = ["add","X","__netjabber__:x:data:field"];
+$NAMESPACES{"jabber:x:data"}->{Field}->{Defined} = "x";
+$NAMESPACES{"jabber:x:data"}->{Field}->{Hash}    = "child-add";
+$NAMESPACES{"jabber:x:data"}->{Field}->{Add}     = ["X","__netjabber__:x:data:field","Field","field"];
+
+$NAMESPACES{"jabber:x:data"}->{Fields}->{Get} = ["__netjabber__:children:x","__netjabber__:x:data:field"];
+
+$NAMESPACES{"jabber:x:data"}->{Reported}->{Get}     = ["__netjabber__:children:x","__netjabber__:x:data:reported"];
+$NAMESPACES{"jabber:x:data"}->{Reported}->{Set}     = ["add","X","__netjabber__:x:data:reported"];
+$NAMESPACES{"jabber:x:data"}->{Reported}->{Defined} = "x";
+$NAMESPACES{"jabber:x:data"}->{Reported}->{Hash}    = "child-add";
+
+$NAMESPACES{"jabber:x:data"}->{Reported}->{Add}     = ["X","__netjabber__:x:data:reported","Reported","reported"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:x:data:reported
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Get}     = "";
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Set}     = ["add","X","__netjabber__:x:data:field"];
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Defined} = "x";
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Hash}    = "child-add";
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Field}->{Add}     = ["X","__netjabber__:x:data:field","Field","field"];
+
+$NAMESPACES{"__netjabber__:x:data:reported"}->{Fields}->{Get} = ["__netjabber__:children:x","__netjabber__:x:data:field"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:x:data:field
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:x:data:field"}->{Desc}->{Get}        = "desc";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Desc}->{Set}        = ["scalar","desc"];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Desc}->{Defined}    = "desc";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Desc}->{Hash}       = "child-data";
+
+$NAMESPACES{"__netjabber__:x:data:field"}->{Label}->{Get}        = "label";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Label}->{Set}        = ["scalar","label"];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Label}->{Defined}    = "label";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Label}->{Hash}       = "att";
+
+$NAMESPACES{"__netjabber__:x:data:field"}->{Type}->{Get}        = "type";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Type}->{Set}        = ["scalar","type"];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Type}->{Defined}    = "type";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Type}->{Hash}       = "att";
+
+$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Get}        = "value";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Set}        = ["array","value"];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Defined}    = "value";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Hash}       = "child-data";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Value}->{Remove}     = "value";
+
+$NAMESPACES{"__netjabber__:x:data:field"}->{Var}->{Get}        = "var";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Var}->{Set}        = ["scalar","var"];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Var}->{Defined}    = "var";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Var}->{Hash}       = "att";
+
+$NAMESPACES{"__netjabber__:x:data:field"}->{Field}->{Get} = "__netjabber__:master";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Field}->{Set} = ["master"];
+
+$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Get}        = "";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Set}        = ["add","X","__netjabber__:x:data:field:option"];
+$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Defined}    = "x";
+$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Hash}       = "child-add";
+
+$NAMESPACES{"__netjabber__:x:data:field"}->{Option}->{Add} = ["X","__netjabber__:x:data:field:option","Option","option"];
+
+$NAMESPACES{"__netjabber__:x:data:field"}->{Options}->{Get} = ["__netjabber__:children:x","__netjabber__:x:data:field:option"];
+
+#-----------------------------------------------------------------------------
+# __netjabber__:x:data:field:option
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Label}->{Get}        = "label";
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Label}->{Set}        = ["scalar","label"];
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Label}->{Defined}    = "label";
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Label}->{Hash}       = "att";
+
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Value}->{Get}        = "value";
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Value}->{Set}        = ["scalar","value"];
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Value}->{Defined}    = "value";
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Value}->{Hash}       = "child-data";
+
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Option}->{Get} = "__netjabber__:master";
+$NAMESPACES{"__netjabber__:x:data:field:option"}->{Option}->{Set} = ["master"];
 
 #-----------------------------------------------------------------------------
 # jabber:x:delay
@@ -452,82 +554,6 @@ $NAMESPACES{"jabber:x:expire"}->{Seconds}->{Hash}       = "att";
 
 $NAMESPACES{"jabber:x:expire"}->{Expire}->{Get} = "__netjabber__:master";
 $NAMESPACES{"jabber:x:expire"}->{Expire}->{Set} = ["master"];
-
-#-----------------------------------------------------------------------------
-# jabber:x:form
-#-----------------------------------------------------------------------------
-$NAMESPACES{"jabber:x:form"}->{Instructions}->{Get}        = "instructions";
-$NAMESPACES{"jabber:x:form"}->{Instructions}->{Set}        = ["scalar","instructions"];
-$NAMESPACES{"jabber:x:form"}->{Instructions}->{Defined}    = "instructions";
-$NAMESPACES{"jabber:x:form"}->{Instructions}->{Hash}       = "child-data";
-
-$NAMESPACES{"jabber:x:form"}->{Form}->{Get} = "__netjabber__:master";
-$NAMESPACES{"jabber:x:form"}->{Form}->{Set} = ["master"];
-
-$NAMESPACES{"jabber:x:form"}->{Field}->{Get}        = "";
-$NAMESPACES{"jabber:x:form"}->{Field}->{Set}        = ["add","X","__netjabber__:x:form:field"];
-$NAMESPACES{"jabber:x:form"}->{Field}->{Defined}    = "x";
-$NAMESPACES{"jabber:x:form"}->{Field}->{Hash}       = "child-add";
-
-$NAMESPACES{"jabber:x:form"}->{Field}->{Add} = ["X","__netjabber__:x:form:field","Field","field"];
-
-$NAMESPACES{"jabber:x:form"}->{Fields}->{Get} = ["__netjabber__:children:x","__netjabber__:x:form:field"];
-
-#-----------------------------------------------------------------------------
-# __netjabber__:x:form:field
-#-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:x:form:field"}->{Label}->{Get}        = "label";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Label}->{Set}        = ["scalar","label"];
-$NAMESPACES{"__netjabber__:x:form:field"}->{Label}->{Defined}    = "label";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Label}->{Hash}       = "att";
-
-$NAMESPACES{"__netjabber__:x:form:field"}->{Order}->{Get}        = "order";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Order}->{Set}        = ["scalar","order"];
-$NAMESPACES{"__netjabber__:x:form:field"}->{Order}->{Defined}    = "order";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Order}->{Hash}       = "att";
-
-$NAMESPACES{"__netjabber__:x:form:field"}->{Type}->{Get}        = "type";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Type}->{Set}        = ["scalar","type"];
-$NAMESPACES{"__netjabber__:x:form:field"}->{Type}->{Defined}    = "type";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Type}->{Hash}       = "att";
-
-$NAMESPACES{"__netjabber__:x:form:field"}->{Value}->{Get}        = "value";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Value}->{Set}        = ["scalar","value"];
-$NAMESPACES{"__netjabber__:x:form:field"}->{Value}->{Defined}    = "value";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Value}->{Hash}       = "child-data";
-
-$NAMESPACES{"__netjabber__:x:form:field"}->{Var}->{Get}        = "var";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Var}->{Set}        = ["scalar","var"];
-$NAMESPACES{"__netjabber__:x:form:field"}->{Var}->{Defined}    = "var";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Var}->{Hash}       = "att";
-
-$NAMESPACES{"__netjabber__:x:form:field"}->{Field}->{Get} = "__netjabber__:master";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Field}->{Set} = ["master"];
-
-$NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Get}        = "";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Set}        = ["add","X","__netjabber__:x:form:field:option"];
-$NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Defined}    = "x";
-$NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Hash}       = "child-add";
-
-$NAMESPACES{"__netjabber__:x:form:field"}->{Option}->{Add} = ["X","__netjabber__:x:form:field:option","Option","option"];
-
-$NAMESPACES{"__netjabber__:x:form:field"}->{Options}->{Get} = ["__netjabber__:children:x","__netjabber__:x:form:field:option"];
-
-#-----------------------------------------------------------------------------
-# __netjabber__:x:form:field:option
-#-----------------------------------------------------------------------------
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Label}->{Get}        = "label";
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Label}->{Set}        = ["scalar","label"];
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Label}->{Defined}    = "label";
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Label}->{Hash}       = "att";
-
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Value}->{Get}        = "value";
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Value}->{Set}        = ["scalar","value"];
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Value}->{Defined}    = "value";
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Value}->{Hash}       = "att";
-
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Option}->{Get} = "__netjabber__:master";
-$NAMESPACES{"__netjabber__:x:form:field:option"}->{Option}->{Set} = ["master"];
 
 #-----------------------------------------------------------------------------
 # jabber:x:oob

@@ -1,3 +1,31 @@
+1.0025
+======
+  - Documented the PresenceSend function a little better.
+  - Added GetHumanTime function to convert seconds to
+    a sentence.  Useful for various Jabber things (last,
+    time, etc.)
+  - Added the ability to remove a callback.  This is to
+    try and speed thigs up by being able to unregister the
+    receive and send callbacks when you don't care about them.
+  - Added jabber:iq:rpc support based on JEP-0009.
+  - Fixed bad function call in VersionQuery.
+  - Added code to handle tracking the user's activity.
+  - Added <desc/> to the x:data.
+  - Added RemoveXXXX function to match GetXXXX and SetXXXX.
+  - Added timeouts to RegisterRequest(), SearchRequest(), and
+    LastQuery().
+  - Fixed bug in LastQuery().
+  - Finished support for jabber:x:data (previously jabber:x:form
+    in the 1.0021 change messages).
+  - Added Execute function to Component to provide a generic
+    inner loop for easier component writing.
+  - Added support for a finer level of callbacks.  You can now
+    create callbacks for all types of <iq/> packets and
+    namespaces.  See Net::Jabber::Protocol for more details.
+  - Fixed bugs with the Raw XML functionality.
+  - Added documentation to Net::Jabber for the Raw XML
+    functions.
+
 1.0024
 ======
   - Fixed a bug where no flag children were being put into the

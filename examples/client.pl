@@ -21,6 +21,10 @@ $SIG{INT} = \&Stop;
 
 my $Connection = new Net::Jabber::Client();
 
+$Connection->SetCallBacks("message" => \&InMessage,
+			  "presence" => \&InPresence,
+			  "iq" => \&InIQ);
+
 my $status = $Connection->Connect("hostname" => $server,
 				  "port" => $port);
 
@@ -29,14 +33,6 @@ if (!(defined($status))) {
   print "        ($!)\n";
   exit(0);
 }
-
-
-
-$Connection->SetCallBacks("message" => \&InMessage,
-			  "presence" => \&InPresence,
-			  "iq" => \&InIQ);
-
-$Connection->Connect();
 
 my @result = $Connection->AuthSend("username" => $username,
 				   "password" => $password,
@@ -76,8 +72,10 @@ sub InMessage{
   my $message = shift;
 
   my $type = $message->GetType();
-  my $from = $message->GetFrom();
-  my $resource = $message->GetResource();
+  my $fromJID = $message->GetFrom("jid");
+
+  my $from = $fromJID->GetUserID();
+  my $resource = $fromJID->GetResource();
   my $subject = $message->GetSubject();
   my $body = $message->GetBody();
   print "===\n";

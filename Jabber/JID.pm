@@ -141,7 +141,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0024";
+$VERSION = "1.0025";
 
 sub new {
   my $proto = shift;
@@ -194,8 +194,11 @@ sub BuildJID {
   my $self = shift;
   $self->{JID} = $self->{USERID};
   $self->{JID} .= "\@" if ($self->{USERID} ne "");
-  $self->{JID} .= $self->{SERVER};
-  $self->{JID} .= "/".$self->{RESOURCE} if ($self->{RESOURCE} ne "");
+  $self->{JID} .= $self->{SERVER} if (exists($self->{SERVER}) &&
+				      defined($self->{SERVER}));
+  $self->{JID} .= "/".$self->{RESOURCE} if (exists($self->{RESOURCE}) &&
+					    defined($self->{RESOURCE}) &&
+					    ($self->{RESOURCE} ne ""));
 }
 
 

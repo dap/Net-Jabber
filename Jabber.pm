@@ -48,6 +48,17 @@ Net::Jabber - Jabber Perl Library
   There is are example scripts in the example directory that
   provide you with examples of very simple Jabber programs.
 
+
+  NOTE: The parser that XML::Stream::Parser provides, as are most Perl
+  parsers, is synchronous.  If you are in the middle of parsing a
+  packet and call a user defined callback, the Parser is blocked until
+  your callback finishes.  This means you cannot be operating on a
+  packet, send out another packet and wait for a response to that packet.
+  It will never get to you.  Threading might solve this, but as we all
+  know threading in Perl is not quite up to par yet.  This issue will be
+  revisted in the future.
+
+
 =head1 EXAMPLES
 
   In an attempt to cut down on memory usage, not all of the modules
@@ -109,6 +120,20 @@ Net::Jabber - Jabber Perl Library
                         $xObj = $obj->NewX("my:namespace");
                         $xObj = $obj->NewX("my:namespace","foo");
                           ie. <foo xmlns='my:namespace'...></foo>
+
+  InsertRawXML(string) - puts the specified string raw into the XML
+                         packet that you call this on.
+
+                         $message->InsertRawXML("<foo></foo>")
+                           <message...>...<foo></foo></message>
+
+                         $x = $message->NewX(..);
+                         $x->InsertRawXML("test");
+
+                         $query = $iq->GetQuery(..);
+                         $query->InsertRawXML("test");
+
+  ClearRawXML() - removes the raw XML from the packet.
 
 =head2 Test functions
 
@@ -217,7 +242,7 @@ if (eval "require Time::Timezone") {
   $TIMEZONE = 0;
 }
 
-$VERSION = "1.0024";
+$VERSION = "1.0025";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -329,15 +354,19 @@ sub Get {
   $arg0 = $_[0] if ($#_ >= 0);
   $arg1 = $_[1] if ($#_ >= 1);
 
+  my $listIndex = ((ref($args) eq "ARRAY") ?
+		   (defined($$args[2]) ? $$args[2] : -1) :
+		   -1);
   my $xmlns = ((ref($args) eq "ARRAY") ? $$args[1] : "");
   my $key = ((ref($args) eq "ARRAY") ? $$args[0] : $args);
+
+  #&DEBUG($self,"Get: full args(",join(",",$args),")");
+  #&DEBUG($self,"Get: args($arg0,$arg1)");
+  #&DEBUG($self,"Get: listIndex($listIndex) xmlns($xmlns) key($key)");
 
   return if ($key eq "");
 
   if ($key eq "__netjabber__:master") {
-    #print "self($self)\n";
-    #$self->debug();
-
     my %hash;
     foreach my $func (@{$funcs}) {
       next if ($func eq "XMLNS");
@@ -371,6 +400,9 @@ sub Get {
       foreach my $item (@{$self->{$loc}->{$key}}) {
 	push(@list,$item) if ($item->GetXMLNS() eq $arg0);
       }
+      if ($listIndex != -1) {
+	return $list[$listIndex];
+      }
       return @list;
     }
     if ($xmlns ne "") {
@@ -379,10 +411,22 @@ sub Get {
 	foreach my $item (@{$self->{$loc}->{$key}}) {
 	  push(@list,$item) if ($item->GetXMLNS() eq $xmlns);
 	}
+	if ($listIndex != -1) {
+	  return $list[$listIndex];
+	}
 	return @list;
       }
       return;
     }
+
+    if (exists($self->{$loc}->{xmlns}) &&
+	($self->{$loc}->{xmlns} eq "__netjabber__:x:data:field")) {
+      if (($key eq "value") &&
+	  ($#{$self->{$loc}->{$key}} == 0)) {
+	return (@{$self->{$loc}->{$key}})[0];
+      }
+    }
+
     return @{$self->{$loc}->{$key}};
   }
   if (ref($self->{$loc}->{$key}) eq "HASH") {
@@ -407,6 +451,44 @@ sub Defined {
   my $funcs = shift;
   my $xmlns = shift;
 
+  #&DEBUG($self,"Defined:","key($key) xmlns($xmlns)");
+
+  if (ref($key) eq "ARRAY") {
+    $xmlns = $$key[1];
+    $key = $$key[0];
+  }
+
+  my $loc = "DATA";
+  if ($key =~ /^__netjabber__\:children\:(.*)$/) {
+    $key = $1;
+    $loc = "CHILDREN";
+  }
+
+  #&DEBUG($self,"Defined:","key($key) xmlns($xmlns) loc($loc)");
+
+  $xmlns = "" unless (defined($xmlns) &&
+		      (($key eq "x") || ($key eq "query")|| ($key eq "data")));
+
+  return exists($self->{$loc}->{$key}) if ($xmlns eq "");
+  foreach my $x (@{$self->{$loc}->{$key}}) {
+    #print $x->GetXMLNS(),"\n";
+    return 1 if ($x->GetXMLNS() eq $xmlns);
+  }
+  return 0;
+}
+
+
+##############################################################################
+#
+# Remove - deletes the hash element if it exists.
+#
+##############################################################################
+sub Remove {
+  my $self = shift;
+  my $key = shift;
+  my $funcs = shift;
+  my $xmlns = shift;
+
   my $loc = "DATA";
   if ($key =~ /^__netjabber__\:children\:(.*)$/) {
     $key = $1;
@@ -416,11 +498,7 @@ sub Defined {
   $xmlns = "" unless (defined($xmlns) &&
 		      (($key eq "x") || ($key eq "query")|| ($key eq "data")));
 
-  return exists($self->{$loc}->{$key}) if ($xmlns eq "");
-  foreach my $x (@{$self->{$loc}->{$key}}) {
-    return 1 if ($x->GetXMLNS() eq $xmlns);
-  }
-  return 0;
+  delete($self->{$loc}->{$key}) if exists($self->{$loc}->{$key});
 }
 
 
@@ -442,7 +520,7 @@ sub Set {
   $arg0 = $_[0] if ($#_ >= 0);
   $arg1 = $_[1] if ($#_ >= 1);
 
-  #&DEBUG($self,"Set: type($type) key($key) args(",join(",",@_),")");
+  #&DEBUG($self,"Set: self($self) type($type) key($key) args(",join(",",@_),")");
 
   if ($type eq "scalar") {
     $self->{DATA}->{$key} = shift;
@@ -666,8 +744,10 @@ sub ParseTree {
   #print "ParseTree: root($root) ref(",ref($self),")\n";
 
   if ($#xTrees > -1) {
-    if ((ref($self) eq "Net::Jabber::IQ") ||
-	(ref($self) eq "Net::Jabber::Query")) {
+    if (((ref($self) eq "Net::Jabber::IQ") ||
+	 (ref($self) eq "Net::Jabber::Query")) &&
+	exists($Net::Jabber::Query::NAMESPACES{$self->{TREE}->{$xTrees[0].'-att-xmlns'}})
+       ) {
 
       #print "do the query:\n";
       #&Net::Jabber::printData("  \$xTrees",\@xTrees);
@@ -675,8 +755,10 @@ sub ParseTree {
       $self->AddQuery($self->{TREE});
     }
 
-    if ((ref($self) eq "Net::Jabber::XDB") ||
-	(ref($self) eq "Net::Jabber::Data")) {
+    if (((ref($self) eq "Net::Jabber::XDB") ||
+	 (ref($self) eq "Net::Jabber::Data")) &&
+	exists($Net::Jabber::Data::NAMESPACES{$self->{TREE}->{$xTrees[0].'-att-xmlns'}})
+       ) {
 
       #print "do the data:\n";
       #&Net::Jabber::printData("  \$xTrees",\@xTrees);
@@ -689,11 +771,13 @@ sub ParseTree {
 
     foreach my $xTree (@xTrees) {
       $self->{TREE}->{'root'} = $xTree;
-      if (ref($self) eq "Net::Jabber::Query") {
+      if ((ref($self) eq "Net::Jabber::Query") &&
+	  exists($Net::Jabber::Query::NAMESPACES{$self->{TREE}->{$xTree.'-att-xmlns'}})) {
 	$self->AddQuery($self->{TREE});
-      } elsif (ref($self) eq "Net::Jabber::Data") {
+      } elsif ((ref($self) eq "Net::Jabber::Data")  &&
+	       exists($Net::Jabber::Data::NAMESPACES{$self->{TREE}->{$xTree.'-att-xmlns'}})) {
 	$self->AddData($self->{TREE});
-      } else {
+      } elsif (exists($Net::Jabber::X::NAMESPACES{$self->{TREE}->{$xTree.'-att-xmlns'}})) {
 	$self->AddX($self->{TREE});
       }
     }
@@ -705,6 +789,11 @@ sub ParseTree {
 }
 
 
+##############################################################################
+#
+# GetXML - Returns a string that represents the packet.
+#
+##############################################################################
 sub GetXML {
   my $self = shift;
   my(@funcs) = @_;
@@ -745,7 +834,7 @@ sub GetXML {
       exists($self->{CHILDREN}->{query}) ||
       exists($self->{CHILDREN}->{data}) ||
       exists($self->{CHILDREN}->{x}) ||
-      (exists($self->{RAWXWML}) && ($#{$self->{RAWXML}} > 0))) {
+      (exists($self->{RAWXML}) && ($#{$self->{RAWXML}} > -1))) {
 
     $string .= ">";
 
@@ -756,7 +845,12 @@ sub GetXML {
     }
 
     if (exists($funcs{'child-data'}) || exists($funcs{'child-flag'})) {
-      foreach my $func (split(",",$funcs{'child-data'}),split(",",$funcs{'child-flag'})) {
+      my @funcList;
+      push(@funcList,split(",",$funcs{'child-data'}))
+	if exists($funcs{'child-data'});
+      push(@funcList,split(",",$funcs{'child-flag'}))
+	if exists($funcs{'child-flag'});
+      foreach my $func (@funcList) {
 	my $lcfunc = $self->Get($func);
 	my $addit = eval "\$self->Defined$func();";
 	$addit = 0 unless defined($addit);
@@ -826,7 +920,7 @@ sub GetXML {
     }
 
     $string .= join("",@{$self->{RAWXML}})
-      if (exists($self->{RAWXWML}) && ($#{$self->{RAWXML}} > 0));
+      if (exists($self->{RAWXML}) && ($#{$self->{RAWXML}} > -1));
 
     $string .= "</".$self->{TAG}.">";
   } else {
@@ -840,6 +934,7 @@ sub GetXML {
 $CALLBACKS{Get} = sub{ return &Net::Jabber::Get(@_); };
 $CALLBACKS{Set} = sub{ return &Net::Jabber::Set(@_); };
 $CALLBACKS{Add} = sub{ return &Net::Jabber::Add(@_); };
+$CALLBACKS{Remove} = sub{ return &Net::Jabber::Remove(@_); };
 $CALLBACKS{Defined} = sub{ return &Net::Jabber::Defined(@_); };
 
 
@@ -856,7 +951,7 @@ sub AutoLoad {
   my ($package) = ($AutoLoad =~ /^(.*)::/);
   $AutoLoad =~ s/^.*:://;
   #&DEBUG($self,"AutoLoad: tag($self->{TAG}) package($package) function($AutoLoad) args(",join(",",@_),")");
-  my ($type,$value) = ($AutoLoad =~ /^(Add|Get|Set|Defined|ValType)(.*)$/);
+  my ($type,$value) = ($AutoLoad =~ /^(Add|Get|Set|Remove|Defined|ValType)(.*)$/);
   $type = "" unless defined($type);
   $value = "" unless defined($value);
 
@@ -881,6 +976,7 @@ sub AutoLoad {
 					   exists($FUNCTIONS{$arg0}->{Add}));
 
   my @funcs = grep { exists($FUNCTIONS{$_}->{Hash}) } keys(%FUNCTIONS);
+
 
   return &{$CALLBACKS{$type}}($self,$FUNCTIONS{$value}->{$type},\@funcs,@_)
     if (exists($FUNCTIONS{$value}) &&
@@ -1176,52 +1272,7 @@ sub printData {
 ##############################################################################
 sub sprintData {
   my ($preString,$data) = @_;
-
-  my $outString = "";
-
-  if (ref($data) eq "HASH") {
-    my $key;
-    foreach $key (sort { $a cmp $b } keys(%{$data})) {
-      if (ref($$data{$key}) eq "") {
-	$outString .= $preString."{'$key'} = \"$$data{$key}\";\n";
-      } else {
-	if (ref($$data{$key}) =~ /Net::Jabber/) {
-	  $outString .= $preString."{'$key'} = ".ref($$data{$key}).";\n";
-	} else {
-	  $outString .= $preString."{'$key'};\n";
-	  $outString .= &sprintData($preString."{'$key'}->",$$data{$key});
-	}
-      }
-    }
-  } else {
-    if (ref($data) eq "ARRAY") {
-      my $index;
-      foreach $index (0..$#{$data}) {
-	if (ref($$data[$index]) eq "") {
-	  $outString .= $preString."[$index] = \"$$data[$index]\";\n";
-	} else {
-	  if (ref($$data[$index]) =~ /Net::Jabber/) {
-	    $outString .= $preString."[$index] = ".ref($$data[$index]).";\n";
-	  } else {
-	    $outString .= $preString."[$index];\n";
-	    $outString .= &sprintData($preString."[$index]->",$$data[$index]);
-	  }
-	}
-      }
-    } else {
-      if (ref($data) eq "REF") {
-	$outString .= &sprintData($preString."->",$$data);
-      } else {
-	if (ref($data) eq "") {
-	  $outString .= $preString." = \"$data\";\n";
-	} else {
- 	  $outString .= $preString." = ".ref($data).";\n";
-	}
-      }
-    }
-  }
-
-  return $outString;
+  return &XML::Stream::sprintData(@_);
 }
 
 
@@ -1268,5 +1319,52 @@ sub GetTimeStamp {
   return sprintf("%02d:%02d",$hour,$min) if ($length eq "shortest");
 }
 
+
+##############################################################################
+#
+# GetHumanTime - convert seconds, into a human readable time string.
+#
+##############################################################################
+sub GetHumanTime {
+  my $seconds = shift;
+
+  my $minutes = 0;
+  my $hours = 0;
+  my $days = 0;
+  my $weeks = 0;
+
+  while ($seconds >= 60) {
+    $minutes++;
+    if ($minutes == 60) {
+      $hours++;
+      if ($hours == 24) {
+	$days++;
+	if ($days == 7) {
+	  $weeks++;
+	  $days -= 7;
+	}
+	$hours -= 24;
+      }
+      $minutes -= 60;
+    }
+    $seconds -= 60;
+  }
+
+  my $humanTime;
+  $humanTime .= "$weeks week " if ($weeks == 1);
+  $humanTime .= "$weeks weeks " if ($weeks > 1);
+  $humanTime .= "$days day " if ($days == 1);
+  $humanTime .= "$days days " if ($days > 1);
+  $humanTime .= "$hours hour " if ($hours == 1);
+  $humanTime .= "$hours hours " if ($hours > 1);
+  $humanTime .= "$minutes minute " if ($minutes == 1);
+  $humanTime .= "$minutes minutes " if ($minutes > 1);
+  $humanTime .= "$seconds second " if ($seconds == 1);
+  $humanTime .= "$seconds seconds " if ($seconds > 1);
+
+  $humanTime = "none" if ($humanTime eq "");
+
+  return $humanTime;
+}
 
 1;

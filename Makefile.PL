@@ -31,6 +31,6 @@ WriteMakefile(
 			      'XML::Stream' => 1.14,
 			      'Digest::SHA1' => 1.02
 			     },
-	      'VERSION' => '1.0024',
+	      'VERSION' => '1.0025',
 	      'dist' => { 'COMPRESS' => 'gzip --best' }
 	     );

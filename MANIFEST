@@ -17,6 +17,7 @@ Jabber/Protocol.pm
 Jabber/Key.pm
 Jabber/JID.pm
 Jabber/Message.pm
+Jabber/Namespaces.pm
 Jabber/Presence.pm
 Jabber/IQ.pm
 Jabber/XDB.pm
@@ -27,3 +28,5 @@ Jabber/Dialback/Result.pm
 Jabber/Dialback/Verify.pm
 Jabber/Query.pm
 Jabber/X.pm
+t/1_load.t
+t/2_client.t
