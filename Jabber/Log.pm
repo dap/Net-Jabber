@@ -162,7 +162,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
 sub new {
   my $proto = shift;
@@ -207,7 +207,7 @@ sub AUTOLOAD {
   my $treeName = "LOG";
   
   return "log" if ($AUTOLOAD eq "GetTag");
-  return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
+  return &XML::Stream::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
   return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
   return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
   return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
@@ -237,7 +237,7 @@ $FUNCTIONS{defined}->{Type} = ["existence","","type"];
 sub GetXML {
   my $self = shift;
   $self->MergeX();
-  return &Net::Jabber::BuildXML(@{$self->{LOG}});
+  return &XML::Stream::BuildXML(@{$self->{LOG}});
 }
 
 
@@ -283,7 +283,7 @@ sub SetFrom {
     $from = $from->GetJID("full");
   }
   return unless ($from ne "");
-  &Net::Jabber::SetXMLData("single",$self->{LOG},"","",{from=>$from});
+  &XML::Stream::SetXMLData("single",$self->{LOG},"","",{from=>$from});
 }
 
 1;

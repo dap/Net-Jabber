@@ -33,10 +33,10 @@ Net::Jabber::Client - Jabber Client Library
 
 =head1 DESCRIPTION
 
-  Client.pm uses Protocol.pm to provide enough high level APIs and 
-  automation of the low level APIs that writing a Jabber Client in 
-  Perl is trivial.  For those that wish to work with the low level 
-  you can do that too, but those functions are covered in the 
+  Client.pm uses Protocol.pm to provide enough high level APIs and
+  automation of the low level APIs that writing a Jabber Client in
+  Perl is trivial.  For those that wish to work with the low level
+  you can do that too, but those functions are covered in the
   documentation for each module.
 
   Net::Jabber::Client provides functions to connect to a Jabber server,
@@ -47,12 +47,12 @@ Net::Jabber::Client - Jabber Client Library
   For more information on how the details for how Net::Jabber is written
   please see the help for Net::Jabber itself.
 
-  For a full list of high level functions available please see 
+  For a full list of high level functions available please see
   Net::Jabber::Protocol.
 
 =head2 Basic Functions
 
-    use Net::Jabber;
+    use Net::Jabber qw(Client);
 
     $Con = new Net::Jabber::Client();
 
@@ -74,17 +74,26 @@ Net::Jabber::Client - Jabber Client Library
 
     new(debuglevel=>0|1|2, - creates the Client object.  debugfile
         debugfile=>string,   should be set to the path for the debug
-        debugtime=>0|1)      log to be written.  If set to "stdout" 
-                             then the debug will go there.  debuglevel 
+        debugtime=>0|1)      log to be written.  If set to "stdout"
+                             then the debug will go there.  debuglevel
                              controls the amount of debug.  For more
                              information about the valid setting for
-                             debuglevel, debugfile, and debugtime see 
+                             debuglevel, debugfile, and debugtime see
                              Net::Jabber::Debug.
 
-    Connect(hostname=>string, - opens a connection to the server listed
-	    port=>integer)      in the host name value, on the port
-                                listed.  The defaults for the two are
-				localhost and 5222.
+    Connect(hostname=>string,      - opens a connection to the server
+	    port=>integer,           listed in the hostname (default
+            connectiontype=>string,  localhost), on the port (default
+            ssl=>0|1)                5222) listed, using the
+                                     connectiontype listed (default
+                                     tcpip).  The two connection types
+                                     available are:
+                                       tcpip  standard TCP socket
+                                       http   TCP socket, but with the
+                                              headers needed to talk
+                                              through a web proxy
+                                     If you specify ssl, then it will
+                                     be used to connect.
 
     Disconnect() - closes the connection to the server.
 
@@ -103,15 +112,11 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-use XML::Stream 1.06;
+use XML::Stream 1.12 qw(Hash);
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0021";
-
-use Net::Jabber::Protocol;
-($Net::Jabber::Protocol::VERSION < $VERSION) &&
-  die("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
+$VERSION = "1.0022";
 
 sub new {
   my $proto = shift;
@@ -124,7 +129,7 @@ sub new {
 
   $self->{DELEGATE} = new Net::Jabber::Protocol();
 
-  $self->{DEBUG} = 
+  $self->{DEBUG} =
     new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
 			   file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
 			   time=>exists($args{debugtime}) ? $args{debugtime} : 0,
@@ -132,19 +137,21 @@ sub new {
 			   header=>"NJ::Client"
 			  );
 
-  $self->{SERVER} = {hostname => "localhost", 
+  $self->{SERVER} = {hostname => "localhost",
 		     port => 5222 ,
-		     ssl=>(exists($args{ssl}) ? $args{ssl} : 0)
+		     ssl=>(exists($args{ssl}) ? $args{ssl} : 0),
+		     connectiontype=>(exists($args{connectiontype}) ? $args{connectiontype} : "tcpip")
 		    };
 
   $self->{CONNECTED} = 0;
 
-  $self->{STREAM} = new XML::Stream(debugfh=>$self->{DEBUG}->GetHandle(),
+  $self->{STREAM} = new XML::Stream(style=>"hash",
+				    debugfh=>$self->{DEBUG}->GetHandle(),
 				    debuglevel=>$self->{DEBUG}->GetLevel(),
 				    debugtime=>$self->{DEBUG}->GetTime());
 
   $self->{VERSION} = $VERSION;
-  
+
   $self->{LIST}->{currentID} = 0;
 
   return $self;
@@ -182,21 +189,24 @@ sub Connect {
 
   $self->{DEBUG}->Log1("Connect: hostname($self->{SERVER}->{hostname})");
 
-  $self->{SESSION} =
-    $self->{STREAM}->
-      Connect(hostname=>$self->{SERVER}->{hostname},
-	      port=>$self->{SERVER}->{port},
-	      namespace=>"jabber:client",
-	      ssl=>$self->{SERVER}->{ssl},
-	      timeout=>10
-	     ) || ($self->SetErrorCode($self->{STREAM}->GetErrorCode()) &&
-		   return);
-  
-  $self->{DEBUG}->Log1("Connect: connection made");
+  if ($self->{SESSION} =
+        $self->{STREAM}->
+          Connect(hostname=>$self->{SERVER}->{hostname},
+		  port=>$self->{SERVER}->{port},
+		  namespace=>"jabber:client",
+		  connectiontype=>$self->{SERVER}->{connectiontype},
+		  ssl=>$self->{SERVER}->{ssl},
+		  timeout=>10
+		 )) {
+    $self->{DEBUG}->Log1("Connect: connection made");
 
-  $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
-  $self->{CONNECTED} = 1;
-  return 1;
+    $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
+    $self->{CONNECTED} = 1;
+    return 1;
+  } else {
+    $self->SetErrorCode($self->{STREAM}->GetErrorCode());
+    return;
+  }
 }
 
 
@@ -208,7 +218,7 @@ sub Connect {
 sub Disconnect {
   my $self = shift;
 
-  $self->{STREAM}->Disconnect($self->{SESSION}->{id}) 
+  $self->{STREAM}->Disconnect($self->{SESSION}->{id})
     if ($self->{CONNECTED} == 1);
   $self->{CONNECTED} = 0;
   $self->{DEBUG}->Log1("Disconnect: bye bye");

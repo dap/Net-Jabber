@@ -124,9 +124,9 @@ require 5.003;
 use strict;
 use FileHandle;
 use Carp;
-use vars qw($VERSION %HANDLES $DEFAULT $DEFAULTLEVEL $AUTOLOAD);
+use vars qw($VERSION %HANDLES $DEFAULT $DEFAULTLEVEL $DEFAULTTIME $AUTOLOAD);
 
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
 sub new {
   my $proto = shift;
@@ -158,25 +158,21 @@ sub Init {
   $args{time} = 0 if !exists($args{time});
   $args{setdefault} = 0 if !exists($args{setdefault});
   $args{usedefault} = 0 if !exists($args{usedefault});
-  
+
   $self->{TIME} = $args{time};
 
-  if (($args{usedefault} == 1) && ($Net::Jabber::Debug::DEFAULT ne "")) {
+  if ($args{usedefault} == 1) {
     $args{setdefault} = 0;
-
-    $self->{TIME} = $Net::Jabber::Debug::DEFAULTTIME;
-    $self->{LEVEL} = $Net::Jabber::Debug::DEFAULTLEVEL;
-    $self->{HANDLE} = $Net::Jabber::Debug::DEFAULT;
-
-  } else { 
+    $self->{USEDEFAULT} = 1;
+  } else {
     $self->{LEVEL} = 0;
     $self->{LEVEL} = $args{level} if exists($args{level});
-    
+
     $self->{HANDLE} = new FileHandle(">&STDERR");
     $self->{HANDLE}->autoflush(1);
     if (exists($args{file})) {
       if (exists($Net::Jabber::Debug::HANDLES{$args{file}})) {
-	$self->{HANDLE} = $Ne::Jabber::Debug::HANDLES{$args{file}};
+	$self->{HANDLE} = $Net::Jabber::Debug::HANDLES{$args{file}};
 	$self->{HANDLE}->autoflush(1);
       } else {
 	if (-e $args{file}) {
@@ -215,7 +211,7 @@ sub Init {
     $Net::Jabber::Debug::DEFAULT = $self->{HANDLE};
     $Net::Jabber::Debug::DEFAULTLEVEL = $self->{LEVEL};
     $Net::Jabber::Debug::DEFAULTTIME = $self->{TIME};
-  } 
+  }
 
   $self->{HEADER} = "Debug";
   $self->{HEADER} = $args{header} if exists($args{header});
@@ -229,18 +225,19 @@ sub Init {
 ##############################################################################
 sub Log {
   my $self = shift;
-  my $level = shift;
   my (@args) = @_;
 
-  return if ($level > $self->{LEVEL});
-
   my $fh = $self->{HANDLE};
+  $fh = $Net::Jabber::Debug::DEFAULT if exists($self->{USEDEFAULT});
 
   my $string = "";
 
+  my $testTime = $self->{TIME};
+  $testTime = $Net::Jabber::Debug::DEFAULTTIME if exists($self->{USEDEFAULT});
+
   $string .= "[".&Net::Jabber::GetTimeStamp("local",time,"short")."] "
-    if ($self->{TIME} == 1);
-  $string .= $self->{HEADER}.":";
+    if ($testTime == 1);
+  $string .= $self->{HEADER}.": ";
 
   my $arg;
   foreach $arg (@args) {
@@ -255,13 +252,12 @@ sub Log {
       if (ref($arg) eq "ARRAY") {
 	$string .= " [ ".join(" ",@{$arg})." ]";
       }	else {
-	$arg =~ s/^\s+//;
-	$arg =~ s/\s+$//;
-	$string .= " ".$arg;
+	$string .= $arg;
       }
     }
   }
   print $fh "$string\n";
+  return 1;
 }
 
 
@@ -278,7 +274,8 @@ sub AUTOLOAD {
   my ($function) = ($AUTOLOAD =~ /\:\:(.*)$/);
   croak("$function not defined") if !($function =~ /Log\d+/);
   my ($level) = ($function =~ /Log(\d+)/);
-  $self->Log($level,@_);
+  return 0 if ($level > (exists($self->{USEDEFAULT}) ? $Net::Jabber::Debug::DEFAULTLEVEL : $self->{LEVEL}));
+  $self->Log(@_);
 }
 
 

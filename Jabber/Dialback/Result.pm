@@ -28,25 +28,29 @@ Net::Jabber::Dialback::Result - Jabber Dialback Result Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::Dialback::Result is a companion to the Net::Jabber::Dialback 
-  module.  It provides the user a simple interface to set and retrieve all 
+  Net::Jabber::Dialback::Result is a companion to the Net::Jabber::Dialback
+  module.  It provides the user a simple interface to set and retrieve all
   parts of a Jabber Dialback Result.
 
 =head1 DESCRIPTION
 
-  To initialize the Result with a Jabber <log/> you must pass it the 
-  XML::Parse::Tree array.  For example:
+  To initialize the Result with a Jabber <db:*/> you must pass it
+  the XML::Stream hash.  For example:
 
-    my $dialback = new Net::Jabber::Dialback::Result(@tree);
+    my $dialback = new Net::Jabber::Dialback::Result(%hash);
 
   There has been a change from the old way of handling the callbacks.
-  You no longer have to do the above, a Net::Jabber::Dialback::Result 
-  object is passed to the callback function for the dialback:
+  You no longer have to do the above yourself, a NJ::Dialback::Result
+  object is passed to the callback function for the message.  Also,
+  the first argument to the callback functions is the session ID from
+  XML::Streams.  There are some cases where you might want this
+  information, like if you created a Client that connects to two servers
+  at once, or for writing a mini server.
 
-    use Net::Jabber;
+    use Net::Jabber qw(Server);
 
-    sub dialback {
-      my ($Result) = @_;
+    sub dialbackResult {
+      my ($sid,$Result) = @_;
       .
       .
       .
@@ -56,7 +60,7 @@ Net::Jabber::Dialback::Result - Jabber Dialback Result Module
 
   To create a new dialback to send to the server:
 
-    use Net::Jabber;
+    use Net::Jabber qw(Server);
 
     $Result = new Net::Jabber::Dialback::Result();
 
@@ -150,7 +154,7 @@ Net::Jabber::Dialback::Result - Jabber Dialback Result Module
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in May of 2001 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -164,30 +168,32 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
   my $self = { };
-  
+
   $self->{VERSION} = $VERSION;
-  $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("local");
 
   bless($self, $proto);
 
-  $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
-                                          header=>"NJ::Dialback::Result");
+  $self->{DEBUGHEADER} = "DB:Result";
+
+  $self->{DATA} = {};
+  $self->{CHILDREN} = {};
+
+  $self->{TAG} = "db:result";
 
   if ("@_" ne ("")) {
     if (ref($_[0]) eq "Net::Jabber::Dialback::Result") {
       return $_[0];
     } else {
-      my @temp = @_;
-      $self->{DBRESULT} = \@temp;
+      $self->{TREE} = shift;
+      $self->ParseTree();
+      delete($self->{TREE});
     }
-  } else {
-    $self->{DBRESULT} = [ "db:result" , [{}]];
   }
 
   return $self;
@@ -196,91 +202,36 @@ sub new {
 
 ##############################################################################
 #
-# AUTOLOAD - This function calls the delegate with the appropriate function
-#            name and argument list.
+# AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
 sub AUTOLOAD {
   my $self = shift;
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  $AUTOLOAD =~ s/^.*:://;
-  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
-  $type = "" unless defined($type);
-  my $treeName = "DBRESULT";
-  
-  return "dialback" if ($AUTOLOAD eq "GetTag");
-  return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
-  return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
-  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
-  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
-  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
-  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
-  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
+  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
+$FUNCTIONS{From}->{Get}        = "from";
+$FUNCTIONS{From}->{Set}        = ["jid","from"];
+$FUNCTIONS{From}->{Defined}    = "from";
+$FUNCTIONS{From}->{Hash}       = "att";
 
-$FUNCTIONS{get}->{To}   = ["value","","to"];
-$FUNCTIONS{get}->{From} = ["value","","from"];
-$FUNCTIONS{get}->{Type} = ["value","","type"];
-$FUNCTIONS{get}->{Data} = ["value","",""];
+$FUNCTIONS{Data}->{Get}        = "data";
+$FUNCTIONS{Data}->{Set}        = ["scalar","data"];
+$FUNCTIONS{Data}->{Defined}    = "data";
+$FUNCTIONS{Data}->{Hash}       = "data";
 
-$FUNCTIONS{set}->{Type} = ["single","","","type","*"];
-$FUNCTIONS{set}->{Data} = ["single","","*","",""];
+$FUNCTIONS{To}->{Get}        = "to";
+$FUNCTIONS{To}->{Set}        = ["jid","to"];
+$FUNCTIONS{To}->{Defined}    = "to";
+$FUNCTIONS{To}->{Hash}       = "att";
 
-$FUNCTIONS{defined}->{To}   = ["existence","","to"];
-$FUNCTIONS{defined}->{From} = ["existence","","from"];
-$FUNCTIONS{defined}->{Type} = ["existence","","type"];
+$FUNCTIONS{Type}->{Get}        = "type";
+$FUNCTIONS{Type}->{Set}        = ["scalar","type"];
+$FUNCTIONS{Type}->{Defined}    = "type";
+$FUNCTIONS{Type}->{Hash}       = "att";
 
-
-##############################################################################
-#
-# SetResult - takes a hash of all of the things you can set on a <dialback/>
-#              and sets each one.
-#
-##############################################################################
-sub SetResult {
-  my $self = shift;
-  my %dbresult;
-  while($#_ >= 0) { $dbresult{ lc pop(@_) } = pop(@_); }
-
-  $self->SetTo($dbresult{to}) if exists($dbresult{to});
-  $self->SetFrom($dbresult{from}) if exists($dbresult{from});
-  $self->SetType($dbresult{type}) if exists($dbresult{type});
-  $self->SetData($dbresult{data}) if exists($dbresult{data});
-}
-
-
-##############################################################################
-#
-# SetTo - sets the to attribute in the <db:result/>
-#
-##############################################################################
-sub SetTo {
-  my $self = shift;
-  my ($to) = @_;
-  if (ref($to) eq "Net::Jabber::JID") {
-    $to = $to->GetJID("full");
-  }
-  return unless ($to ne "");
-  &Net::Jabber::SetXMLData("single",$self->{DBRESULT},"","",{to=>$to});
-}
-
-
-##############################################################################
-#
-# SetFrom - sets the from attribute in the <db:result/>
-#
-##############################################################################
-sub SetFrom {
-  my $self = shift;
-  my ($from) = @_;
-  if (ref($from) eq "Net::Jabber::JID") {
-    $from = $from->GetJID("full");
-  }
-  return unless ($from ne "");
-  &Net::Jabber::SetXMLData("single",$self->{DBRESULT},"","",{from=>$from});
-}
-
+$FUNCTIONS{Result}->{Get} = "__netjabber__:master";
+$FUNCTIONS{Result}->{Set} = ["master"];
 
 1;
 

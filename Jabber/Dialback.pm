@@ -34,42 +34,29 @@ Net::Jabber::Dialback - Jabber Dialback Module
 
 =head1 DESCRIPTION
 
-  To initialize the Dialback with a Jabber <db:*/> you must pass it 
-  the XML::Parser Tree array.  For example:
+  To initialize the Dialback with a Jabber <db:*/> you must pass it
+  the XML::Stream hash.  For example:
 
-    my $dialback = new Net::Jabber::Dialback(@tree);
-
-  There has been a change from the old way of handling the callbacks.
-  You no longer have to do the above, a Net::Jabber::Dialback object
-  is passed to the callback function for the message:
-
-    use Net::Jabber;
-
-    sub dialback {
-      my ($DB) = @_;
-      .
-      .
-      .
-    }
+    my $dialback = new Net::Jabber::Dialback(%hash);
 
   You now have access to all of the retrieval functions available.
 
   To create a new message to send to the server:
 
-    use Net::Jabber;
+    use Net::Jabber qw(Server);
 
     $DB = new Net::Jabber::Dialback("verify");
     $DB = new Net::Jabber::Dialback("result");
 
   Please see the specific documentation for Net::Jabber::Dialback::Result
-  and Net::Jabber::Dialback::Verify
+  and Net::Jabber::Dialback::Verify.
 
   For more information about the array format being passed to the
   CallBack please read the Net::Jabber::Client documentation.
 
 =head1 AUTHOR
 
-By Ryan Eatmon in January of 2001 for http://jabber.org..
+By Ryan Eatmon in May of 2001 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -83,7 +70,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
 use Net::Jabber::Dialback::Result;
 ($Net::Jabber::Dialback::Result::VERSION < $VERSION) &&
@@ -94,26 +81,31 @@ use Net::Jabber::Dialback::Verify;
   die("Net::Jabber::Dialback::Verify $VERSION required--this is only version $Net::Jabber::Dialback::Verify::VERSION");
 
 sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+  my $self = { };
+
+  bless($self, $proto);
+
   if ("@_" ne ("")) {
     if (ref($_[0]) =~ /Net::Jabber::Dialback/) {
       return $_[0];
     } else {
-      my $temp = @_;
-      return new Net::Jabber::Dialback::Result() 
+      my ($temp) = @_;
+      return new Net::Jabber::Dialback::Result()
 	if ($temp eq "result");
-      return new Net::Jabber::Dialback::Verify() 
+      return new Net::Jabber::Dialback::Verify()
 	if ($temp eq "verify");
-      
+
       my @temp = @{$temp};
-      return new Net::Jabber::Dialback::Result(@temp) 
+      return new Net::Jabber::Dialback::Result(@temp)
 	if ($temp[0] eq "db:result");
-      return new Net::Jabber::Dialback::Verify(@temp) 
+      return new Net::Jabber::Dialback::Verify(@temp)
 	if ($temp[0] eq "db:verify");
     }
   } else {
     carp "You must specify either \"result\" or \"verify\" as an argument";
   }
 }
-
 
 1;

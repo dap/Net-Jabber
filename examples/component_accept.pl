@@ -1,5 +1,5 @@
 
-use Net::Jabber;
+use Net::Jabber qw(Component);
 use strict;
 
 if ($#ARGV < 2) {
@@ -49,7 +49,8 @@ sub Stop {
 
 sub messageCB {
   my $sid = shift;
-  my $message = new Net::Jabber::Message(@_);
+  my $message = shift;
+
   print "Recd: ",$message->GetXML(),"\n";
 
   my $reply = $message->Reply();

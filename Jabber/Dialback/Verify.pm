@@ -28,25 +28,29 @@ Net::Jabber::Dialback::Verify - Jabber Dialback Verify Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::Dialback::Verify is a companion to the Net::Jabber::Dialback 
-  module.  It provides the user a simple interface to set and retrieve all 
+  Net::Jabber::Dialback::Verify is a companion to the Net::Jabber::Dialback
+  module.  It provides the user a simple interface to set and retrieve all
   parts of a Jabber Dialback Verify.
 
 =head1 DESCRIPTION
 
-  To initialize the Verify with a Jabber <log/> you must pass it the 
-  XML::Parse::Tree array.  For example:
+  To initialize the Verify with a Jabber <db:*/> you must pass it
+  the XML::Stream hash.  For example:
 
-    my $dialback = new Net::Jabber::Dialback::Verify(@tree);
+    my $dialback = new Net::Jabber::Dialback::Verify(%hash);
 
   There has been a change from the old way of handling the callbacks.
-  You no longer have to do the above, a Net::Jabber::Dialback::Verify 
-  object is passed to the callback function for the dialback:
+  You no longer have to do the above yourself, a NJ::Dialback::Verify
+  object is passed to the callback function for the message.  Also,
+  the first argument to the callback functions is the session ID from
+  XML::Streams.  There are some cases where you might want this
+  information, like if you created a Client that connects to two servers
+  at once, or for writing a mini server.
 
-    use Net::Jabber;
+    use Net::Jabber qw(Server);
 
-    sub dialback {
-      my ($Verify) = @_;
+    sub dialbackVerify {
+      my ($sid,$Verify) = @_;
       .
       .
       .
@@ -56,7 +60,7 @@ Net::Jabber::Dialback::Verify - Jabber Dialback Verify Module
 
   To create a new dialback to send to the server:
 
-    use Net::Jabber;
+    use Net::Jabber qw(Server);
 
     $Verify = new Net::Jabber::Dialback::Verify();
 
@@ -160,7 +164,7 @@ Net::Jabber::Dialback::Verify - Jabber Dialback Verify Module
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in May of 2001 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -174,30 +178,32 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
   my $self = { };
-  
+
   $self->{VERSION} = $VERSION;
-  $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("local");
 
   bless($self, $proto);
 
-  $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
-                                          header=>"NJ::Dialback::Verify");
+  $self->{DEBUGHEADER} = "DB:Verify";
+
+  $self->{DATA} = {};
+  $self->{CHILDREN} = {};
+
+  $self->{TAG} = "db:verify";
 
   if ("@_" ne ("")) {
     if (ref($_[0]) eq "Net::Jabber::Dialback::Verify") {
       return $_[0];
     } else {
-      my @temp = @_;
-      $self->{DBVERIFY} = \@temp;
+      $self->{TREE} = shift;
+      $self->ParseTree();
+      delete($self->{TREE});
     }
-  } else {
-    $self->{DBVERIFY} = [ "db:verify" , [{}]];
   }
 
   return $self;
@@ -206,94 +212,40 @@ sub new {
 
 ##############################################################################
 #
-# AUTOLOAD - This function calls the delegate with the appropriate function
-#            name and argument list.
+# AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
 sub AUTOLOAD {
   my $self = shift;
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  $AUTOLOAD =~ s/^.*:://;
-  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
-  $type = "" unless defined($type);
-  my $treeName = "DBVERIFY";
-  
-  return "dialback" if ($AUTOLOAD eq "GetTag");
-  return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
-  return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
-  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
-  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
-  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
-  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
-  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
+  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
+$FUNCTIONS{From}->{Get}        = "from";
+$FUNCTIONS{From}->{Set}        = ["jid","from"];
+$FUNCTIONS{From}->{Defined}    = "from";
+$FUNCTIONS{From}->{Hash}       = "att";
 
-$FUNCTIONS{get}->{To}   = ["value","","to"];
-$FUNCTIONS{get}->{From} = ["value","","from"];
-$FUNCTIONS{get}->{Type} = ["value","","type"];
-$FUNCTIONS{get}->{ID} = ["value","","id"];
-$FUNCTIONS{get}->{Data} = ["value","",""];
+$FUNCTIONS{Data}->{Get}        = "data";
+$FUNCTIONS{Data}->{Set}        = ["scalar","data"];
+$FUNCTIONS{Data}->{Defined}    = "data";
+$FUNCTIONS{Data}->{Hash}       = "data";
 
-$FUNCTIONS{set}->{Type} = ["single","","","type","*"];
-$FUNCTIONS{set}->{ID} = ["single","","","id","*"];
-$FUNCTIONS{set}->{Data} = ["single","","*","",""];
+$FUNCTIONS{ID}->{Get}        = "id";
+$FUNCTIONS{ID}->{Set}        = ["scalar","id"];
+$FUNCTIONS{ID}->{Defined}    = "id";
+$FUNCTIONS{ID}->{Hash}       = "child-data";
 
-$FUNCTIONS{defined}->{To}   = ["existence","","to"];
-$FUNCTIONS{defined}->{From} = ["existence","","from"];
-$FUNCTIONS{defined}->{Type} = ["existence","","type"];
-$FUNCTIONS{defined}->{ID} = ["existence","","id"];
+$FUNCTIONS{To}->{Get}        = "to";
+$FUNCTIONS{To}->{Set}        = ["jid","to"];
+$FUNCTIONS{To}->{Defined}    = "to";
+$FUNCTIONS{To}->{Hash}       = "att";
 
+$FUNCTIONS{Type}->{Get}        = "type";
+$FUNCTIONS{Type}->{Set}        = ["scalar","type"];
+$FUNCTIONS{Type}->{Defined}    = "type";
+$FUNCTIONS{Type}->{Hash}       = "att";
 
-##############################################################################
-#
-# SetVerify - takes a hash of all of the things you can set on a <dialback/>
-#              and sets each one.
-#
-##############################################################################
-sub SetVerify {
-  my $self = shift;
-  my %dbverify;
-  while($#_ >= 0) { $dbverify{ lc pop(@_) } = pop(@_); }
-
-  $self->SetTo($dbverify{to}) if exists($dbverify{to});
-  $self->SetFrom($dbverify{from}) if exists($dbverify{from});
-  $self->SetType($dbverify{type}) if exists($dbverify{type});
-  $self->SetID($dbverify{id}) if exists($dbverify{id});
-  $self->SetData($dbverify{data}) if exists($dbverify{data});
-}
-
-
-##############################################################################
-#
-# SetTo - sets the to attribute in the <db:verify/>
-#
-##############################################################################
-sub SetTo {
-  my $self = shift;
-  my ($to) = @_;
-  if (ref($to) eq "Net::Jabber::JID") {
-    $to = $to->GetJID("full");
-  }
-  return unless ($to ne "");
-  &Net::Jabber::SetXMLData("single",$self->{DBVERIFY},"","",{to=>$to});
-}
-
-
-##############################################################################
-#
-# SetFrom - sets the from attribute in the <db:verify/>
-#
-##############################################################################
-sub SetFrom {
-  my $self = shift;
-  my ($from) = @_;
-  if (ref($from) eq "Net::Jabber::JID") {
-    $from = $from->GetJID("full");
-  }
-  return unless ($from ne "");
-  &Net::Jabber::SetXMLData("single",$self->{DBVERIFY},"","",{from=>$from});
-}
-
+$FUNCTIONS{Verify}->{Get} = "__netjabber__:master";
+$FUNCTIONS{Verify}->{Set} = ["master"];
 
 1;

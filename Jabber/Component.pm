@@ -33,9 +33,9 @@ Net::Jabber::Component - Jabber Component Library
 
 =head1 DESCRIPTION
 
-  Component.pm seeks to provide enough high level APIs and automation of 
+  Component.pm seeks to provide enough high level APIs and automation of
   the low level APIs that writing a Jabber Component in Perl is trivial.
-  For those that wish to work with the low level you can do that too, 
+  For those that wish to work with the low level you can do that too,
   but those functions are covered in the documentation for each module.
 
   Net::Jabber::Component provides functions to connect to a Jabber server,
@@ -46,12 +46,12 @@ Net::Jabber::Component - Jabber Component Library
   For more information on how the details for how Net::Jabber is written
   please see the help for Net::Jabber itself.
 
-  For a full list of high level functions available please see 
+  For a full list of high level functions available please see
   Net::Jabber::Protocol.
 
 =head2 Basic Functions
 
-    use Net::Jabber;
+    use Net::Jabber qw(Component);
 
     $Con = new Net::Jabber::Component();
 
@@ -78,11 +78,11 @@ Net::Jabber::Component - Jabber Component Library
 
     new(debuglevel=>0|1|2, - creates the Component object.  debugfile
         debugfile=>string,   should be set to the path for the debug
-        debugtime=>0|1)      log to be written.  If set to "stdout" 
-                             then the debug will go there.  debuglevel 
+        debugtime=>0|1)      log to be written.  If set to "stdout"
+                             then the debug will go there.  debuglevel
                              controls the amount of debug.  For more
                              information about the valid setting for
-                             debuglevel, debugfile, and debugtime see 
+                             debuglevel, debugfile, and debugtime see
                              Net::Jabber::Debug.
 
     Connect(hostname=>string,       - opens a connection to the server
@@ -128,15 +128,23 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-use XML::Stream 1.06;
+use XML::Stream 1.12 qw( Hash );
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
-use Net::Jabber::Protocol;
-($Net::Jabber::Protocol::VERSION < $VERSION) &&
-  die("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
+use Net::Jabber::Data;
+($Net::Jabber::Data::VERSION < $VERSION) &&
+  die("Net::Jabber::Data $VERSION required--this is only version $Net::Jabber::Data::VERSION");
+
+use Net::Jabber::XDB;
+($Net::Jabber::XDB::VERSION < $VERSION) &&
+  die("Net::Jabber::XDB $VERSION required--this is only version $Net::Jabber::XDB::VERSION");
+
+#use Net::Jabber::Log;
+#($Net::Jabber::Log::VERSION < $VERSION) &&
+#  die("Net::Jabber::Log $VERSION required--this is only version $Net::Jabber::Log::VERSION");
 
 use Net::Jabber::Key;
 ($Net::Jabber::Key::VERSION < $VERSION) &&
@@ -155,26 +163,27 @@ sub new {
 
   $self->{DELEGATE} = new Net::Jabber::Protocol();
 
-  $self->{DEBUG} = 
+  $self->{DEBUG} =
     new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
 			   file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
 			   time=>exists($args{debugtime}) ? $args{debugtime} : 0,
 			   setdefault=>1,
 			   header=>"NJ::Component"
 			  );
-  
+
   $self->{SERVER} = {hostname => "localhost",
 		     port => 5269,
 		     componentname => ""};
 
   $self->{CONNECTED} = 0;
 
-  $self->{STREAM} = new XML::Stream(debugfh=>$self->{DEBUG}->GetHandle(),
+  $self->{STREAM} = new XML::Stream(style=>"hash",
+				    debugfh=>$self->{DEBUG}->GetHandle(),
 				    debuglevel=>$self->{DEBUG}->GetLevel(),
 				    debugtime=>$self->{DEBUG}->GetTime());
 
   $self->{VERSION} = $VERSION;
-  
+
   $self->{LIST}->{currentID} = 0;
 
   return $self;
@@ -217,52 +226,53 @@ sub Connect {
 
   if (($args{connectiontype} eq "exec") ||
       ($args{connectiontype} eq "stdinout")) {
-    
-    $self->{SESSION} = 
-      $self->{STREAM}->
-	Connect(connectiontype=>"stdinout",
-		namespace=>"jabber:component:exec",
-		timeout=>10,
-	       ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
-		     return);
+
+    if (!($self->{SESSION} =
+	    $self->{STREAM}->
+	      Connect(connectiontype=>"stdinout",
+		      namespace=>"jabber:component:exec",
+		      timeout=>10,
+		     ))) {
+      $self->SetErrorCode($self->{STREAM}->GetErrorCode());
+      return;
+    }
   }
-  
-  if (($args{connectiontype} eq "accept") || 
+
+  if (($args{connectiontype} eq "accept") ||
       ($args{connectiontype} eq "tcpip")) {
 
     $self->{DEBUG}->Log1("Connect: hostname($args{hostname}) secret($args{secret}) componentname($args{componentname})");
-    
+
     if (!exists($args{hostname})) {
       $self->SetErrorCode("No hostname specified.");
       return;
     }
-    
+
     if (!exists($args{secret})) {
       $self->SetErrorCode("No secret specified.");
       return;
     }
-    
+
     if (!exists($args{componentname})) {
       $self->SetErrorCode("No component specified.");
       return;
     }
-    
+
     $self->{SERVER}->{hostname} = delete($args{hostname});
     $self->{SERVER}->{port} = delete($args{port}) if exists($args{port});
-    
-    $self->{SESSION} = 
-      $self->{STREAM}->
-	Connect(hostname=>$self->{SERVER}->{hostname},
-		port=>$self->{SERVER}->{port},
-		to=>$args{componentname},
-		namespace=>"jabber:component:accept",
-		(defined($args{myhostname}) ?
-		 (myhostname=>$args{myhostname}) :
-		 ()
-		),
-		timeout=>10
-	       );
-    if ($self->{SESSION} eq "") {
+
+    if (!($self->{SESSION} =
+            $self->{STREAM}->
+	      Connect(hostname=>$self->{SERVER}->{hostname},
+		      port=>$self->{SERVER}->{port},
+		      to=>$args{componentname},
+		      namespace=>"jabber:component:accept",
+		      (defined($args{myhostname}) ?
+		       (myhostname=>$args{myhostname}) :
+		       ()
+		      ),
+		      timeout=>10
+		     ))) {
       $self->SetErrorCode($self->{STREAM}->GetErrorCode());
       return;
     }
@@ -275,7 +285,7 @@ sub Connect {
     $self->Send("<handshake>".Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$args{secret})."</handshake>");
     my @handshake = $self->Process();
     return if ($handshake[0] eq "");
-    return if (&Net::Jabber::GetXMLData("value",$handshake[0],"","") ne "");
+    return if (&XML::Stream::GetXMLData("value",$handshake[0],"","") ne "");
   }
 
   $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });

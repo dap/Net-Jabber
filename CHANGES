@@ -1,3 +1,31 @@
+1.0022
+======
+  - XML::Stream supports SSL.  Client docs updated to show the
+    switches needed to enable that and HTTP.
+  - Started to work on supporting XDB.  But due to lack of
+    documentation, this release DOES NOT 100% support it.  Use
+    at your own risk.
+  - Updated docs to reflect changes.
+  - Added Net::Jabber::Namespaces as a way to help document
+    how the redesign works.  It's probably incomplete so
+    ask questions and I'll work on it.
+  - Added check to make sure you specify a schema for the
+    use Net::Jabber qw ( xxx ); line.
+  - Fixed bug in Connect where it would not handle the case where
+    it could not connect properly.
+  - Fixed bug in Debug.
+  - Fixed iq:time and iq:version.  The redesign broke the automatic
+    behavior they had before.
+  - Tweaked ParseTree for changes in XML::Stream.
+  - Fixed bug in Query.pm where I forgot to copy over a function
+    for jabber:iq:search.
+  - Redesigned modules to try and use less memeory.
+  - Changed over to the new XML::Stream Hash data format.  This
+    has helped to reduce memory usage by half (initial results)
+    although it comes at the cost of increased disk usage.
+  - Moved the GetXMLData, SetXMLData, and BuildXML functions into
+    XML::Stream where they belong.  Should have done that long ago.
+
 1.0021
 ======
   - Fixed bug in the Process function caused by the XML::Stream

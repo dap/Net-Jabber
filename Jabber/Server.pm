@@ -33,10 +33,10 @@ Net::Jabber::Server - Jabber Server Library
 
 =head1 DESCRIPTION
 
-  Server.pm seeks to provide enough high level APIs and automation of 
-  the low level APIs that writing and spawning a Jabber Server in Perl 
-  is trivial.  For those that wish to work with the low level you can 
-  do that too, but those functions are covered in the documentation for 
+  Server.pm seeks to provide enough high level APIs and automation of
+  the low level APIs that writing and spawning a Jabber Server in Perl
+  is trivial.  For those that wish to work with the low level you can
+  do that too, but those functions are covered in the documentation for
   each module.
 
   Net::Jabber::Server provides functions to run a full Jabber server that
@@ -46,12 +46,12 @@ Net::Jabber::Server - Jabber Server Library
   For more information on how the details for how Net::Jabber is written
   please see the help for Net::Jabber itself.
 
-  For a full list of high level functions available please see 
+  For a full list of high level functions available please see
   Net::Jabber::Protocol.
 
 =head2 Basic Functions
 
-    use Net::Jabber;
+    use Net::Jabber qw(Server);
 
     $Server = new Net::Jabber::Server();
 
@@ -67,11 +67,11 @@ Net::Jabber::Server - Jabber Server Library
 
     new(debuglevel=>0|1|2, - creates the Server object.  debugfile
         debugfile=>string,   should be set to the path for the debug
-        debugtime=>0|1)      log to be written.  If set to "stdout" 
-                             then the debug will go there.  debuglevel 
+        debugtime=>0|1)      log to be written.  If set to "stdout"
+                             then the debug will go there.  debuglevel
                              controls the amount of debug.  For more
                              information about the valid setting for
-                             debuglevel, debugfile, and debugtime see 
+                             debuglevel, debugfile, and debugtime see
                              Net::Jabber::Debug.
 
     Start(hostname=>string, - starts the server listening on the proper
@@ -95,14 +95,26 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
-use XML::Stream 1.07;
+use XML::Stream 1.12 qw(Hash);
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
-use Net::Jabber::Protocol;
-($Net::Jabber::Protocol::VERSION < $VERSION) &&
-  die("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
+use Net::Jabber::Data;
+($Net::Jabber::Data::VERSION < $VERSION) &&
+  die("Net::Jabber::Data $VERSION required--this is only version $Net::Jabber::Data::VERSION");
+
+use Net::Jabber::XDB;
+($Net::Jabber::XDB::VERSION < $VERSION) &&
+  die("Net::Jabber::XDB $VERSION required--this is only version $Net::Jabber::XDB::VERSION");
+
+#use Net::Jabber::Log;
+#($Net::Jabber::Log::VERSION < $VERSION) &&
+#  die("Net::Jabber::Log $VERSION required--this is only version $Net::Jabber::Log::VERSION");
+
+use Net::Jabber::Dialback;
+($Net::Jabber::Dialback::VERSION < $VERSION) &&
+  die("Net::Jabber::Dialback $VERSION required--this is only version $Net::Jabber::Dialback::VERSION");
 
 use Net::Jabber::Key;
 ($Net::Jabber::Key::VERSION < $VERSION) &&
@@ -123,7 +135,7 @@ sub new {
 
   $self->{DELEGATE} = new Net::Jabber::Protocol();
 
-  $self->{DEBUG} = 
+  $self->{DEBUG} =
     new Net::Jabber::Debug(level=>exists($args{debuglevel}) ? $args{debuglevel} : -1,
 			   file=>exists($args{debugfile}) ? $args{debugfile} : "stdout",
 			   time=>exists($args{debugtime}) ? $args{debugtime} : 0,
@@ -135,7 +147,8 @@ sub new {
 		     port => 5269,
 		     servername => ""};
 
-  $self->{STREAM} = new XML::Stream(debugfh=>$self->{DEBUG}->GetHandle(),
+  $self->{STREAM} = new XML::Stream(style=>"hash",
+				    debugfh=>$self->{DEBUG}->GetHandle(),
 				    debuglevel=>$self->{DEBUG}->GetLevel(),
 				    debugtime=>$self->{DEBUG}->GetTime());
 
@@ -184,14 +197,13 @@ sub Start {
   my $hostname = $self->{SERVER}->{hostname};
   $hostname = $args{hostname} if exists($args{hostname});
 
-  my $status = "";
-  while(($status eq "") && ($self->{STOP} == 0)) {
-    $status = $self->{STREAM}->Listen(hostname=>$hostname,
-				      port=>$self->{SERVER}->{port},
-				      namespace=>"jabber:server");
+  my $status = $self->{STREAM}->Listen(hostname=>$hostname,
+				       port=>$self->{SERVER}->{port},
+				       namespace=>"jabber:server");
 
-    while(($self->{STOP} == 0) && defined($self->{STREAM}->Process(0))) {}
-    $status = "";
+  while($self->{STOP} == 0) {
+    while(($self->{STOP} == 0) && defined($self->{STREAM}->Process())) {
+    }
   }
 }
 
@@ -213,6 +225,9 @@ sub messageHandler {
   my ($message) = @_;
 
   $self->{DEBUG}->Log2("messageHandler: message(",$message->GetXML(),")");
+
+  my $reply = $message->Reply();
+  $self->Send($reply);
 }
 
 
@@ -258,5 +273,44 @@ sub dbverifyHandler {
   $self->{DEBUG}->Log2("dbverifyHandler: dbverify(",$dbverify->GetXML(),")");
 }
 
+
+sub Send {
+  my $self = shift;
+  my $object = shift;
+
+  if (ref($object) eq "") {
+    my ($server) = ($object =~ /to=[\"\']([^\"\']+)[\"\']/);
+    $server =~ s/^\S*\@?(\S+)\/?.*$/$1/;
+    $self->SendXML($server,$object);
+  } else {
+    $self->SendXML($object->GetTo("jid")->GetServer(),$object->GetXML());
+  }
+}
+
+
+sub SendXML {
+  my $self = shift;
+  my $server = shift;
+  my $xml = shift;
+  $self->{DEBUG}->Log1("SendXML: server($server) sent($xml)");
+
+  my $sid = $self->{STREAM}->Host2SID($server);
+  if (!defined($sid)) {
+    $self->{STREAM}->Connect(hostname=>$server,
+			     port=>5269,
+			     connectiontype=>"tcpip",
+			     namespace=>"jabber:server");
+    $sid = $self->{STREAM}->Host2SID($server);
+  }
+  $self->{DEBUG}->Log1("SendXML: sid($sid)");
+  &{$self->{CB}->{send}}($sid,$xml) if exists($self->{CB}->{send});
+  $self->{STREAM}->Send($sid,$xml);
+}
+
+
+#
+# by not send xmlns:db='jabber:server:dialback' to a server, we operate in
+# legacy mode, and do not have to do dialback.
+#
 
 1;

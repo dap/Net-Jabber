@@ -31,35 +31,104 @@ Net::Jabber - Jabber Perl Library
   Net::Jabber provides a Perl user with access to the Jabber
   Instant Messaging protocol.
 
-  For more information about Jabber visit: 
- 
+  For more information about Jabber visit:
+
     http://www.jabber.org
 
 =head1 DESCRIPTION
 
-  Net::Jabber is a convenient tool to use for any perl scripts
-  that would like to utilize the Jabber Instant Messaging 
-  protocol.  While not a client in and of itself, it provides 
-  all of the necessary back-end functions to make a CGI client 
-  or command-line perl client feasible and easy to use.  
+  Net::Jabber is a convenient tool to use for any perl script
+  that would like to utilize the Jabber Instant Messaging
+  protocol.  While not a client in and of itself, it provides
+  all of the necessary back-end functions to make a CGI client
+  or command-line perl client feasible and easy to use.
   Net::Jabber is a wrapper around the rest of the official
-  Net::Jabber::xxxxxx packages.  
+  Net::Jabber::xxxxxx packages.
 
-  There is an example script, client.pl, that provides you with
-  an example a very simple Jabber client that logs a user in and
-  displays any messages they receive.  
+  There is are example scripts in the example directory that
+  provide you with examples of very simple Jabber programs.
 
-  There is also an example transport script, transport.pl,
-  that shows how to write a transport that gets a message,
-  converts the entire message to uppercase, and send it back
-  to the sender.
+=head1 EXAMPLES
+
+  In an attempt to cut down on memory usage, not all of the modules
+  are loaded at compile time.  You have to tell the Net::Jabber
+  module which "set" of modules you want to work with when you
+  use the module:
+
+    use Net::Jabber qw(Client Component Server);
+
+  Depending on what you are trying to write, specify one of the
+  above when you use the module.  (You can specify more than one,
+  but it is unlikely that you will need too.)
+
+    For a client:
+      use Net::Jabber qw(Client);
+      my $client = new Net::Jabber::Client();
+
+    For a component:
+      use Net::Jabber qw(Component);
+      my $component = new Net::Jabber::Component();
+
+    For a server:
+      use Net::Jabber qw(Server);
+      my $server = new Net::Jabber::Server();
+
+=head1 METHODS
+
+  The Net::Jabber module does not define any methods that you will call
+  directly in your code.  Instead you will instantiate objects that
+  call functions from this module to do work.  The three main objects
+  that you will work with are the Message, Presence, and IQ modules.
+  Each one corresponds to the Jabber equivilant and allows you get and
+  set all parts of those packets.
+
+  There are a few functions that are the same across all of the objects:
+
+=head2 Retrieval functions
+
+  GetXML() - returns the XML string that represents the data contained
+             in the object.
+
+             $xml  = $obj->GetXML();
+
+  GetX()          - returns an array of Net::Jabber::X objects that
+  GetX(namespace)   represent all of the <x/> style namespaces in the
+                    object.  If you specify a namespace then only X
+                    objects with that XMLNS are returned.
+
+                    @xObj = $obj->GetX();
+                    @xObj = $obj->GetX("my:namespace");
+
+=head2 Creation functions
+
+  NewX(namespace)     - creates a new Net::Jabber::X object with the
+  NewX(namespace,tag)   specified namespace and root tag of <x/>.
+                        Optionally you may specify another root tag
+                        if <x/> is not desired.
+
+                        $xObj = $obj->NewX("my:namespace");
+                        $xObj = $obj->NewX("my:namespace","foo");
+                          ie. <foo xmlns='my:namespace'...></foo>
+
+=head2 Test functions
+
+  DefinedX()          - returns 1 if there are any <x/> tags in the
+  DefinedX(namespace)   packet, 0 otherwise.  Optionally you can
+                        specify a namespace and determine if there
+                        are any <x/> with that namespace.
+
+                        $test = $obj->DefinedX();
+                        $test = $obj->DefinedX("my:namespace");
 
 =head1 PACKAGES
 
+  For more information on each of these packages, please see
+  the man page for each one.
+
   Net::Jabber::Client - this package contains the code needed to
   communicate with a Jabber server: login, wait for messages,
-  send messages, and logout.  It uses XML::Stream to read the 
-  stream from the server and based on what kind of tag it 
+  send messages, and logout.  It uses XML::Stream to read the
+  stream from the server and based on what kind of tag it
   encounters it calls a function to handle the tag.
 
   Net::Jabber::Component - this package contains the code needed
@@ -67,17 +136,23 @@ Net::Jabber - Jabber Perl Library
   the communication between a jabber server and some outside
   program or communications pacakge (IRC, talk, email, etc...)
   With this module you can write a full component in just
-  a few lines of Perl.  It uses XML::Stream to communicate with 
-  its host server and based on what kind of tag it encounters it 
-  calls a function to handle the tag.  This replaces the Transport
-  module as of the new Jabber server v1.1.2.
+  a few lines of Perl.  It uses XML::Stream to communicate with
+  its host server and based on what kind of tag it encounters it
+  calls a function to handle the tag.
 
-  Net::Jabber::Transport - *****REMOVED***** this package no
-  longer exists.
+  Net::Jabber::Server - this package contains the code needed
+  to instantiate a lightweight Jabber server.  This module is
+  still under development, but the goal is to have this be a
+  fully functioning Jabber server that can interact with a real
+  server using the server to server protocol, as well as accept
+  client and component connections.  The purpose being that some
+  programs might be better suited if they ran and did all of the
+  talking on their own.  Also this just seemed like a really cool
+  thing to try and do.
 
   Net::Jabber::Protocol - a collection of high-level functions
-  that Client and transport use to make their lives easier.
-  These functions are included through AUTOLOAD and delegates.
+  that Client, Component, and Server use to make their lives easier.
+  These functions are included through AUTOLOAD.
 
   Net::Jabber::JID - the Jabber IDs consist of three parts:
   user id, server, and resource.  This module gives you access
@@ -91,59 +166,37 @@ Net::Jabber - Jabber Perl Library
   a <presence/> received from the server.
 
   Net::Jabber::IQ - IQ is a wrapper around a number of modules
-  that provide support for the various Info/Query namespaces that 
+  that provide support for the various Info/Query namespaces that
   Jabber recognizes.
 
-  Net::Jabber::Query - this module uses delegates and autoloading
-  to provide access to all of the Query modules listed below.
+  Net::Jabber::Query - this module represents anything that can
+  be called a <query/> for an <iq/>.
 
-  Net::Jabber::Query::Agent - provides access to the information
-  about an agent that the server supports.
+  Net::Jabber::X - this module represents anything that can
+  be called an <x/>.
 
-  Net::Jabber::Query::Agents - the list of agents, see agent above,
-  that the server supports.
+=head1 ADD CUSTOM MODULES
 
-  Net::Jabber::Query::Auth - everything needed to authenticate a
-  session to the server.
+  The way that this module set is coded is a little different than
+  the typical module.  Since XML is a very structured thing, and
+  Jabber is an XML stream the modules have been coded to reuse
+  code where ever possible.  Generic functions in Jabber.pm provide
+  access for all of the other modules which drive the functions via
+  hash structures that define the functions using AUTOLOAD.  Confused?
+  I can understand if you are, I was too while trying to code this.
+  But after I got the hang of it is really simple to add in a new
+  Jabber module.
 
-  Net::Jabber::Query::Fneg - feature negoation between the client
-  and server.
-
-  Net::Jabber::Query::Oob - support for out of bandwidth file
-  transfers.
-
-  Net::Jabber::Query::Register - everything needed to create a new
-  Jabber account on the server.
-
-  Net::Jabber::Query::Roster - everything needed to manage and query
-  the server side Rosters.
-
-  Net::Jabber::Query::Roster::Item - access to an item from the
-  roster.
-
-  Net::Jabber::Query::Time - exchange time information with the
-  target recipient (either server or client).
-
-  Net::Jabber::Query::Version - exchange version information with 
-  the target recipient (either server or client).
-
-  Net::Jabber::X::Delay - specifies the delays that the message 
-  went through before begin delivered.
-
-  Net::Jabber::X::Oob - out of bandwidth file transers.
-
-  Net::Jabber::X::Roster - support for embedded roster items.
-
-  Net::Jabber::X::Roster::Item - access to the item in a roster.
-
+  For more information on this topic, please read the man page for
+  Net::Jabber::Namespaces.
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://perl.jabber.org/
+By Ryan Eatmon in May of 2001 for http://jabber.org/
 
 =head1 COPYRIGHT
 
-This module is free software; you can redistribute it and/or modify
+This module is free software, you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
@@ -153,131 +206,82 @@ use strict;
 use Time::Local;
 use Carp;
 use Digest::SHA1;
-use vars qw($VERSION %DELEGATES $UNICODE);
+use Unicode::String;
+use POSIX;
+use vars qw($VERSION $DEBUG %CALLBACKS $TIMEZONE $PARSING);
 
-if ($] >= 5.006) {
-  $UNICODE = 1;
+if (eval "require Time::Timezone") {
+  $TIMEZONE = 1;
+  Time::Timezone->import(qw(tz_local_offset tz_name));
 } else {
-  require Unicode::String;
-  $UNICODE = 0;
+  $TIMEZONE = 0;
 }
 
-
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
-  die("Net::Jabber::JID $VERSION required--this is only version $Net::Jabber::JID::VERSION");
+  croak("Net::Jabber::JID $VERSION required--this is only version $Net::Jabber::JID::VERSION");
 
 use Net::Jabber::JID;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
-  die("Net::Jabber::JID $VERSION required--this is only version $Net::Jabber::JID::VERSION");
-
-use Net::Jabber::Dialback;
-($Net::Jabber::Dialback::VERSION < $VERSION) &&
-  die("Net::Jabber::Dialback $VERSION required--this is only version $Net::Jabber::Dialback::VERSION");
+  croak("Net::Jabber::JID $VERSION required--this is only version $Net::Jabber::JID::VERSION");
 
 use Net::Jabber::X;
 ($Net::Jabber::X::VERSION < $VERSION) &&
-  die("Net::Jabber::X $VERSION required--this is only version $Net::Jabber::X::VERSION");
+  croak("Net::Jabber::X $VERSION required--this is only version $Net::Jabber::X::VERSION");
 
 use Net::Jabber::Query;
 ($Net::Jabber::Query::VERSION < $VERSION) &&
-  die("Net::Jabber::Query $VERSION required--this is only version $Net::Jabber::Query::VERSION");
-
-use Net::Jabber::Data;
-($Net::Jabber::Data::VERSION < $VERSION) &&
-  die("Net::Jabber::Data $VERSION required--this is only version $Net::Jabber::Data::VERSION");
+  croak("Net::Jabber::Query $VERSION required--this is only version $Net::Jabber::Query::VERSION");
 
 use Net::Jabber::Message;
 ($Net::Jabber::Message::VERSION < $VERSION) &&
-  die("Net::Jabber::Message $VERSION required--this is only version $Net::Jabber::Message::VERSION");
+  croak("Net::Jabber::Message $VERSION required--this is only version $Net::Jabber::Message::VERSION");
 
 use Net::Jabber::IQ;
 ($Net::Jabber::IQ::VERSION < $VERSION) &&
-  die("Net::Jabber::IQ $VERSION required--this is only version $Net::Jabber::IQ::VERSION");
-
-use Net::Jabber::XDB;
-($Net::Jabber::XDB::VERSION < $VERSION) &&
-  die("Net::Jabber::XDB $VERSION required--this is only version $Net::Jabber::XDB::VERSION");
-
-#use Net::Jabber::Log;
-#($Net::Jabber::Log::VERSION < $VERSION) &&
-#  die("Net::Jabber::Log $VERSION required--this is only version $Net::Jabber::Log::VERSION");
+  croak("Net::Jabber::IQ $VERSION required--this is only version $Net::Jabber::IQ::VERSION");
 
 use Net::Jabber::Presence;
 ($Net::Jabber::Presence::VERSION < $VERSION) &&
-  die("Net::Jabber::Presence $VERSION required--this is only version $Net::Jabber::Presence::VERSION");
+  croak("Net::Jabber::Presence $VERSION required--this is only version $Net::Jabber::Presence::VERSION");
 
-use Net::Jabber::Client;
-($Net::Jabber::Client::VERSION < $VERSION) &&
-  die("Net::Jabber::Client $VERSION required--this is only version $Net::Jabber::Client::VERSION");
+use Net::Jabber::Protocol;
+($Net::Jabber::Protocol::VERSION < $VERSION) &&
+  croak("Net::Jabber::Protocol $VERSION required--this is only version $Net::Jabber::Protocol::VERSION");
 
-use Net::Jabber::Component;
-($Net::Jabber::Component::VERSION < $VERSION) &&
-  die("Net::Jabber::Component $VERSION required--this is only version $Net::Jabber::Component::VERSION");
+$DEBUG = new Net::Jabber::Debug(usedefault=>1,
+				header=>"NJ::Main");
 
-use Net::Jabber::Server;
-($Net::Jabber::Server::VERSION < $VERSION) &&
-  die("Net::Jabber::Server $VERSION required--this is only version $Net::Jabber::Server::VERSION");
+require Exporter;
+my @ISA = qw(Exporter);
+my @EXPORT_OK = qw(Client Component Server);
+
+sub import {
+  my $class = shift;
+
+  my $pass = 0;
+  foreach my $module (@_) {
+    eval "use Net::Jabber::$module;";
+    croak($@) if ($@);
+    eval "(\$Net::Jabber::${module}::VERSION < \$VERSION) && croak(\"Net::Jabber::$module \$VERSION required--this is only version \$Net::Jabber::${module}::VERSION\");";
+    croak($@) if ($@);
+    $pass = 1;
+  }
+  croak("Failed to load any schema for Net::Jabber from the use line.\n  ie. \"use Net::Jabber qw( Client );\"\n") if ($pass == 0);
+}
 
 
 ##############################################################################
 #
-# NameSpace delegates
+# DEBUG - helper function for printing debug messages using Net::Jabber::Debug
 #
 ##############################################################################
-$DELEGATES{query}->{'jabber:iq:agent'}->{parent}        = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:agent'}->{delegate}      = "Net::Jabber::Query::Agent";
-$DELEGATES{query}->{'jabber:iq:agents'}->{parent}       = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:agents'}->{delegate}     = "Net::Jabber::Query::Agents";
-$DELEGATES{query}->{'jabber:iq:auth'}->{parent}         = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:auth'}->{delegate}       = "Net::Jabber::Query::Auth";
-$DELEGATES{query}->{'jabber:iq:autoupdate'}->{parent}   = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:autoupdate'}->{delegate} = "Net::Jabber::Query::AutoUpdate";
-$DELEGATES{query}->{'jabber:iq:filter'}->{parent}       = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:filter'}->{delegate}     = "Net::Jabber::Query::Filter";
-$DELEGATES{query}->{'jabber:iq:fneg'}->{parent}         = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:fneg'}->{delegate}       = "Net::Jabber::Query::Fneg";
-$DELEGATES{query}->{'jabber:iq:oob'}->{parent}          = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:oob'}->{delegate}        = "Net::Jabber::Query::Oob";
-$DELEGATES{query}->{'jabber:iq:register'}->{parent}     = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:register'}->{delegate}   = "Net::Jabber::Query::Register";
-$DELEGATES{query}->{'jabber:iq:roster'}->{parent}       = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:roster'}->{delegate}     = "Net::Jabber::Query::Roster";
-$DELEGATES{query}->{'jabber:iq:search'}->{parent}       = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:search'}->{delegate}     = "Net::Jabber::Query::Search";
-$DELEGATES{query}->{'jabber:iq:time'}->{parent}         = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:time'}->{delegate}       = "Net::Jabber::Query::Time";
-$DELEGATES{query}->{'jabber:iq:version'}->{parent}      = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:version'}->{delegate}    = "Net::Jabber::Query::Version";
-
-$DELEGATES{x}->{'jabber:x:autoupdate'}->{parent}   = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:autoupdate'}->{delegate} = "Net::Jabber::X::AutoUpdate";
-$DELEGATES{x}->{'jabber:x:delay'}->{parent}        = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:delay'}->{delegate}      = "Net::Jabber::X::Delay";
-$DELEGATES{x}->{'jabber:x:encrypted'}->{parent}    = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:encrypted'}->{delegate}  = "Net::Jabber::X::Encrypted";
-$DELEGATES{x}->{'jabber:x:form'}->{parent}         = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:form'}->{delegate}       = "Net::Jabber::X::Form";
-$DELEGATES{x}->{'jabber:x:gc'}->{parent}           = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:gc'}->{delegate}         = "Net::Jabber::X::GC";
-#$DELEGATES{x}->{'jabber:x:ident'}->{parent}       = "Net::Jabber::X";
-#$DELEGATES{x}->{'jabber:x:ident'}->{delegate}     = "Net::Jabber::X::Ident";
-$DELEGATES{x}->{'jabber:x:oob'}->{parent}          = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:oob'}->{delegate}        = "Net::Jabber::X::Oob";
-$DELEGATES{x}->{'jabber:x:replypres'}->{parent}    = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:replypres'}->{delegate}  = "Net::Jabber::X::ReplyPres";
-$DELEGATES{x}->{'jabber:x:roster'}->{parent}       = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:roster'}->{delegate}     = "Net::Jabber::X::Roster";
-$DELEGATES{x}->{'jabber:x:signed'}->{parent}       = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:signed'}->{delegate}     = "Net::Jabber::X::Signed";
-$DELEGATES{x}->{'jabber:x:sxpm'}->{parent}         = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:sxpm'}->{delegate}       = "Net::Jabber::X::SXPM";
-
-$DELEGATES{xdb}->{'jabber:iq:auth'}->{parent}      = "Net::Jabber::Data";
-$DELEGATES{xdb}->{'jabber:iq:auth'}->{delegate}    = "Net::Jabber::Data::Auth";
-
+sub DEBUG {
+  my $self = shift;
+  return $DEBUG->Log99($self->{DEBUGHEADER},": ",@_);
+}
 
 
 ##############################################################################
@@ -287,10 +291,10 @@ $DELEGATES{xdb}->{'jabber:iq:auth'}->{delegate}    = "Net::Jabber::Data::Auth";
 ##############################################################################
 sub debug {
   my $self = shift;
-  my $treeName = shift;
-  
-  print "debug ",$treeName,": ",$self,"\n";
-  &Net::Jabber::printData("debug: \$self->{".$treeName."}->",$self->{$treeName});
+
+  print "debug ",$self,":\n";
+  &Net::Jabber::printData("debug: \$self->{DATA}->",$self->{DATA});
+  &Net::Jabber::printData("debug: \$self->{CHILDREN}->",$self->{CHILDREN});
 }
 
 
@@ -307,435 +311,806 @@ sub MissingFunction {
 
 ##############################################################################
 #
-# Get - returns the string that is contained in this tag/attribute.
+# Get - returns the value stored in the hash
 #
 ##############################################################################
 sub Get {
-#  print "N::J::Get: (",join(",",@_),")\n";
-  my $parent = shift;
-  my $self = (ref($_[0]) ne "") ? shift : $parent;
-  my $tag = shift;
-  my $treeName = shift;
+  my $self = shift;
   my $args = shift;
-  
-  &Net::Jabber::MissingFunction($parent,"Get$tag")
-    unless (ref($args) eq "ARRAY");
+  my $funcs = shift;
 
-#  print "\$\$args: (",join(",",@{$args}),")\n";
+  my $xmlns = ((ref($args) eq "ARRAY") ? $$args[1] : "");
+  my $key = ((ref($args) eq "ARRAY") ? $$args[0] : $args);
 
-  my $type = shift;
-  $type = "" unless defined($type);
-  
-  if ($$args[0] eq "value array") {
-    my @getData = &Net::Jabber::GetXMLData($$args[0],
-					   $self->{$treeName},
-					   $$args[1],
-					   $$args[2]);
-    my $lastIndex = $#getData;
-    my $index;
-    foreach $index (0..$lastIndex) {
-      if ($getData[($lastIndex - $index)] eq "") {
-	splice(@getData,($lastIndex-$index),1);
-      }
+  return if ($key eq "");
+
+  if ($key eq "__netjabber__:master") {
+    #print "self($self)\n";
+    #$self->debug();
+
+    my %hash;
+    foreach my $func (@{$funcs}) {
+      next if ($func eq "XMLNS");
+      #print "GetMaster: func($func)\n";
+      my $lcfunc = lc($func);
+      next unless eval "\$self->Defined$func();";
+      my $value = eval "\$self->Get$func();";
+      $hash{$lcfunc} = $value;
     }
-    return @getData;
-  } else {
-    my $getData = &Net::Jabber::GetXMLData($$args[0],
-					   $self->{$treeName},
-					   $$args[1],
-					   $$args[2]);
-    
-    return new Net::Jabber::JID($getData) if ($type eq "jid");
-    return $getData;
+    return %hash;
+  }	
+
+  my $loc = "DATA";
+  if ($key =~ /^__netjabber__\:children\:(.*)$/) {
+    $key = $1;
+    $loc = "CHILDREN";
   }
+
+  return unless exists($self->{$loc}->{$key});
+
+  if (ref($self->{$loc}->{$key}) eq "Net::Jabber::JID") {
+    my $value = $self->{$loc}->{$key};
+    return $value->GetJID("full") if ($_[0] ne "jid");
+    return $value;
+  }
+  if (ref($self->{$loc}->{$key}) eq "ARRAY") {
+    return $self->{$loc}->{$key}->[0]
+      if (($key eq "query") && ($xmlns eq "") && ($_[0] eq ""));
+    if ($_[0] ne "") {
+      my @list;
+      foreach my $item (@{$self->{$loc}->{$key}}) {
+	push(@list,$item) if ($item->GetXMLNS() eq $_[0]);
+      }
+      return @list;
+    }
+    if ($xmlns ne "") {
+      if (($key eq "x") || ($key eq "query")) {
+	my @list;
+	foreach my $item (@{$self->{$loc}->{$key}}) {
+	  push(@list,$item) if ($item->GetXMLNS() eq $xmlns);
+	}
+	return @list;
+      }
+      return;
+    }
+    return @{$self->{$loc}->{$key}};
+  }
+  if (ref($self->{$loc}->{$key}) eq "HASH") {
+    return if (($_[0] ne "") && !exists($self->{$loc}->{$key}->{$_[0]}));
+    return $self->{$loc}->{$key}->{$_[0]}
+      if (($_[0] ne "") && exists($self->{$loc}->{$key}->{$_[0]}));
+    return %{$self->{$loc}->{$key}};
+  }
+
+  return $self->{$loc}->{$key};
 }
 
 
 ##############################################################################
 #
-# Set - sets the XML data for this tag
-#
-##############################################################################
-sub Set {
-#  print "N::J::Set: (",join(",",@_),")\n";
-  my $parent = shift;
-  my $self = (ref($_[0]) ne "") ? shift : $parent;
-  my $tag = shift;
-  my $treeName = shift;
-  my $args = shift;
-
-  &Net::Jabber::MissingFunction($parent,"Set$tag")
-    unless (ref($args) eq "ARRAY");
-
-#  print "\$\$args: (",join(",",@{$args}),")\n";
-
-  &Net::Jabber::SetXMLData($$args[0],
-			   $self->{$treeName},
-			   $$args[1],
-			   (($$args[2] eq "*") ? shift : ""),
-			   (($$args[3] ne "") ?
-			    { $$args[3]=>(($$args[4] eq "*") ? shift : "") } :
-			    {}
-			   )
-			  );
-}
-
-
-##############################################################################
-#
-# Defined - returns 1 if the tag exists, 0 other else.
+# Defined - returns 1 if the hash element exists, 0 otherwise
 #
 ##############################################################################
 sub Defined {
-#  print "N::J::Defined: (",join(",",@_),")\n";
-  my $parent = shift;
-  my $self = (ref($_[0]) ne "") ? shift : $parent;
-  my $tag = shift;
-  my $treeName = shift;
+  my $self = shift;
+  my $key = shift;
+  my $funcs = shift;
+  my $xmlns = shift;
+
+  my $loc = "DATA";
+  if ($key =~ /^__netjabber__\:children\:(.*)$/) {
+    $key = $1;
+    $loc = "CHILDREN";
+  }
+
+  $xmlns = "" unless (defined($xmlns) &&
+		      (($key eq "x") || ($key eq "query")|| ($key eq "data")));
+
+  return exists($self->{$loc}->{$key}) if ($xmlns eq "");
+  foreach my $x (@{$self->{$loc}->{$key}}) {
+    return 1 if ($x->GetXMLNS() eq $xmlns);
+  }
+  return 0;
+}
+
+
+##############################################################################
+#
+# Set - takes an argument list and based off of it, sets the hash value.
+#
+##############################################################################
+sub Set {
+  my $self = shift;
   my $args = shift;
+  my $funcs = shift;
+  my $type = $$args[0];
+  my $key = $$args[1];
+  $key = "" unless defined($key);
 
-#  print "\$\$args: (",join(",",@{$args}),")\n";
+  #&DEBUG($self,"Set: type($type) key($key) args(",join(",",@_),")");
 
-  &Net::Jabber::MissingFunction($parent,"Defined$tag")
-    unless (ref($args) eq "ARRAY");
-
-  return &Net::Jabber::GetXMLData($$args[0],
-				  $self->{$treeName},
-				  $$args[1],
-				  $$args[2]);
-}
-
-
-##############################################################################
-#
-# SetXMLData - takes a host of arguments and sets a portion of the specified
-#              XML::Parser::Tree object with that data.  The function works
-#              in two modes "single" or "multiple".  "single" denotes that 
-#              the function should locate the current tag that matches this 
-#              data and overwrite it's contents with data passed in.  
-#              "multiple" denotes that a new tag should be created even if 
-#              others exist.
-#
-#              type    - single or multiple
-#              XMLTree - pointer to XML::Parser::Tree
-#              tag     - name of tag to create/modify (if blank assumes
-#                        working with top level tag)
-#              data    - CDATA to set for tag
-#              attribs - attributes to ADD to tag
-#
-##############################################################################
-sub SetXMLData {
-  my ($type,$XMLTree,$tag,$data,$attribs) = @_;
-  my ($key);
-
-  if ($tag ne "") {
-    if ($type eq "single") {
-      my ($child);
-      foreach $child (1..$#{$$XMLTree[1]}) {
-	if ($$XMLTree[1]->[$child] eq $tag) {
-	  if ($data ne "") {
-	    #todo: add code to handle writing the cdata again and appending it.
-	    $$XMLTree[1]->[$child+1]->[1] = 0;
-	    $$XMLTree[1]->[$child+1]->[2] = $data;
-	  }
-	  foreach $key (keys(%{$attribs})) {
-	    $$XMLTree[1]->[$child+1]->[0]->{$key} = $$attribs{$key};
-	  }
-	  return;
-	}
-      }
-    }
-    $$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = $tag;
-    $$XMLTree[1]->[($#{$$XMLTree[1]}+1)]->[0] = {};
-    foreach $key (keys(%{$attribs})) {
-      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[0]->{$key} = $$attribs{$key};
-    }
-    if ($data ne "") {
-      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[1] = 0;
-      $$XMLTree[1]->[$#{$$XMLTree[1]}]->[2] = $data;
-    }
-  } else {
-    foreach $key (keys(%{$attribs})) {
-      $$XMLTree[1]->[0]->{$key} = $$attribs{$key};
-    }
-    if ($data ne "") {
-      if (($#{$$XMLTree[1]} > 0) &&
-	  ($$XMLTree[1]->[($#{$$XMLTree[1]}-1)] eq "0")) {
-	$$XMLTree[1]->[$#{$$XMLTree[1]}] .= $data;
-      } else {
-	$$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = 0;
-	$$XMLTree[1]->[($#{$$XMLTree[1]}+1)] = $data;
-      }
-    }
+  if ($type eq "scalar") {
+    $self->{DATA}->{$key} = shift;
   }
-}
-
-
-##############################################################################
-#
-# GetXMLData - takes a host of arguments and returns various data structures
-#              that match them.
-#
-#              type - "existence" - returns 1 or 0 if the tag exists in the
-#                                   top level.
-#                     "value" - returns either the CDATA of the tag, or the
-#                               value of the attribute depending on which is
-#                               sought.  This ignores any mark ups to the data
-#                               and just returns the raw CDATA.
-#                     "value array" - returns an array of strings representing
-#                                     all of the CDATA in the specified tag.
-#                                     This ignores any mark ups to the data
-#                                     and just returns the raw CDATA.
-#                     "tree" - returns an XML::Parser::Tree object with the
-#                              specified tag as the root tag.
-#                     "tree array" - returns an array of XML::Parser::Tree 
-#                                    objects each with the specified tag as
-#                                    the root tag.
-#              XMLTree - pointer to XML::Parser::Tree object
-#              tag     - tag to pull data from.  If blank then the top level
-#                        tag is accessed.
-#              attrib  - attribute value to retrieve.  Ignored for types
-#                        "value array", "tree", "tree array".  If paired
-#                        with value can be used to filter tags based on
-#                        attributes and values.
-#              value   - only valid if an attribute is supplied.  Used to
-#                        filter for tags that only contain this attribute.
-#                        Useful to search through multiple tags that all
-#                        reference different name spaces.
-#
-##############################################################################
-sub GetXMLData {
-  my ($type,$XMLTree,$tag,$attrib,$value) = @_;
-
-  $attrib = "" if !defined($attrib);
-  $value = "" if !defined($value);
-
-  #---------------------------------------------------------------------------
-  # Check if a child tag in the root tag is being requested.
-  #---------------------------------------------------------------------------
-  if ($tag ne "") {
-    my (@array);
-    my ($child);
-    foreach $child (1..$#{$$XMLTree[1]}) {
-      if (($$XMLTree[1]->[$child] eq $tag) || ($tag eq "*")) {
-	next if (ref($$XMLTree[1]->[$child]) eq "ARRAY");
-
-        #---------------------------------------------------------------------
-        # Filter out tags that do not contain the attribute and value.
-        #---------------------------------------------------------------------
-	next if (($value ne "") && ($attrib ne "") && exists($$XMLTree[1]->[$child+1]->[0]->{$attrib}) && ($$XMLTree[1]->[$child+1]->[0]->{$attrib} ne $value));
-	next if (($attrib ne "") && ((ref($$XMLTree[1]->[$child+1]) ne "ARRAY") || !exists($$XMLTree[1]->[$child+1]->[0]->{$attrib})));
-
-        #---------------------------------------------------------------------
-	# Check for existence
-        #---------------------------------------------------------------------
-	if ($type eq "existence") {
-	  return 1;
-	}
-        #---------------------------------------------------------------------
-	# Return the raw CDATA value without mark ups, or the value of the
-        # requested attribute.
-        #---------------------------------------------------------------------
-	if ($type eq "value") {
-	  if ($attrib eq "") {
-	    my $str = "";
-	    my $next = 0;
-	    my $index;
-	    foreach $index (1..$#{$$XMLTree[1]->[$child+1]}) {
-	      if ($next == 1) { $next = 0; next; }
-	      if ($$XMLTree[1]->[$child+1]->[$index] eq "0") {
-		$str .= $$XMLTree[1]->[$child+1]->[$index+1];
-		$next = 1;
-	      }
-	    }
-	    return $str;
-	  }
-	  return $$XMLTree[1]->[$child+1]->[0]->{$attrib}
-	    if (exists $$XMLTree[1]->[$child+1]->[0]->{$attrib});
-	}
-        #---------------------------------------------------------------------
-	# Return an array of values that represent the raw CDATA without
-        # mark up tags for the requested tags.
-        #---------------------------------------------------------------------
-	if ($type eq "value array") {
-	  my $str = "";
-	  my $next = 0;
-	  my $index;
-	  foreach $index (1..$#{$$XMLTree[1]->[$child+1]}) {
-	    if ($next == 1) { $next = 0; next; }
-	    if ($$XMLTree[1]->[$child+1]->[$index] eq "0") {
-	      $str .= $$XMLTree[1]->[$child+1]->[$index+1];
-	      $next = 1;
-	    }
-	  }
-	  push(@array,$str);
-	}
-        #---------------------------------------------------------------------
-	# Return a pointer to a new XML::Parser::Tree object that has the
-        # requested tag as the root tag.
-        #---------------------------------------------------------------------
-	if ($type eq "tree") {
-	  my @tree = ( $$XMLTree[1]->[$child] , $$XMLTree[1]->[$child+1] );
-	  return @tree;
-	}
-        #---------------------------------------------------------------------
-	# Return an array of pointers to XML::Parser::Tree objects that have
-        # the requested tag as the root tags.
-        #---------------------------------------------------------------------
-	if ($type eq "tree array") {
-	  my @tree = ( $$XMLTree[1]->[$child] , $$XMLTree[1]->[$child+1] );
-	  push(@array,\@tree);
-	}
-      }
+  if ($type eq "array") {
+    my(@value) = @_;
+    @value = @{$value[0]} if (ref($value[0]) eq "ARRAY");
+    foreach my $item (@value) {
+      push(@{$self->{DATA}->{$key}},$item)
     }
-    #-------------------------------------------------------------------------
-    # If we are returning arrays then return array.
-    #-------------------------------------------------------------------------
-    if (($type eq "tree array") || ($type eq "value array")) {
-      return @array;
-    }
-  } else {
-    #---------------------------------------------------------------------
-    # This is the root tag, so handle things a level up.
-    #---------------------------------------------------------------------
-
-    #---------------------------------------------------------------------
-    # Return the raw CDATA value without mark ups, or the value of the
-    # requested attribute.
-    #---------------------------------------------------------------------
-    if ($type eq "value") {
-      if ($attrib eq "") {
-	my $str = "";
-	my $next = 0;
-	my $index;
-	foreach $index (1..$#{$$XMLTree[1]}) {
-	  if ($next == 1) { $next = 0; next; }
-	  if ($$XMLTree[1]->[$index] eq "0") {
-	    $str .= $$XMLTree[1]->[$index+1];
-	    $next = 1;
-	  }
-	}
-	return $str;
-      }
-      return $$XMLTree[1]->[0]->{$attrib}
-        if (exists $$XMLTree[1]->[0]->{$attrib});
-    }
-    #---------------------------------------------------------------------
-    # Return a pointer to a new XML::Parser::Tree object that has the
-    # requested tag as the root tag.
-    #---------------------------------------------------------------------
-    if ($type eq "tree") {
-      my @tree =  @{$$XMLTree};
-      return @tree;
-    }
-
-    if ($type eq "existence") {
-      return 1 if (($attrib ne "") && (exists($$XMLTree[1]->[0]->{$attrib})));
-    }
+    return;
   }
-  #---------------------------------------------------------------------------
-  # Return 0 if this was a request for existence, or "" if a request for
-  # a "value", or [] for "tree", "value array", and "tree array".
-  #---------------------------------------------------------------------------
-  return 0 if ($type eq "existence");
-  return "" if ($type eq "value");
-  return [];
-}
-
-
-##############################################################################
-#
-# EscapeXML - Simple function to make sure that no bad characters make it into
-#             in the XML string that might cause the string to be 
-#             misinterpreted.
-#
-##############################################################################
-sub EscapeXML {
-  my $data = shift;
-
-  $data =~ s/&/&amp;/g;
-  $data =~ s/</&lt;/g;
-  $data =~ s/>/&gt;/g;
-  $data =~ s/\"/&quot;/g;
-  $data =~ s/\'/&apos;/g;
-
-  if ($UNICODE == 1) {
-    eval("{  no warnings;  \$data =~ tr/\0-\xff//CU;  };")
-  } else {
-    my $unicode = new Unicode::String();
-    $unicode->latin1($data);
-    $data = $unicode->utf8;
+  if ($type eq "jid") {
+    my $value = shift;
+    $value = new Net::Jabber::JID($value)
+      unless (ref($value) eq "Net::Jabber::JID");
+    $self->{DATA}->{$key} = $value;
+    return;
   }
-
-  return $data;
-}
-
-
-##############################################################################
-#
-# BuildXML - takes an XML::Parser::Tree object and builds the XML string that
-#            it represents.
-#
-##############################################################################
-sub BuildXML {
-  my (@parseTree) = @_;
-  my ($str,$att,$child);
-
-  return "" if $#parseTree eq -1;
-
-  if (ref($parseTree[0]) eq "") {
-
-    if ($parseTree[0] eq "0") {
-      return &EscapeXML($parseTree[1]);
+  if ($type eq "timestamp") {
+    my $stamp = shift;
+    $stamp = "" unless defined($stamp);
+    if ($stamp eq "") {
+      $stamp = &Net::Jabber::GetTimeStamp("utc","","stamp");
     }
+    $self->{DATA}->{$key} = $stamp;
+    return;
+  }
+  if ($type eq "flag") {
+    $self->{DATA}->{$key} = "";
+    return;
+  }
+  if ($type eq "add") {
+    my (@children) = @_;
 
-    $str = "<".$parseTree[0];
-    foreach $att (keys(%{$parseTree[1]->[0]})) {
-      $str .= " ".$att."='".&EscapeXML($parseTree[1]->[0]->{$att})."'";
+    #&DEBUG($self,"Set: add args(",join(",",@children),")");
+    #&DEBUG($self,"Set: add start");
+    my %ignore;
+    foreach my $index (3..$#{@{$args}}) {
+      #&DEBUG($self,"Set: add index($index)");
+      $ignore{$$args[$index]} = 1;
     }
-    
-    my $tempStr = &Net::Jabber::BuildXML(@{$parseTree[1]});
+    foreach my $child (@children) {
+      next if exists($ignore{$self->{TREE}->{$child."-tag"}});
+      #&DEBUG($self,"Set: add child ($child)");
+      #&DEBUG($self,"Set: root tag (",$self->{TREE}->{$child."-tag"},")");
+      $self->{TREE}->{$child."-att-xmlns"} = $$args[2];
+      $self->{TREE}->{$child."-att-__netjabber__:ignore"} = "__netjabber__";
+      $self->{TREE}->{root} = $child;
+      #&DEBUG($self,"Set: add call (\$self->Add$$args[1](\$self->{TREE});)");
+      eval "\$self->Add$$args[1](\$self->{TREE});";
+    }
+    #&DEBUG($self,"Set: add end");
+    return;
+  }
+  if ($type eq "master") {
+    eval "\$self->MasterSet(\@_);" if ($key eq "");
+    eval "\$self->MasterSetAll(\@_);" if ($key eq "all");
+    return;
+  }
+  if ($type eq "special") {
+    if ($_[0] eq "") {
+      $self->{DATA}->{__netjabbertime__} = time
+	unless exists($self->{DATA}->{__netjabbertime__});
+      my $value;
+      $value = (&POSIX::uname())[0] if ($key eq "os");
+      if ($key eq "utc") {
+	$value = &Net::Jabber::GetTimeStamp("utc",$self->{DATA}->{__netjabbertime__},"stamp");
+      }
+      $value = uc(&tz_name(&tz_local_offset()))
+	if (($key eq "tz") && ($TIMEZONE == 1));
+      $value = &Net::Jabber::GetTimeStamp("local",$self->{DATA}->{__netjabbertime__}) if ($key eq "display");
 
-    if (!defined($tempStr) || ($tempStr eq "")) {
-      $str .= "/>";
+      $value = "Net::Jabber v$Net::Jabber::VERSION" if ($key eq "version");
+
+      $self->{DATA}->{$key} = $value;
     } else {
-      $str .= ">";
-      $str .= $tempStr;
-      $str .= "</".$parseTree[0].">";
+      my $value = $_[0];
+      $value = $_[0]." - [Net::Jabber v$Net::Jabber::VERSION]"
+	if (($key eq "version") && ($PARSING == 0));
+      $self->{DATA}->{$key} = $value;
     }
-
-  } else {
-    shift(@parseTree);
-    while("@parseTree" ne "") {
-      $str .= &Net::Jabber::BuildXML(@parseTree);
-      shift(@parseTree);
-      shift(@parseTree);
-    }
+    return;
   }
-
-  return $str;
 }
 
 
 ##############################################################################
 #
-# printData - debugging function to print out any data structure in an 
+# Add - generic function to handle adding x children into the fray.
+#
+##############################################################################
+sub Add {
+  my $self = shift;
+  my $args = shift;
+  my $funcs = shift;
+
+  my $tag = $$args[3];
+  $tag = shift if ($tag eq "");
+
+  #&DEBUG($self,"Add: tag($tag)");
+
+  my $xTag;
+  #&DEBUG($self,"Add: call(\$xTag = \$self->Add$$args[0](\{'root'=>1,'1-tag'=>\$tag});)");
+
+  eval "\$xTag = \$self->Add$$args[0](\{'root'=>1,'1-tag'=>\$tag\});";
+  $xTag->SetXMLNS($$args[1]);
+  #&DEBUG($self,"Add: call(\$xTag->Set$$args[2](\@_);)");
+  eval "\$xTag->Set$$args[2](\@_);";
+  return $xTag;
+}
+
+
+##############################################################################
+#
+# ParseXMLNS - anything that uses the namespace method must frist kow what the
+#              xmlns of this thing is... So here's a function to do just that.
+#
+##############################################################################
+sub ParseXMLNS {
+  my $self = shift;
+
+  $self->SetXMLNS($self->{TREE}->{$self->{TREE}->{root}."-att-xmlns"})
+    if exists($self->{TREE}->{$self->{TREE}->{root}."-att-xmlns"});
+}
+
+
+##############################################################################
+#
+# ParseTree - since we are not storing the huge XML Tree anymore, we need
+#             to parse the tree and build the hash.
+#
+##############################################################################
+sub ParseTree {
+  $PARSING++;
+  my $self = shift;
+
+  #print "ParseTree: self($self)\n";
+
+  #print "ParseTree: tree\n";
+  #&Net::Jabber::printData("  \$tree",$self->{TREE});
+
+  my $root = $self->{TREE}->{'root'};
+
+  #print "ParseTree: start root($root)\n";
+  #print "ParseTree: funcs(",join(",",@_),")\n";
+
+  foreach my $function (@_) {
+    my $lcfunc = $self->Get($function);
+
+    #print "ParseTree: start eval func($function)\n";
+
+    my $type = $self->Hash($function);
+    #print "ParseTree: function($function) type($type)\n";
+    #print "ParseTree: function($function) tag($lcfunc)\n";
+
+    if ($type eq "att") {
+      eval "\$self->Set$function(\$self->{TREE}->{'${root}-att-$lcfunc'}) if exists(\$self->{TREE}->{'${root}-att-$lcfunc'});";
+      next;
+    }
+
+    if ($type eq "data") {
+      eval "\$self->Set$function(\$self->{TREE}->{'${root}-data'}) if exists(\$self->{TREE}->{'${root}-data'});";
+      next;
+    }
+
+    if ($type eq "child-data") {
+      my @children = split(",",$self->{TREE}->{"$root-child"});
+      @children = grep { $self->{TREE}->{"$_-tag"} eq $lcfunc } @children;
+      foreach my $childid (@children) {
+	eval "\$self->Set$function(\$self->{TREE}->{'${childid}-data'}) if exists(\$self->{TREE}->{'${childid}-data'});";
+	eval "\$self->Set$function() unless exists(\$self->{TREE}->{'${childid}-data'});";
+      }
+      next;
+    }
+
+    if ($type eq "child-flag") {
+      my @children = split(",",$self->{TREE}->{"$root-child"});
+      @children = grep { $self->{TREE}->{"$_-tag"} eq $lcfunc } @children;
+      foreach my $childid (@children) {
+	eval "\$self->Set$function();";
+      }
+      next;
+    }
+
+    if ($type eq "child-add") {
+      $lcfunc = $self->Add($function);
+      my @children = split(",",$self->{TREE}->{"$root-child"});
+      @children = grep { $self->{TREE}->{"$_-tag"} eq $lcfunc } @children
+	unless ($lcfunc eq "");
+      eval "\$self->Set$function(\@children);";
+      next;
+    }
+
+    if ($type =~ /^att-(.+)-(.+)$/) {
+      my $child = $1;
+      my $att = $2;
+
+      my @children = split(",",$self->{TREE}->{"$root-child"});
+      @children = grep { $self->{TREE}->{"$_-tag"} eq $child } @children;
+      foreach my $childid (@children) {
+	eval "\$self->Set$function(\$self->{TREE}->{'${childid}-att-${att}'}) if exists(\$self->{TREE}->{'${childid}-att-${att}'});";
+      }
+      next;
+    }
+
+    #print "ParseTree: stop eval func($function)\n";
+  }
+
+  my $count = 0;
+  my @xTrees = &XML::Stream::GetXMLData("tree array",$self->{TREE},"*","xmlns","");
+
+  #print "xtrees:\n";
+  #&Net::Jabber::printData("  \$xTrees",\@xTrees);
+  #print "ParseTree: root($root) ref(",ref($self),")\n";
+
+  if ($#xTrees > -1) {
+    if ((ref($self) eq "Net::Jabber::IQ") ||
+	(ref($self) eq "Net::Jabber::Query")) {
+
+      #print "do the query:\n";
+      #&Net::Jabber::printData("  \$xTrees",\@xTrees);
+      $self->{TREE}->{'root'} = shift(@xTrees);
+      $self->AddQuery($self->{TREE});
+    }
+
+    if ((ref($self) eq "Net::Jabber::XDB") ||
+	(ref($self) eq "Net::Jabber::Data")) {
+
+      #print "do the data:\n";
+      #&Net::Jabber::printData("  \$xTrees",\@xTrees);
+      $self->{TREE}->{'root'} = shift(@xTrees);
+      $self->AddData($self->{TREE});
+    }
+
+    #print "now for x:\n";
+    #&Net::Jabber::printData("  \$xTrees",\@xTrees);
+
+    foreach my $xTree (@xTrees) {
+      $self->{TREE}->{'root'} = $xTree;
+      if (ref($self) eq "Net::Jabber::Query") {
+	$self->AddQuery($self->{TREE});
+      } elsif (ref($self) eq "Net::Jabber::Data") {
+	$self->AddData($self->{TREE});
+      } else {
+	$self->AddX($self->{TREE});
+      }
+    }
+  }
+
+  #print "tree:\n";
+  #$self->debug();
+  $PARSING--;
+}
+
+
+sub GetXML {
+  my $self = shift;
+  my(@funcs) = @_;
+
+  #&DEBUG($self,"\n",&Net::Jabber::sprintData("  \$self->{DATA}->",$self->{DATA})) if #&DEBUG($self,"GetXML: tree");
+
+  my %funcs;
+  foreach my $func (@funcs) {
+    if (exists($self->{DATA}->{$self->Get($func)})) {
+      if (exists($funcs{$self->Hash($func)})) {
+	$funcs{$self->Hash($func)} .= ",$func";
+      } else {
+	$funcs{$self->Hash($func)} = "$func";
+      }
+    }	
+  }
+
+  my $string = "<".$self->{TAG};
+
+  if (exists($funcs{att})) {
+    foreach my $func (split(",",$funcs{att})) {
+      if (exists($self->{DATA}->{$self->Get($func)})) {
+
+	my $value = eval "\$self->Get$func();";
+	next if ($value =~ /^__netjabber__/);
+	next if ($value eq "");
+	$value = &XML::Stream::EscapeXML($value);
+	$string .= " ".$self->Get($func)."='$value'";
+      }
+    }
+  }
+
+  if (exists($funcs{'data'}) ||
+      exists($funcs{'child-data'}) ||
+      exists($self->{CHILDREN}->{query}) ||
+      exists($self->{CHILDREN}->{data}) ||
+      exists($self->{CHILDREN}->{x})) {
+
+    $string .= ">";
+
+    foreach my $func (split(",",$funcs{'data'})) {
+      $string .= &XML::Stream::EscapeXML(eval "\$self->Get$func();");
+    }
+
+    foreach my $func (split(",",$funcs{'child-data'})) {
+      my $lcfunc = $self->Get($func);
+      my $addit = eval "\$self->Defined$func();";
+      my $valType = eval "\$self->ValType$func();";
+
+      if (($valType) eq "array") {
+	my @value = eval "\$self->Get$func();";
+	foreach my $item (@value) {
+	  $string .= "<$lcfunc>$item</$lcfunc>";
+	}
+      } else {
+	my $value = eval "\$self->Get$func();";
+	$value = &XML::Stream::EscapeXML($value);
+	my $test = "att-$lcfunc-";
+	my @attFuncs = grep { /^$test/; } keys(%funcs);
+
+	if (($addit == 1) || ($#attFuncs > -1)) {
+
+	  $string .= "<$lcfunc" if ($addit == 1);
+
+	  foreach my $att (@attFuncs) {
+	    my $attFunc = $funcs{$att};
+	    ($att) = ($att =~ /^$test(.*)$/);
+	
+	    my $pass = eval "\$self->Defined$attFunc();";
+	    my $attValue = eval "$self->Get$attFunc();";
+	    $pass = 0 if (($pass == 1) && 
+			  (($attValue eq "") || 
+			   ($attValue =~ /^__netjabber__/)));
+
+	    if ($pass == 1) {
+	      $string .= "<$lcfunc" if ($addit == 0);
+	      $addit = 1;
+	      $attValue = &XML::Stream::EscapeXML($attValue);
+	      $string .= " $att='$attValue'";
+	    }
+	  }
+	  if ($addit == 1) {
+	    if ($value eq "") {
+	      $string .= "/>";
+	    } else {
+	      $string .= ">".$value."</$lcfunc>";
+	    }
+	  }
+	}
+      }
+    }
+
+    if (exists($self->{CHILDREN}->{query})) {
+      foreach my $query (@{$self->{CHILDREN}->{query}}) {
+	$string .= $query->GetXML();
+      }
+    }
+    if (exists($self->{CHILDREN}->{data})) {
+      foreach my $query (@{$self->{CHILDREN}->{data}}) {
+	$string .= $query->GetXML();
+      }
+    }
+    if (exists($self->{CHILDREN}->{x})) {
+      foreach my $x (@{$self->{CHILDREN}->{x}}) {
+	$string .= $x->GetXML();
+      }
+    }
+
+    $string .= "</".$self->{TAG}.">";
+  } else {
+    $string .= "/>";
+  }
+
+  return $string;
+}
+
+
+$CALLBACKS{Get} = sub{ return &Net::Jabber::Get(@_); };
+$CALLBACKS{Set} = sub{ return &Net::Jabber::Set(@_); };
+$CALLBACKS{Add} = sub{ return &Net::Jabber::Add(@_); };
+$CALLBACKS{Defined} = sub{ return &Net::Jabber::Defined(@_); };
+
+
+##############################################################################
+#
+# AutoLoad - This function is a central location for handling all of the
+#            AUTOLOADS for all of the sub modules.
+#
+##############################################################################
+sub AutoLoad {
+  my $self = shift;
+  my $AutoLoad = shift;
+  return if ($AutoLoad =~ /::DESTROY$/);
+  my ($package) = ($AutoLoad =~ /^(.*)::/);
+  $AutoLoad =~ s/^.*:://;
+#  &DEBUG($self,"AutoLoad: tag($self->{TAG}) package($package) function($AutoLoad) args(",join(",",@_),")");
+  my ($type,$value) = ($AutoLoad =~ /^(Add|Get|Set|Defined|ValType)(.*)$/);
+  $type = "" unless defined($type);
+  $value = "" unless defined($value);
+
+  return $self->{TAG} if ($AutoLoad eq "GetTag");
+
+  my %FUNCTIONS;
+  eval "\%FUNCTIONS = \%".$package."::FUNCTIONS";
+
+  return $FUNCTIONS{$_[0]}->{Hash} if (exists($FUNCTIONS{$_[0]}->{Hash}) && ($AutoLoad eq "Hash"));
+  return $FUNCTIONS{$_[0]}->{Get} if (exists($FUNCTIONS{$_[0]}->{Get}) && ($AutoLoad eq "Get"));
+  return $FUNCTIONS{$_[0]}->{Add}->[3] if (exists($FUNCTIONS{$_[0]}->{Add}) && ($AutoLoad eq "Add"));
+
+  my @funcs = grep { exists($FUNCTIONS{$_}->{Hash}) } keys(%FUNCTIONS);
+
+  return &{$CALLBACKS{$type}}($self,$FUNCTIONS{$value}->{$type},\@funcs,@_)
+    if (exists($FUNCTIONS{$value}) &&
+	exists($FUNCTIONS{$value}->{$type}));
+
+  return $FUNCTIONS{$value}->{Set}->[0]
+    if (exists($FUNCTIONS{$value}) && ($type eq "ValType"));
+
+  if (($package eq "Net::Jabber::X") ||
+      ($package eq "Net::Jabber::Query") ||
+      ($package eq "Net::Jabber::Data")) {
+    my $xmlns = $self->GetXMLNS();
+    #&DEBUG($self,"xmlns(",$xmlns,")");
+    #&DEBUG($self,"\%FUNCTIONS = \%{\$".$package."::NAMESPACES{\'".$xmlns."\'}}");
+    eval "\%FUNCTIONS = \%{\$".$package."::NAMESPACES{\'".$xmlns."\'}}";
+
+    push(@funcs, grep { exists($FUNCTIONS{$_}->{Hash}) } keys(%FUNCTIONS));
+    return &{$CALLBACKS{$type}}($self,$FUNCTIONS{$value}->{$type},\@funcs,@_)
+      if (exists($FUNCTIONS{$value}) &&
+	  exists($FUNCTIONS{$value}->{$type}));
+
+    return $FUNCTIONS{$value}->{Set}->[0]
+      if (exists($FUNCTIONS{$value}) && ($type eq "ValType"));
+  }
+
+  return $FUNCTIONS{$_[0]}->{Hash}
+    if (exists($FUNCTIONS{$_[0]}->{Hash}) && ($AutoLoad eq "Hash"));
+  return $FUNCTIONS{$_[0]}->{Get}
+    if (exists($FUNCTIONS{$_[0]}->{Get}) && ($AutoLoad eq "Get"));
+  return $FUNCTIONS{$_[0]}->{Add}->[3]
+    if (exists($FUNCTIONS{$_[0]}->{Add}) && ($AutoLoad eq "Add"));
+
+  #&DEBUG($self,"funcs(",join(",",@funcs),")");
+
+  if ($AutoLoad eq "MasterSet") {
+    my (%args) = @_;
+    foreach my $func (@funcs) {
+      my $lcfunc = lc($func);#
+      if (exists($args{$lcfunc})) {
+	#&DEBUG($self,"MasterSet: call(\$self->Set${func}(\$_[1]);)");
+	eval "\$self->Set${func}(\$args{\$lcfunc});";
+      }
+    }
+    return;
+  }
+
+  if ($AutoLoad eq "MasterSetAll") {
+    my (%args) = @_;
+    foreach my $func (@funcs) {
+      next if ($func eq "XMLNS");
+      my $lcfunc = lc($func);
+      eval "\$self->Set${func}(\$args{\$lcfunc});";
+    }
+    return;
+  }
+
+  return &Net::Jabber::ParseXMLNS($self) if ($AutoLoad eq "ParseXMLNS");
+  return &Net::Jabber::ParseTree($self,@funcs) if ($AutoLoad eq "ParseTree");
+  return &Net::Jabber::GetXML($self,@funcs) if ($AutoLoad eq "GetXML");
+
+  if (($AutoLoad eq "NewX") ||
+      ($AutoLoad eq "NewQuery") ||
+      ($AutoLoad eq "NewData") ||
+      ($AutoLoad eq "AddX") ||
+      ($AutoLoad eq "AddQuery") ||
+      ($AutoLoad eq "AddData") ||
+      ($AutoLoad eq "RemoveX") ||
+      ($AutoLoad eq "RemoveQuery") ||
+      ($AutoLoad eq "RemoveData")
+     ) {
+
+    my $tag;
+    if ($AutoLoad =~ /^New(.*)$/) {
+      my $xmlns = $_[0];
+      my $obj = $1;
+
+      eval "\%FUNCTIONS = \%{\$Net::Jabber::".$obj."::NAMESPACES{\'".$xmlns."\'}}";
+      $tag = $FUNCTIONS{"__netjabber__"}->{Tag}
+	if exists($FUNCTIONS{"__netjabber__"}->{Tag});
+    }
+
+    return eval("return &Net::Jabber::${AutoLoad}(\$self,\@_,\$tag);");
+  }
+  return &Net::Jabber::debug($self) if ($AutoLoad eq "debug");
+
+  &Net::Jabber::MissingFunction($self,$AutoLoad);
+}
+
+
+##############################################################################
+#
+# NewX - calls AddX to create a new Net::Jabber::X object, sets the xmlns and
+#        returns a pointer to the new object.
+#
+##############################################################################
+sub NewX {
+  my $self = shift;
+  my ($xmlns,$tag) = @_;
+  $tag = "x" unless defined($tag);
+  return $self->AddX({'root'=>1,
+		      '1-tag'=>$tag,
+		      '1-att-xmlns'=>$xmlns}
+		    );
+}
+
+
+##############################################################################
+#
+# AddX - creates a new Net::Jabber::X object, pushes it on the list, and
+#        returns a pointer to the new object.  This is a private helper
+#        function.
+#
+##############################################################################
+sub AddX {
+  my $self = shift;
+  my $xTag = new Net::Jabber::X(shift);
+  push(@{$self->{CHILDREN}->{x}},$xTag);
+  return $xTag;
+}
+
+
+##############################################################################
+#
+# RemoveX - removes all xtags that have the specified namespace.
+#
+##############################################################################
+sub RemoveX {
+  my $self = shift;
+  my ($xmlns) = @_;
+
+  foreach my $index (reverse(0..$#{$self->{CHILDREN}->{x}})) {
+    splice(@{$self->{CHILDREN}->{x}},$index,1)
+      if (($xmlns eq "") ||
+	  ($self->{CHILDREN}->{x}->[$index]->GetXMLNS() eq $xmlns));
+  }
+}
+
+
+##############################################################################
+#
+# NewQuery - calls SetQuery to create a new Net::Jabber::Query object, sets
+#            the xmlns and returns a pointer to the new object.
+#
+##############################################################################
+sub NewQuery {
+  my $self = shift;
+  my ($xmlns,$tag) = @_;
+  $tag = "query" unless defined($tag);
+  $self->RemoveQuery();
+  return $self->AddQuery({'root'=>1,
+			  '1-tag'=>$tag,
+			  '1-att-xmlns'=>$xmlns}
+			);
+}
+
+
+##############################################################################
+#
+# AddQuery - creates a new Net::Jabber::Query object, sets the internal
+#            pointer to it, and returns a pointer to the new object.  This
+#            is a private helper function.
+#
+##############################################################################
+sub AddQuery {
+  my $self = shift;
+  my $queryTag = new Net::Jabber::Query(shift);
+  push(@{$self->{CHILDREN}->{query}},$queryTag);
+  return $queryTag;
+}
+
+
+##############################################################################
+#
+# RemoveQuery - removes all querytags that have the specified namespace.
+#
+##############################################################################
+sub RemoveQuery {
+  my $self = shift;
+  my ($xmlns) = @_;
+
+  foreach my $index (reverse(0..$#{$self->{CHILDREN}->{query}})) {
+    splice(@{$self->{CHILDREN}->{query}},$index,1)
+      if (($xmlns eq "") ||
+	  ($self->{CHILDREN}->{query}->[$index]->GetXMLNS() eq $xmlns));
+  }
+}
+
+
+##############################################################################
+#
+# NewData - calls SetData to create a new Net::Jabber::Data object, sets
+#            the xmlns and returns a pointer to the new object.
+#
+##############################################################################
+sub NewData {
+  my $self = shift;
+  my ($xmlns,$tag) = @_;
+  $tag = "data" unless defined($tag);
+  $self->RemoveData();
+  return $self->AddData({'root'=>1,
+			 '1-tag'=>$tag,
+			 '1-att-xmlns'=>$xmlns}
+			);
+}
+
+
+##############################################################################
+#
+# AddData - creates a new Net::Jabber::Data object, sets the internal
+#            pointer to it, and returns a pointer to the new object.  This
+#            is a private helper function.
+#
+##############################################################################
+sub AddData {
+  my $self = shift;
+  my $dataTag = new Net::Jabber::Data(shift);
+  push(@{$self->{CHILDREN}->{data}},$dataTag);
+  return $dataTag;
+}
+
+
+##############################################################################
+#
+# RemoveData - removes all datatags that have the specified namespace.
+#
+##############################################################################
+sub RemoveData {
+  my $self = shift;
+  my ($xmlns) = @_;
+
+  foreach my $index (reverse(0..$#{$self->{CHILDREN}->{data}})) {
+    splice(@{$self->{CHILDREN}->{data}},$index,1)
+      if (($xmlns eq "") ||
+	  ($self->{CHILDREN}->{data}->[$index]->GetXMLNS() eq $xmlns));
+  }
+}
+
+
+##############################################################################
+#
+# printData - debugging function to print out any data structure in an
 #             organized manner.  Very useful for debugging XML::Parser::Tree
 #             objects.  This is a private function that will only exist in
 #             in the development version.
 #
 ##############################################################################
 sub printData {
+  print &sprintData(@_);
+}
+
+
+##############################################################################
+#
+# sprintData - debugging function to build a string out of any data structure
+#              in an organized manner.  Very useful for debugging
+#              XML::Parser::Tree objects and perl hashes of hashes.
+#
+#              This is a private function.
+#
+##############################################################################
+sub sprintData {
   my ($preString,$data) = @_;
+
+  my $outString = "";
 
   if (ref($data) eq "HASH") {
     my $key;
     foreach $key (sort { $a cmp $b } keys(%{$data})) {
       if (ref($$data{$key}) eq "") {
-	print $preString,"{\'",$key,"\'} = \"",$$data{$key},"\"\n";
+	$outString .= $preString."{'$key'} = \"$$data{$key}\"\n";
       } else {
-	print $preString,"{\'",$key,"\'}\n";
-	&printData($preString."{'".$key."'}->",$$data{$key});
+	if (ref($$data{$key}) =~ /Net::Jabber/) {
+	  $outString .= $preString."{'$key'} = ".ref($$data{$key})."\n";
+	} else {
+	  $outString .= $preString."{'$key'}\n";
+	  $outString .= &sprintData($preString."{'$key'}->",$$data{$key});
+	}
       }
     }
   } else {
@@ -743,24 +1118,30 @@ sub printData {
       my $index;
       foreach $index (0..$#{$data}) {
 	if (ref($$data[$index]) eq "") {
-	  print $preString,"[",$index,"] = \"",$$data[$index],"\"\n";
+	  $outString .= $preString."[$index] = \"$$data[$index]\"\n";
 	} else {
-	  print $preString,"[",$index,"]\n";
-	  &printData($preString."[".$index."]->",$$data[$index]);
+	  if (ref($$data[$index]) =~ /Net::Jabber/) {
+	    $outString .= $preString."[$index] = ".ref($$data[$index])."\n";
+	  } else {
+	    $outString .= $preString."[$index]\n";
+	    $outString .= &sprintData($preString."[$index]->",$$data[$index]);
+	  }
 	}
       }
     } else {
       if (ref($data) eq "REF") {
-	&printData($preString."->",$$data);
+	$outString .= &sprintData($preString."->",$$data);
       } else {
 	if (ref($data) eq "") {
-	  print $preString," = \"",$data,"\"\n";
+	  $outString .= $preString." = \"$data\"\n";
 	} else {
- 	  print $preString," = ",ref($data),"\n";
+ 	  $outString .= $preString." = ".ref($data)."\n";
 	}
       }
     }
   }
+
+  return $outString;
 }
 
 
@@ -793,13 +1174,19 @@ sub GetTimeStamp {
   return $time if ($type eq "time");
   ($sec,$min,$hour,$mday,$mon,$year,$wday) = localtime(((defined($time) && ($time ne "")) ? $time : time)) if ($type eq "local");
   ($sec,$min,$hour,$mday,$mon,$year,$wday) = gmtime(((defined($time) && ($time ne "")) ? $time : time)) if ($type eq "utc");
+
+  return sprintf("%d%02d%02dT%02d:%02d:%02d",($year + 1900),($mon+1),$mday,$hour,$min,$sec) if ($length eq "stamp");
+
   $wday = ('Sun','Mon','Tue','Wed','Thu','Fri','Sat')[$wday];
-  $mon = ('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')[$mon];
-  return sprintf("%3s %3s %02d, %d %02d:%02d:%02d",$wday,$mon,$mday,($year + 1900),$hour,$min,$sec) if ($length eq "long");
+
+  my $month = ('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')[$mon];
+  $mon++;
+
+  return sprintf("%3s %3s %02d, %d %02d:%02d:%02d",$wday,$month,$mday,($year + 1900),$hour,$min,$sec) if ($length eq "long");
+  return sprintf("%3s %d/%02d/%02d %02d:%02d",$wday,($year + 1900),$mon,$mday,$hour,$min) if ($length eq "normal");
   return sprintf("%02d:%02d:%02d",$hour,$min,$sec) if ($length eq "short");
   return sprintf("%02d:%02d",$hour,$min) if ($length eq "shortest");
 }
 
 
 1;
-

@@ -1,5 +1,5 @@
 
-use Net::Jabber;
+use Net::Jabber qw(Client);
 use strict;
 
 if ($#ARGV < 5) {
@@ -51,7 +51,7 @@ $Client->Disconnect();
 
 sub messageCB {
   my $sid = shift;
-  my $message = new Net::Jabber::Message(@_);
+  my $message = shift;
 
   print "The body of the message should read:\n";
   print "  (THIS IS A TEST... A SUCCESSFUL TEST...)\n";

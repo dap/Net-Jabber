@@ -4,7 +4,7 @@ exec perl -x $0
 
 #!perl
 
-use Net::Jabber;
+use Net::Jabber qw(Component);
 use strict;
 
 $SIG{HUP} = \&Stop;
@@ -41,7 +41,8 @@ sub Stop {
 
 sub messageCB {
   my $sid = shift;
-  my $message = new Net::Jabber::Message(@_);
+  my $message = shift;
+
   print STDERR "Recd: ",$message->GetXML(),"\n";
 
   my $reply = $message->Reply();

@@ -29,24 +29,28 @@ Net::Jabber::Message - Jabber Message Module
 =head1 SYNOPSIS
 
   Net::Jabber::Message is a companion to the Net::Jabber module.
-  It provides the user a simple interface to set and retrieve all 
+  It provides the user a simple interface to set and retrieve all
   parts of a Jabber Message.
 
 =head1 DESCRIPTION
 
-  To initialize the Message with a Jabber <message/> you must pass it the 
-  XML::Parser Tree array.  For example:
+  To initialize the Message with a Jabber <message/> you must pass it
+  the XML::Stream hash.  For example:
 
-    my $message = new Net::Jabber::Message(@tree);
+    my $message = new Net::Jabber::Message(%hash);
 
   There has been a change from the old way of handling the callbacks.
-  You no longer have to do the above, a Net::Jabber::Message object is 
-  passed to the callback function for the message:
+  You no longer have to do the above yourself, a Net::Jabber::Message
+  object is passed to the callback function for the message.  Also,
+  the first argument to the callback functions is the session ID from
+  XML::Streams.  There are some cases where you might want this
+  information, like if you created a Client that connects to two servers
+  at once, or for writing a mini server.
 
-    use Net::Jabber;
+    use Net::Jabber qw(Client);
 
     sub message {
-      my ($Mess) = @_;
+      my ($sid,$Mess) = @_;
       .
       .
       .
@@ -56,201 +60,151 @@ Net::Jabber::Message - Jabber Message Module
 
   To create a new message to send to the server:
 
-    use Net::Jabber;
+    use Net::Jabber qw(Client);
 
     $Mess = new Net::Jabber::Message();
 
-  Now you can call the creation functions below to populate the tag before
-  sending it.
+  Now you can call the creation functions below to populate the tag
+  before sending it.
 
-  For more information about the array format being passed to the CallBack
-  please read the Net::Jabber::Client documentation.
-
-=head2 Retrieval functions
-
-    $to         = $Mess->GetTo();
-    $toJID      = $Mess->GetTo("jid");
-    $from       = $Mess->GetFrom();
-    $fromJID    = $Mess->GetFrom("jid");
-    $resource   = $Mess->GetResource();
-    $type       = $Mess->GetType();
-    $subject    = $Mess->GetSubject();
-    $body       = $Mess->GetBody();
-    @body       = $Mess->GetBody("full");
-    $thread     = $Mess->GetThread();
-    $priority   = $Mess->GetPriority();
-    $error      = $Mess->GetError();
-    $errCode    = $Mess->GetErrorCode();
-    @xTags      = $Mess->GetX();
-    @xTags      = $Mess->GetX("my:namespace");
-    @xTrees     = $Mess->GetXTrees();
-    @xTrees     = $Mess->GetXTrees("my:namespace");
-
-    $str        = $Mess->GetXML();
-    @message    = $Mess->GetTree();
-
-    $date       = $Mess->GetTimeStamp();
-
-=head2 Creation functions
-
-    $Mess->SetMessage(TO=>"bob\@jabber.org/Working Bob",
-		      Subject=>"Lunch",
-		      BoDy=>"Let's go grab some lunch!",
-		      priority=>100);
-    $Mess->SetTo("test\@jabber.org");
-    $Mess->SetFrom("me\@jabber.org");
-    $Mess->SetType("groupchat");
-    $Mess->SetSubject("This is a test");
-    $Mess->SetBody("This is a test of the emergency broadcast system...");
-    $Mess->SetThread("AE912B3");
-    $Mess->SetPriority(1);
-
-    $Mess->SetMessage(to=>"bob\@jabber.org",
-                      errorcode=>403,
-                      error=>"Permission Denied");
-    $Mess->SetErrorCode(403);
-    $Mess->SetError("Permission Denied");
-
-    $X = $Mess->NewX("jabber:x:delay");
-    $X = $Mess->NewX("my:namespace");
-    $X = $Mess->NewX(Net::Jabber::X::XXXXX);
-
-    $Reply = $Mess->Reply();
-    $Reply = $Mess->Reply(template=>"transport-filter");
-
-=head2 Test functions
-
-    $test = $Mess->DefinedTo();
-    $test = $Mess->DefinedFrom();
-    $test = $Mess->DefinedType();
-    $test = $Mess->DefinedSubject();
-    $test = $Mess->DefinedBody();
-    $test = $Mess->DefinedThread();
-    $test = $Mess->DefinedPriority();
-    $test = $Mess->DefinedErrorCode();
-    $test = $Mess->DefinedError();
+  For more information about the array format being passed to the
+  CallBack please read the Net::Jabber::Client documentation.
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetTo()      - returns either a string with the Jabber Identifier,
-  GetTo("jid")   or a Net::Jabber::JID object for the person who is 
-                 going to receive the <message/>.  To get the JID
-                 object set the string to "jid", otherwise leave
-                 blank for the text string.
+  GetTo()      - returns the value in the to='' attribute for the
+  GetTo("jid")   <message/>.  If you specify "jid" as an argument
+                 then a Net::Jabber::JID object is returned and
+                 you can easily parse the parts of the JID.
 
-  GetFrom()      -  returns either a string with the Jabber Identifier,
-  GetFrom("jid")    or a Net::Jabber::JID object for the person who
-                    sent the <message/>.  To get the JID object set 
-                    the string to "jid", otherwise leave blank for the 
-                    text string.
+                 $to    = $Mess->GetTo();
+                 $toJID = $Mess->GetTo("jid");
 
-  GetResource() - returns a string with the Jabber Resource of the 
-                  person who sent the <message/>.
+  GetFrom()      - returns the value in the from='' attribute for the
+  GetFrom("jid")   <message/>.  If you specify "jid" as an argument
+                   then a Net::Jabber::JID object is returned and
+                   you can easily parse the parts of the JID.
 
-  GetType() - returns a string with the type <message/> this is.
+                   $from    = $Mess->GetFrom();
+                   $fromJID = $Mess->GetFrom("jid");
 
-  GetSubject() - returns a string with the subject of the <message/>.
+  GetType() - returns the type='' attribute of the <message/>.  Each
+              message is one of four types:
 
-  GetBody(string) - returns the data in the <body/> tag depending on the
-                    value of the string passed to it.  The string
-                    represents the mark up level to return.
+                normal        regular message (default if type is blank)
+                chat          one on one chat
+                groupchat     multi-person chat
+                headline      headline
+                error         error message
 
-                    none   returns a string with just the text of 
-                           the <body/> (default)
-                    full   returns an XML::Paser::Tree with everything
-                           in the <body/>
+              $type = $Mess->GetType();
 
-  GetThread() - returns a string that represents the thread this
-                <message/> belongs to.
+  GetSubject() - returns the data in the <subject/> tag.
 
-  GetPriority() - returns an integer with the priority of the <message/>.
+                 $subject = $Mess->GetSubject();
+
+  GetBody() - returns the data in the <body/> tag.
+
+              $body = $Mess->GetBody();
+
+  GetThread() - returns the data in the <thread/> tag.
+
+                $thread = $Mess->GetThread();
 
   GetError() - returns a string with the data of the <error/> tag.
 
-  GetErrorCode() - returns a string with the code of the <error/> tag.
+               $error = $Mess->GetError();
 
-  GetX(string) - returns an array of Net::Jabber::X objects.  The string 
-                 can either be empty or the XML Namespace you are looking
-                 for.  If empty then GetX returns every <x/> tag in the 
-                 <message/>.  If an XML Namespace is sent then GetX 
-                 returns every <x/> tag with that Namespace.
+  GetErrorCode() - returns a string with the code='' attribute of the
+                   <error/> tag.
 
-  GetXTrees(string) - returns an array of XML::Parser::Tree objects.  The 
-                      string can either be empty or the XML Namespace you 
-                      are looking for.  If empty then GetXTrees returns
-                      every <x/> tag in the <message/>.  If an XML
-                      Namespace is sent then GetXTrees returns every
-                      <x/> tag with that  Namespace.
+                   $errCode = $Mess->GetErrorCode();
 
-  GetXML() - returns the XML string that represents the <message/>.
-             This is used by the Send() function in Client.pm to send
-             this object as a Jabber Message.
+  GetTimeStamp() - returns a string that represents the time this
+                   message object was created (and probably received)
+                   for sending to the client.  If there is a
+                   jabber:x:delay tag then that time is used to show
+                   when the message was sent.
 
-  GetTree() - returns an array that contains the <message/> tag
-              in XML::Parser Tree format.
+                   $date = $Mess->GetTimeStamp();
 
-  GetTimeStamp() - returns a string that represents the time this message
-                   object was created (and probably received) for sending
-                   to the client.  If there is an <x/> delay tag then that
-                   time is used to show when the message was sent.
 
 =head2 Creation functions
 
-  SetMessage(to=>string|JID,     - set multiple fields in the <message/>
-             from=>string|JID,     at one time.  This is a cumulative
-             type=>string,         and over writing action.  If you set
-             subject=>string,      the "to" attribute twice, the second
-             body=>string,         setting is what is used.  If you set
-             thread=>string,       the subject, and then set the body
-             priority=>integer,    then both will be in the <message/>
-             errorcode=>string,    tag.  For valid settings read the
-             error=>string)        specific Set functions below.
+  SetMessage(to=>string|JID,    - set multiple fields in the <message/>
+             from=>string|JID,    at one time.  This is a cumulative
+             type=>string,        and over writing action.  If you set
+             subject=>string,     the "to" attribute twice, the second
+             body=>string,        setting is what is used.  If you set
+             thread=>string,      the subject, and then set the body
+             errorcode=>string,   then both will be in the <message/>
+             error=>string)       tag.  For valid settings read the
+                                  specific Set functions below.
 
-  SetTo(string) - sets the to attribute.  You can either pass a string
-  SetTo(JID)      or a JID object.  They must be valid Jabber 
+                            $Mess->SetMessage(TO=>"bob\@jabber.org",
+					      Subject=>"Lunch",
+					      BoDy=>"Let's do lunch!");
+                            $Mess->SetMessage(to=>"bob\@jabber.org",
+					      from=>"jabber.org",
+					      errorcode=>404,
+					      error=>"Not found");
+
+  SetTo(string) - sets the to='' attribute.  You can either pass
+  SetTo(JID)      a string or a JID object.  They must be valid Jabber
                   Identifiers or the server will return an error message.
-                  (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+                  (ie.  bob@jabber.org/Work)
 
-  SetFrom(string) - sets the from attribute.  You can either pass a string
-  SetFrom(JID)      or a JID object.  They must be valid Jabber 
-                    Identifiers or the server will return an error message.
-                    (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+                  $Mess->SetTo("test\@jabber.org");
+
+  SetFrom(string) - sets the from='' attribute.  You can either pass
+  SetFrom(JID)      a string or a JID object.  They must be valid Jabber
+                    Identifiers or the server will return an error
+                    message. (ie.  jabber:bob@jabber.org/Work)
+                    This field is not required if you are writing a
+                    Client since the server will put the JID of your
+                    connection in there to prevent spamming.
+
+                    $Mess->SetFrom("me\@jabber.org");
 
   SetType(string) - sets the type attribute.  Valid settings are:
 
-                    chat           defines a chat style message
-                    error          defines an error message
-                    groupchat      defines a chatroom message
-                    normal         defines a normal message (default)
+                      normal         regular message (default if blank)
+                      chat           one one one chat style message
+                      groupchat      multi-person chatroom message
+                      headline       news headline, stock ticker, etc...
+                      error          error message
+
+                    $Mess->SetType("groupchat");
 
   SetSubject(string) - sets the subject of the <message/>.
 
+                       $Mess->SetSubject("This is a test");
+
   SetBody(string) - sets the body of the <message/>.
+
+                    $Mess->SetBody("To be or not to be...");
 
   SetThread(string) - sets the thread of the <message/>.  You should
                       copy this out of the message being replied to so
                       that the thread is maintained.
 
-  SetPriority(integer) - sets the priority of this <message/>.  The 
-                         higher the priority the more likely the client
-                         will deliver the message, even if the user has
-                         specified no messages.
+                      $Mess->SetThread("AE912B3");
 
   SetErrorCode(string) - sets the error code of the <message/>.
 
+                         $Mess->SetErrorCode(403);
+
   SetError(string) - sets the error string of the <message/>.
 
-  NewX(string) - creates a new Net::Jabber::X object with the namespace
-                 in the string.  In order for this function to work with
-                 a custom namespace, you must define and register that  
-                 namespace with the X module.  For more information
-                 please read the documentation for Net::Jabber::X.
+                     $Mess->SetError("Permission Denied");
 
-  Reply(template=>string,       - creates a new Message object and
-        replytransport=>string)   populates the to/from based on
-                                  the value of template.  The following
+  Reply(hash,                   - creates a new Message object and
+        template=>string,         populates the to/from based on
+        replytransport=>string)   the value of template, and the
+                                  subject by putting "re: " in front
+                                  if the type is normal.  The following
                                   templates are available:
 
                                   normal: (default)
@@ -267,46 +221,67 @@ Net::Jabber::Message - Jabber Message Module
                                        reply to the address from the
                                        to.  ie( bob%j.org@transport.j.org
                                        would send to bob@j.org) and
-                                       set the from to be 
+                                       set the from to be
                                        sender@replytransport.  That
                                        way a two way filter can occur.
 
+                                  If you specify a hash the same as with
+                                  SetMessage then those values will 
+                                  override the Reply values.
+
+                                  $Reply = $Mess->Reply();
+                                  $Reply = $Mess->Reply(type=>"chat");
+                                  $Reply = $Mess->Reply(template=>...);
+
 =head2 Test functions
 
-  DefinedTo() - returns 1 if the to attribute is defined in the <message/>, 
-                0 otherwise.
+  DefinedTo() - returns 1 if the to attribute is defined in the
+                <message/>, 0 otherwise.
 
-  DefinedFrom() - returns 1 if the from attribute is defined in the 
+                $test = $Mess->DefinedTo();
+
+  DefinedFrom() - returns 1 if the from attribute is defined in the
                   <message/>, 0 otherwise.
 
-  DefinedType() - returns 1 if the type attribute is defined in the 
+                  $test = $Mess->DefinedFrom();
+
+  DefinedType() - returns 1 if the type attribute is defined in the
                   <message/>, 0 otherwise.
 
-  DefinedSubject() - returns 1 if <subject/> is defined in the <message/>, 
-                     0 otherwise.
+                  $test = $Mess->DefinedType();
 
-  DefinedBody() - returns 1 if <body/> is defined in the <message/>, 
+  DefinedSubject() - returns 1 if <subject/> is defined in the
+                     <message/>, 0 otherwise.
+
+                     $test = $Mess->DefinedSubject();
+
+  DefinedBody() - returns 1 if <body/> is defined in the <message/>,
                   0 otherwise.
 
-  DefinedThread() - returns 1 if <thread/> is defined in the <message/>, 
+                  $test = $Mess->DefinedBody();
+
+  DefinedThread() - returns 1 if <thread/> is defined in the <message/>,
                     0 otherwise.
 
-  DefinedPriority() - returns 1 if <priority/> is defined in the <message/>, 
-                      0 otherwise.
+                    $test = $Mess->DefinedThread();
 
-  DefinedErrorCode() - returns 1 if <error/> is defined in the <message/>, 
-                       0 otherwise.
+  DefinedErrorCode() - returns 1 if <error/> is defined in the
+                       <message/>, 0 otherwise.
 
-  DefinedError() - returns 1 if the code attribute is defined in the 
+                       $test = $Mess->DefinedErrorCode();
+
+  DefinedError() - returns 1 if the code attribute is defined in the
                    <error/>, 0 otherwise.
+
+                   $test = $Mess->DefinedError();
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in May of 2001 for http://jabber.org
 
 =head1 COPYRIGHT
 
-This module is free software; you can redistribute it and/or modify
+This module is free software, you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
@@ -316,37 +291,33 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
   my $self = { };
-  
+
   $self->{VERSION} = $VERSION;
   $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("local");
 
   bless($self, $proto);
 
-  $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
-                                          header=>"NJ::Message");
+  $self->{DEBUGHEADER} = "Message";
+
+  $self->{DATA} = {};
+  $self->{CHILDREN} = {};
+
+  $self->{TAG} = "message";
 
   if ("@_" ne ("")) {
     if (ref($_[0]) eq "Net::Jabber::Message") {
       return $_[0];
     } else {
-      my @temp = @_;
-      $self->{MESSAGE} = \@temp;
-      my $xTree;
-      foreach $xTree ($self->GetXTrees()) {
-	my $xmlns = &Net::Jabber::GetXMLData("value",$xTree,"","xmlns");
-	next if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
-	$self->AddX($xmlns,@{$xTree});
-      }
+      $self->{TREE} = shift;
+      $self->ParseTree();
+      delete($self->{TREE});
     }
-  } else {
-    $self->{MESSAGE} = [ "message" , [{}]];
-    $self->{XTAGS} = [];
   }
 
   return $self;
@@ -355,150 +326,65 @@ sub new {
 
 ##############################################################################
 #
-# AUTOLOAD - This function calls the delegate with the appropriate function
-#            name and argument list.
+# AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
 sub AUTOLOAD {
   my $self = shift;
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  $AUTOLOAD =~ s/^.*:://;
-  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
-  $type = "" unless defined($type);
-  my $treeName = "MESSAGE";
-  
-  return "message" if ($AUTOLOAD eq "GetTag");
-  return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
-  return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
-  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
-  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
-  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
-  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
-  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
+  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
 
-$FUNCTIONS{get}->{To}         = ["value","","to"];
-$FUNCTIONS{get}->{From}       = ["value","","from"];
-$FUNCTIONS{get}->{ID}         = ["value","","id"];
-$FUNCTIONS{get}->{Type}       = ["value","","type"];
-$FUNCTIONS{get}->{Subject}    = ["value","subject",""];
-$FUNCTIONS{get}->{Thread}     = ["value","thread",""];
-$FUNCTIONS{get}->{Priority}   = ["value","priority",""];
-$FUNCTIONS{get}->{ErrorCode}  = ["value","error","code"];
-$FUNCTIONS{get}->{Error}      = ["value","error",""];
+$FUNCTIONS{Body}->{Get}        = "body";
+$FUNCTIONS{Body}->{Set}        = ["scalar","body"];
+$FUNCTIONS{Body}->{Defined}    = "body";
+$FUNCTIONS{Body}->{Hash}       = "child-data";
 
-$FUNCTIONS{set}->{ID}         = ["single","","","id","*"];
-$FUNCTIONS{set}->{Type}       = ["single","","","type","*"];
-$FUNCTIONS{set}->{Subject}    = ["single","subject","*","",""];
-$FUNCTIONS{set}->{Body}       = ["single","body","*","",""];
-$FUNCTIONS{set}->{Thread}     = ["single","thread","*","",""];
-$FUNCTIONS{set}->{Priority}   = ["single","priority","*","",""];
-$FUNCTIONS{set}->{ErrorCode}  = ["single","error","","code","*"];
-$FUNCTIONS{set}->{Error}      = ["single","error","*","",""];
+$FUNCTIONS{Error}->{Get}        = "error";
+$FUNCTIONS{Error}->{Set}        = ["scalar","error"];
+$FUNCTIONS{Error}->{Defined}    = "error";
+$FUNCTIONS{Error}->{Hash}       = "child-data";
 
-$FUNCTIONS{defined}->{To}         = ["existence","","to"];
-$FUNCTIONS{defined}->{From}       = ["existence","","from"];
-$FUNCTIONS{defined}->{ID}         = ["existence","","id"];
-$FUNCTIONS{defined}->{Type}       = ["existence","","type"];
-$FUNCTIONS{defined}->{Subject}    = ["existence","subject",""];
-$FUNCTIONS{defined}->{Body}       = ["existence","body",""];
-$FUNCTIONS{defined}->{Thread}     = ["existence","thread",""];
-$FUNCTIONS{defined}->{Priority}   = ["existence","priority",""];
-$FUNCTIONS{defined}->{ErrorCode}  = ["existence","error","code"];
-$FUNCTIONS{defined}->{Error}      = ["existence","error",""];
+$FUNCTIONS{ErrorCode}->{Get}        = "errorcode";
+$FUNCTIONS{ErrorCode}->{Set}        = ["scalar","errorcode"];
+$FUNCTIONS{ErrorCode}->{Defined}    = "errorcode";
+$FUNCTIONS{ErrorCode}->{Hash}       = "att-error-code";
 
+$FUNCTIONS{From}->{Get}        = "from";
+$FUNCTIONS{From}->{Set}        = ["jid","from"];
+$FUNCTIONS{From}->{Defined}    = "from";
+$FUNCTIONS{From}->{Hash}       = "att";
 
-##############################################################################
-#
-# GetResource - returns the Jabber Resource of the person who sent the 
-#              <message/>
-#
-##############################################################################
-sub GetResource {
-  my $self = shift;
-  my ($str) =
-    (&Net::Jabber::GetXMLData("value",$self->{MESSAGE},"","from") =~ /^[^\/]+\/?(.*)$/);
-  return $str;
-}
+$FUNCTIONS{ID}->{Get}        = "id";
+$FUNCTIONS{ID}->{Set}        = ["scalar","id"];
+$FUNCTIONS{ID}->{Defined}    = "id";
+$FUNCTIONS{ID}->{Hash}       = "att";
 
+$FUNCTIONS{Subject}->{Get}        = "subject";
+$FUNCTIONS{Subject}->{Set}        = ["scalar","subject"];
+$FUNCTIONS{Subject}->{Defined}    = "subject";
+$FUNCTIONS{Subject}->{Hash}       = "child-data";
 
-##############################################################################
-#
-# GetBody - returns the body of the <message/>
-#
-##############################################################################
-sub GetBody {
-  my $self = shift;
-  my ($level) = @_;
-  $level = "" if !defined($level);
-  return &Net::Jabber::GetXMLData("value",$self->{MESSAGE},"body")
-    if (($level eq "none") || ($level eq ""));
-  return &Net::Jabber::GetXMLData("tree",$self->{MESSAGE},"body")
-    if ($level eq "full");
-}
+$FUNCTIONS{Thread}->{Get}        = "thread";
+$FUNCTIONS{Thread}->{Set}        = ["scalar","thread"];
+$FUNCTIONS{Thread}->{Defined}    = "thread";
+$FUNCTIONS{Thread}->{Hash}       = "child-data";
 
+$FUNCTIONS{To}->{Get}        = "to";
+$FUNCTIONS{To}->{Set}        = ["jid","to"];
+$FUNCTIONS{To}->{Defined}    = "to";
+$FUNCTIONS{To}->{Hash}       = "att";
 
-##############################################################################
-#
-# GetX - returns an array of Net::Jabber::X objects.  If a namespace is 
-#        requested then only objects from that name space are returned.
-#
-##############################################################################
-sub GetX {
-  my $self = shift;
-  my($xmlns) = @_;
-  my @xTags;
-  my $xTag;
-  foreach $xTag (@{$self->{XTAGS}}) {
-    push(@xTags,$xTag) if (($xmlns eq "") || ($xTag->GetXMLNS() eq $xmlns));
-  }
-  return @xTags;
-}
+$FUNCTIONS{Type}->{Get}        = "type";
+$FUNCTIONS{Type}->{Set}        = ["scalar","type"];
+$FUNCTIONS{Type}->{Defined}    = "type";
+$FUNCTIONS{Type}->{Hash}       = "att";
 
+$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
+$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
 
-##############################################################################
-#
-# GetXTrees - returns an array of XML::Parser::Tree objects of the <x/> tags
-#
-##############################################################################
-sub GetXTrees {
-  my $self = shift;
-  $self->MergeX();
-  my ($xmlns) = @_;
-  my $xTree;
-  my @xTrees;
-  foreach $xTree (&Net::Jabber::GetXMLData("tree array",$self->{MESSAGE},"*","xmlns",$xmlns)) {
-    push(@xTrees,$xTree);
-  }
-  return @xTrees;
-}
-
-
-##############################################################################
-#
-# GetXML -  returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  $self->MergeX();
-  return &Net::Jabber::BuildXML(@{$self->{MESSAGE}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#              the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;
-  $self->MergeX();
-  return %{$self->{MESSAGE}};
-}
+$FUNCTIONS{Message}->{Get} = "__netjabber__:master";
+$FUNCTIONS{Message}->{Set} = ["master"];
 
 
 ##############################################################################
@@ -510,234 +396,13 @@ sub GetTree {
 sub GetTimeStamp {
   my $self = shift;
 
-  my @xTags = $self->GetX("jabber:x:delay");
-  if ($#xTags >= 0) {
+  if ($self->DefinedX("jabber:x:delay")) {
+    my @xTags = $self->GetX("jabber:x:delay");
     my $xTag = $xTags[0];
     $self->{TIMESTAMP} = &Net::Jabber::GetTimeStamp("utcdelaylocal",$xTag->GetStamp());
   }
 
   return $self->{TIMESTAMP};
-}
-
-
-##############################################################################
-#
-# SetMessage - takes a hash of all of the things you can set on a <message/>
-#              and sets each one.
-#
-##############################################################################
-sub SetMessage {
-  my $self = shift;
-  my %message;
-  while($#_ >= 0) { $message{ lc pop(@_) } = pop(@_); }
-
-  $self->SetID($message{id}) if exists($message{id});
-  $self->SetTo($message{to}) if exists($message{to});
-  $self->SetFrom($message{from}) if exists($message{from});
-  $self->SetType($message{type}) if exists($message{type});
-  $self->SetSubject($message{subject}) if exists($message{subject});
-  $self->SetBody($message{body}) if exists($message{body});
-  $self->SetThread($message{thread}) if exists($message{thread});
-  $self->SetPriority($message{priority}) if exists($message{priority});
-  $self->SetErrorCode($message{errorcode}) if exists($message{errorcode});
-  $self->SetError($message{error}) if exists($message{error});
-}
-
-
-##############################################################################
-#
-# SetTo - sets the to attribute in the <message/>
-#
-##############################################################################
-sub SetTo {
-  my $self = shift;
-  my ($to) = @_;
-  if (ref($to) eq "Net::Jabber::JID") {
-    $to = $to->GetJID("full");
-  }
-  return unless ($to ne "");
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{to=>$to});
-}
-
-
-##############################################################################
-#
-# SetFrom - sets the from attribute in the <message/>
-#
-##############################################################################
-sub SetFrom {
-  my $self = shift;
-  my ($from) = @_;
-  if (ref($from) eq "Net::Jabber::JID") {
-    $from = $from->GetJID("full");
-  }
-  return unless ($from ne "");
-  &Net::Jabber::SetXMLData("single",$self->{MESSAGE},"","",{from=>$from});
-}
-
-
-##############################################################################
-#
-# AddXML - adds the specfied XML into the outgoing XML whenever it's 
-#          requested.
-#
-##############################################################################
-sub AddXML {
-  my $self = shift;
-  my ($xml) = @_;
-
-  require XML::Parser;
-  my $parser = new XML::Parser(Style=>'Tree');
-  my @trees = $parser->parse($xml);
-
-  my $treeIndex;
-  foreach $treeIndex (0..$#trees) {
-    my $index;
-    foreach $index (0..$#{$trees[$treeIndex]}) {
-      $self->{MESSAGE}->[1]->[$#{$self->{MESSAGE}->[1]}+1] = $trees[$treeIndex]->[$index];      
-    }
-  }
-}
-
-
-##############################################################################
-#
-# AddTree - adds the specfied Tree into the outgoing XML whenever it's 
-#           requested.
-#
-##############################################################################
-sub AddTree {
-  my $self = shift;
-  my (@tree) = @_;
-
-  my $index;
-  foreach $index (0..$#tree) {
-    $self->{MESSAGE}->[1]->[$#{$self->{MESSAGE}->[1]}+1] = $tree[$index];      
-  }
-}
-
-
-##############################################################################
-#
-# NewX - calls AddX to create a new Net::Jabber::X object, sets the xmlns and 
-#        returns a pointer to the new object.
-#
-##############################################################################
-sub NewX {
-  my $self = shift;
-  my ($xmlns) = @_;
-  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
-  my $xTag = $self->AddX($xmlns);
-  $xTag->SetXMLNS($xmlns) if $xmlns ne "";
-  return $xTag;
-}
-
-
-##############################################################################
-#
-# AddX - creates a new Net::Jabber::X object, pushes it on the list, and 
-#        returns a pointer to the new object.  This is a private helper 
-#        function. 
-#
-##############################################################################
-sub AddX {
-  my $self = shift;
-  my ($xmlns,@xTree) = @_;
-  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
-  $self->{DEBUG}->Log2("AddX: xmlns($xmlns) xTree(",\@xTree,")");
-  my $xTag;
-  eval("\$xTag = new ".$Net::Jabber::DELEGATES{x}->{$xmlns}->{parent}."(\@xTree);");
-  $self->{DEBUG}->Log2("AddX: xTag(",$xTag,")");
-  push(@{$self->{XTAGS}},$xTag);
-  return $xTag;
-}
-
-
-##############################################################################
-#
-# RemoveX - removes all xtags that have the specified namespace.
-#
-##############################################################################
-sub RemoveX {
-  my $self = shift;
-  my ($xmlns) = @_;
-  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
-
-  foreach my $i (reverse(1..$#{$self->{MESSAGE}->[1]})) {
-    $self->{DEBUG}->Log2("RemoveX: i($i)");
-    $self->{DEBUG}->Log2("RemoveX: data(",$self->{MESSAGE}->[1]->[$i],")");
-
-    if ((ref($self->{MESSAGE}->[1]->[$i]) eq "") &&
-	($self->{MESSAGE}->[1]->[$i] eq "x") &&
-	(ref($self->{MESSAGE}->[1]->[($i+1)]) eq "ARRAY") &&
-	exists($self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns}) &&
-	$self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns} eq $xmlns) {
-      splice(@{$self->{MESSAGE}->[1]},$i,2);
-    }
-  }
-  foreach my $index (reverse(0..$#{$self->{XTAGS}})) {
-    splice(@{$self->{XTAGS}},$index,1) 
-      if ($self->{XTAGS}->[$index]->GetXMLNS() eq $xmlns);
-  }
-}
-
-
-##############################################################################
-#
-# MergeX - runs through the list of <x/> in the current message and replaces
-#          them with the list of <x/> in the internal list.  If any old <x/>
-#          in the <message/> are left, then they are removed.  If any new <x/>
-#          are left in the interanl list, then they are added to the end of
-#          the message.  This is a private helper function.  It should be 
-#          used any time you need access the full <message/> so that all of
-#          the <x/> tags are included.  (ie. GetXML, GetTree, debug, etc...)
-#
-##############################################################################
-sub MergeX {
-  my $self = shift;
-
-  $self->{DEBUG}->Log2("MergeX: start");
-
-  return if !(exists($self->{XTAGS}));
-
-  $self->{DEBUG}->Log2("MergeX: xTags(",$self->{XTAGS},")");
-
-  my $xTag;
-  my @xTags;
-  foreach $xTag (@{$self->{XTAGS}}) {
-    push(@xTags,$xTag);
-  }
-
-  $self->{DEBUG}->Log2("MergeX: xTags(",\@xTags,")");
-  $self->{DEBUG}->Log2("MergeX: Check the old tags");
-  $self->{DEBUG}->Log2("MergeX: length(",$#{$self->{MESSAGE}->[1]},")");
-
-  foreach my $i (1..$#{$self->{MESSAGE}->[1]}) {
-    $self->{DEBUG}->Log2("MergeX: i($i)");
-    $self->{DEBUG}->Log2("MergeX: data(",$self->{MESSAGE}->[1]->[$i],")");
-
-    if ((ref($self->{MESSAGE}->[1]->[($i+1)]) eq "ARRAY") &&
-	exists($self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns})) {
-      $self->{DEBUG}->Log2("MergeX: found a namespace xmlns(",$self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns},")");
-      next if !exists($Net::Jabber::DELEGATES{x}->{$self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns}});
-      $self->{DEBUG}->Log2("MergeX: merge index($i)");
-      my $xTag = pop(@xTags);
-      $self->{DEBUG}->Log2("MergeX: merge xTag($xTag)");
-      my @xTree = $xTag->GetTree();
-      $self->{DEBUG}->Log2("MergeX: merge xTree(",\@xTree,")");
-      $self->{MESSAGE}->[1]->[($i+1)] = $xTree[1];
-    }
-  }
-
-  $self->{DEBUG}->Log2("MergeX: Insert new tags");
-  foreach $xTag (@xTags) {
-    $self->{DEBUG}->Log2("MergeX: new tag");
-    my @xTree = $xTag->GetTree();
-    $self->{MESSAGE}->[1]->[($#{$self->{MESSAGE}->[1]}+1)] = "x";
-    $self->{MESSAGE}->[1]->[($#{$self->{MESSAGE}->[1]}+1)] = $xTree[1];
-  }
-
-  $self->{DEBUG}->Log2("MergeX: end");
 }
 
 
@@ -753,6 +418,8 @@ sub Reply {
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
   $args{template} = "normal" unless exists($args{template});
+  my $template = delete($args{template});
+  my $replytransport = delete($args{replytransport});
 
   my $reply = new Net::Jabber::Message();
 
@@ -764,25 +431,24 @@ sub Reply {
   $reply->SetThread($self->GetThread()) if ($self->GetThread() ne "");
   $reply->SetID($self->GetID()) if ($self->GetID() ne "");
   $reply->SetType($self->GetType()) if ($self->GetType() ne "");
-  $reply->SetType($args{type}) if exists($args{type});
 
-  if ($args{template} eq "transport-filter") {
+  if ($template eq "transport-filter") {
     my $toJID = $self->GetTo("jid");
     my $fromJID = $self->GetFrom("jid");
-    
+
     my $filterToJID = new Net::Jabber::JID($toJID->GetUserID());
-    
+
     $reply->SetMessage(to=>$filterToJID,
 		       from=>$fromJID
 		      );
   } else {
-    if ($args{template} eq "transport-filter-reply") {
+    if ($template eq "transport-filter-reply") {
       my $toJID = $self->GetTo("jid");
       my $fromJID = $self->GetFrom("jid");
-      
+
       my $filterToJID = new Net::Jabber::JID($toJID->GetUserID());
-      my $filterFromJID = new Net::Jabber::JID($fromJID->GetUserID()."\%".$fromJID->GetServer()."\@".$args{replytransport});
-      
+      my $filterFromJID = new Net::Jabber::JID($fromJID->GetUserID()."\%".$fromJID->GetServer()."\@".$replytransport);
+
       $reply->SetMessage(to=>$filterToJID,
 			 from=>$filterFromJID
 			);
@@ -791,7 +457,9 @@ sub Reply {
 			 from=>$self->GetTo());
     }
   }
-  
+
+  $reply->SetMessage(%args);
+
   return $reply;
 }
 

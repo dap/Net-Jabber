@@ -1,5 +1,5 @@
 
-use Net::Jabber;
+use Net::Jabber qw(Client);
 use strict;
 
 if ($#ARGV < 4) {
@@ -19,7 +19,7 @@ $SIG{KILL} = \&Stop;
 $SIG{TERM} = \&Stop;
 $SIG{INT} = \&Stop;
 
-my $Connection = new Net::Jabber::Client;
+my $Connection = new Net::Jabber::Client();
 
 my $status = $Connection->Connect("hostname" => $server,
 				  "port" => $port);
@@ -71,9 +71,10 @@ sub Stop {
 }
 
 
-sub InMessage
-{
-  my $message = Net::Jabber::Message->new(@_);
+sub InMessage{
+  my $sid = shift;
+  my $message = shift;
+
   my $type = $message->GetType();
   my $from = $message->GetFrom();
   my $resource = $message->GetResource();
@@ -90,9 +91,10 @@ sub InMessage
 }
 
 
-sub InIQ
-{
-  my $iq = new Net::Jabber::IQ(@_);
+sub InIQ{
+  my $sid = shift;
+  my $iq = shift;
+
   my $from = $iq->GetFrom();
   my $type = $iq->GetType();
   my $query = $iq->GetQuery();
@@ -107,9 +109,10 @@ sub InIQ
   print "===\n";
 }
 
-sub InPresence
-{
-  my $presence = new Net::Jabber::Presence(@_);
+sub InPresence {
+  my $sid = shift;
+  my $presence = shift;
+
   my $from = $presence->GetFrom();
   my $type = $presence->GetType();
   my $status = $presence->GetStatus();

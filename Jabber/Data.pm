@@ -29,76 +29,68 @@ Net::Jabber::Data - Jabber Data Library
 =head1 SYNOPSIS
 
   Net::Jabber::Data is a companion to the Net::Jabber::XDB module. It
-  provides the user a simple interface to set and retrieve all 
+  provides the user a simple interface to set and retrieve all
   parts of a Jabber XDB Data.
 
 =head1 DESCRIPTION
 
-  Net::Jabber::Data differs from the other Net::Jabber::* modules in that
-  the XMLNS of the data is split out into more submodules under
-  Data.  For specifics on each module please view the documentation
-  for each Net::Jabber::Data::* module.  The available modules are:
+  Net::Jabber::Data differs from the other modules in that its behavior
+  and available functions are based off of the XML namespace that is
+  set in it.  The current list of supported namespaces is:
 
-    Net::Jabber::Data::Agent      - Agent Namespace
-    Net::Jabber::Data::Agents     - Supported Agents list from server
-    Net::Jabber::Data::Auth       - Simple Client Authentication
-    Net::Jabber::Data::AutoUpdate - Auto-Update for clients
-    Net::Jabber::Data::Filter     - Messaging Filter
-    Net::Jabber::Data::Fneg       - Feature Negotiation
-    Net::Jabber::Data::Oob        - Out of Bandwidth File Transfers
-    Net::Jabber::Data::Register   - Registration requests
-    Net::Jabber::Data::Roster     - Buddy List management
-    Net::Jabber::Data::Search     - Searching User Directories
-    Net::Jabber::Data::Time       - Client Time
-    Net::Jabber::Data::Version    - Client Version
+    jabber:iq:auth
+    jabber:iq:auth:0k
+    jabber:iq:register
+    jabber:iq:roster
 
-  Each of these modules provide Net::Jabber::Data with the functions
-  to access the data.  By using delegates and the AUTOLOAD function
-  the functions for each namespace is used when that namespace is
-  active.
+  For more information on what these namespaces are for, visit 
+  http://www.jabber.org and browse the Jabber Programmers Guide.
+
+  Each of these namespaces provide Net::Jabber::Data with the functions
+  to access the data.  By using the AUTOLOAD function the functions for
+  each namespace is used when that namespace is active.
 
   To access a Data object you must create an XDB object and use the
-  access functions there to get to the Data.  To initialize the XDB with 
-  a Jabber <xdb/> you must pass it the XML::Parser Tree array from the 
-  Net::Jabber::Client module.  In the callback function for the xdb
-  you can access the data tag by doing the following:
+  access functions there to get to the Data.  To initialize the XDB with
+  a Jabber <xdb/> you must pass it the XML::Stream hash from the
+  Net::Jabber::Client module.
 
-    use Net::Jabber;
+    my $xdb = new Net::Jabber::XDB(%hash);
+
+  There has been a change from the old way of handling the callbacks.
+  You no longer have to do the above yourself, a Net::Jabber::XDB
+  object is passed to the callback function for the message.  Also,
+  the first argument to the callback functions is the session ID from
+  XML::Streams.  There are some cases where you might want this
+  information, like if you created a Client that connects to two servers
+  at once, or for writing a mini server.
+
+    use Net::Jabber qw(Client);
 
     sub xdbCB {
-      my $xdb = new Net::Jabber::XDB(@_);
-      my $data = $mesage->GetData();
+      my ($sid,$XDB) = @_;
+      my $data = $XDB->GetData();
       .
       .
       .
     }
 
-  You now have access to all of the retrieval functions available.
+  You now have access to all of the retrieval functions available for
+  that namespace.
 
   To create a new xdb to send to the server:
 
     use Net::Jabber;
 
     my $xdb = new Net::Jabber::XDB();
-    $data = $xdb->NewData("jabber:xdb:register");
+    $data = $xdb->NewData("jabber:iq:auth");
 
   Now you can call the creation functions for the Data as defined in the
   proper namespaces.  See below for the general <data/> functions, and
   in each data module for those functions.
 
-  For more information about the array format being passed to the CallBack
-  please read the Net::Jabber::Client documentation.
-
-=head2 Retrieval functions
-
-    $xmlns     = $XDB->GetXMLNS();
-
-    $str       = $XDB->GetXML();
-    @xdb        = $XDB->GetTree();
-
-=head2 Creation functions
-
-    $Data->SetXMLNS("jabber:xdb:roster");
+  For more information about the array format being passed to the
+  CallBack please read the Net::Jabber::Client documentation.
 
 =head1 METHODS
 
@@ -107,75 +99,89 @@ Net::Jabber::Data - Jabber Data Library
   GetXMLNS() - returns a string with the namespace of the data that
                the <xdb/> contains.
 
-  GetXML() - returns the XML string that represents the <xdb/>. This 
-             is used by the Send() function in Client.pm to send
-             this object as a Jabber XDB.
+               $xmlns  = $XDB->GetXMLNS();
 
-  GetTree() - returns an array that contains the <xdb/> tag in XML::Parser 
-              Tree format.
+  GetData() - since the behavior of this module depends on the
+               namespace, a Data object may contain Data objects.
+               This helps to leverage code reuse by making children
+               behave in the same manner.  More than likely this
+               function will never be called.
+
+               @data = GetData()
 
 =head2 Creation functions
 
   SetXMLNS(string) - sets the xmlns of the <data/> to the string.
 
-=head1 CUSTOM Data MODULES
+                     $data->SetXMLNS("jabber:xdb:roster");
 
-  Part of the flexability of this module is that you can write your own
-  module to handle a new namespace if you so choose.  The SetDelegates
-  function is your way to register the xmlns and which module will
-  provide the missing access functions.
 
-  To register your namespace and module, you can either create an XDB
-  object and register it once, or you can use the SetDelegates
-  function in Client.pm to do it for you:
+In an effort to make maintaining this document easier, I am not going
+to go into full detail on each of these functions.  Rather I will
+present the functions in a list with a type in the first column to
+show what they return, or take as arugments.  Here is the list of
+types I will use:
 
-    my $Client = new Net::Jabber::Client();
-    $Client->AddDelegate(namespace=>"blah:blah",
-			 parent=>"Net::Jabber::Data",
-			 delegate=>"Blah::Blah");
-    
-  or
+  string  - just a string
+  array   - array of strings
+  flag    - this means that the specified child exists in the
+            XML <child/> and acts like a flag.  get will return
+            0 or 1.
+  JID     - either a string or Net::Jabber::JID object.
+  objects - creates new objects, or returns an array of
+            objects.
+  special - this is a special case kind of function.  Usually
+            just by calling Set() with no arguments it will
+            default the value to a special value, like OS or time.
+            Sometimes it will modify the value you set, like
+            in jabber:xdb:version SetVersion() the function
+            adds on the Net::Jabber version to the string
+            just for advertisement purposes. =)
+  master  - this desribes a function that behaves like the
+            SetMessage() function in Net::Jabber::Message.
+            It takes a hash and sets all of the values defined,
+            and the Set returns a hash with the values that
+            are defined in the object.
 
-    my $Transport = new Net::Jabber::Transport();
-    $Transport->AddDelegate(namespace=>"blah:blah",
-			    parent=>"Net::Jabber::Data",
-			    delegate=>"Blah::Blah");
+=head1 jabber:iq:
 
-  Once you have the delegate registered you need to define the access
-  functions.  Here is a an example module:
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
 
-    package Blah::Blah;
 
-    sub new {
-      my $proto = shift;
-      my $class = ref($proto) || $proto;
-      my $self = { };
-      $self->{VERSION} = $VERSION;
-      bless($self, $proto);
-      return $self;
-    }
+=head1 jabber:iq:
 
-    sub SetBlah {
-      shift;
-      my $self = shift;
-      my ($blah) = @_;
-      return &Net::Jabber::SetXMLData("single",$self->{DATA},"blah","$blah",{});
-    }
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
 
-    sub GetBlah {
-      shift;
-      my $self = shift;
-      return &Net::Jabber::GetXMLData("value",$self->{DATA},"blah","");
-    }
 
-    1;
+=head1 jabber:iq:
 
-  Now when you create a new Data object and call GetBlah on that object
-  it will AUTOLOAD the above function and handle the request.
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+
+
+=head1 jabber:iq:
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+
+
+=head1 jabber:iq:
+
+  Type     Get               Set               Defined
+  =======  ================  ================  ==================
+
+
+=head1 CUSTOM NAMESPACES
+
+  Part of the flexability of this module is that you can define your own
+  namespace.  For more information on this topic, please read the
+  Net::Jabber::Namespaces man page.
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in May of 2001 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -187,29 +193,36 @@ it under the same terms as Perl itself.
 require 5.003;
 use strict;
 use Carp;
-use vars qw($VERSION $AUTOLOAD);
+use vars qw($VERSION $AUTOLOAD %FUNCTIONS %NAMESPACES);
 
-$VERSION = "1.0021";
-
-use Net::Jabber::Data::Auth;
-($Net::Jabber::Data::Auth::VERSION < $VERSION) &&
-  die("Net::Jabber::Data::Auth $VERSION required--this is only version $Net::Jabber::Data::Auth::VERSION");
+$VERSION = "1.0022";
 
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
   my $self = { };
-  
+
   $self->{VERSION} = $VERSION;
 
   bless($self, $proto);
 
+  $self->{DEBUGHEADER} = "Data";
+
+  $self->{DATA} = {};
+  $self->{CHILDREN} = {};
+
+  $self->{TAG} = "data";
+
   if ("@_" ne ("")) {
-    my @temp = @_;
-    $self->{DATA} = \@temp;
-    $self->GetDelegate();
-  } else {
-    $self->{DATA} = [ "data" , [{}]];
+    if (ref($_[0]) eq "Net::Jabber::Data") {
+      return $_[0];
+    } else {
+      $self->{TREE} = shift;
+      $self->{TAG} = $self->{TREE}->{$self->{TREE}->{root}."-tag"};
+      $self->ParseXMLNS();
+      $self->ParseTree();
+      delete($self->{TREE});
+    }
   }
 
   return $self;
@@ -218,104 +231,132 @@ sub new {
 
 ##############################################################################
 #
-# AUTOLOAD - This function calls the delegate with the appropriate function
-#            name and argument list.
+# AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
 sub AUTOLOAD {
-  my $self = $_[0];
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  $AUTOLOAD =~ s/^.*:://;
-  $self->{DELEGATE}->$AUTOLOAD(@_);
-}
-
-
-##############################################################################
-#
-# GetDelegate - sets the delegate for the AUTOLOAD function based on the
-#               namespace.
-#
-##############################################################################
-sub GetDelegate {
   my $self = shift;
-  my $xmlns = $self->GetXMLNS();
-  return if $xmlns eq "";
-  if (exists($Net::Jabber::DELEGATES{data}->{$xmlns})) {
-    eval("\$self->{DELEGATE} = new ".$Net::Jabber::DELEGATES{data}->{$xmlns}->{delegate}."()");
-  }
+  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
+$FUNCTIONS{XMLNS}->{Get}     = "xmlns";
+$FUNCTIONS{XMLNS}->{Set}     = ["scalar","xmlns"];
+$FUNCTIONS{XMLNS}->{Defined} = "xmlns";
+$FUNCTIONS{XMLNS}->{Hash}    = "att";
 
-##############################################################################
-#
-# GetXMLS - returns the namespace of the data in the <xdb/>
-#
-##############################################################################
-sub GetXMLNS {
-  my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{DATA},"","xmlns");
-}
+$FUNCTIONS{Data}->{Get}     = "__netjabber__:children:data";
+$FUNCTIONS{Data}->{Defined} = "__netjabber__:children:data";
 
+#-----------------------------------------------------------------------------
+# jabber:iq:auth
+#-----------------------------------------------------------------------------
+$NAMESPACES{"jabber:iq:auth"}->{Password}->{Get}     = "password";
+$NAMESPACES{"jabber:iq:auth"}->{Password}->{Set}     = ["scalar","password"];
+$NAMESPACES{"jabber:iq:auth"}->{Password}->{Defined} = "password";
+$NAMESPACES{"jabber:iq:auth"}->{Password}->{Hash}    = "data";
 
-##############################################################################
-#
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  $self->MergeItems() if (exists($self->{ITEMS}));
-  $self->MergeAgents() if (exists($self->{AGENTS}));
-  $self->MergeReleases() if (exists($self->{RELEASES}));
-  $self->MergeRules() if (exists($self->{RULES}));
-  return &Net::Jabber::BuildXML(@{$self->{DATA}});
-}
+$NAMESPACES{"jabber:iq:auth"}->{Auth}->{Get} = "__netjabber__:master";
+$NAMESPACES{"jabber:iq:auth"}->{Auth}->{Set} = ["master"];
 
+$NAMESPACES{"jabber:iq:auth"}->{"__netjabber__"}->{Tag} = "password";
 
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#           the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;
-  $self->MergeItems() if (exists($self->{ITEMS}));
-  $self->MergeAgents() if (exists($self->{AGENTS}));
-  $self->MergeReleases() if (exists($self->{RELEASES}));
-  $self->MergeRules() if (exists($self->{RULES}));
-  return @{$self->{DATA}};
-}
+#-----------------------------------------------------------------------------
+# jabber:iq:auth:0k
+#-----------------------------------------------------------------------------
+$NAMESPACES{"jabber:iq:auth:0k"}->{Hash}->{Get}     = "hash";
+$NAMESPACES{"jabber:iq:auth:0k"}->{Hash}->{Set}     = ["scalar","hash"];
+$NAMESPACES{"jabber:iq:auth:0k"}->{Hash}->{Defined} = "hash";
+$NAMESPACES{"jabber:iq:auth:0k"}->{Hash}->{Hash}    = "child-data";
 
+$NAMESPACES{"jabber:iq:auth:0k"}->{Sequence}->{Get}     = "sequence";
+$NAMESPACES{"jabber:iq:auth:0k"}->{Sequence}->{Set}     = ["scalar","sequence"];
+$NAMESPACES{"jabber:iq:auth:0k"}->{Sequence}->{Defined} = "sequence";
+$NAMESPACES{"jabber:iq:auth:0k"}->{Sequence}->{Hash}    = "child-data";
 
-##############################################################################
-#
-# SetXMLS - sets the namespace of the <data/>
-#
-##############################################################################
-sub SetXMLNS {
-  my $self = shift;
-  my ($xmlns) = @_;
-  &Net::Jabber::SetXMLData("single",$self->{DATA},"","",{"xmlns"=>$xmlns});
-  $self->GetDelegate();
-}
+$NAMESPACES{"jabber:iq:auth:0k"}->{Token}->{Get}     = "token";
+$NAMESPACES{"jabber:iq:auth:0k"}->{Token}->{Set}     = ["scalar","token"];
+$NAMESPACES{"jabber:iq:auth:0k"}->{Token}->{Defined} = "token";
+$NAMESPACES{"jabber:iq:auth:0k"}->{Token}->{Hash}    = "child-data";
 
+$NAMESPACES{"jabber:iq:auth:0k"}->{ZeroK}->{Get} = "__netjabber__:master";
+$NAMESPACES{"jabber:iq:auth:0k"}->{ZeroK}->{Set} = ["master"];
 
-##############################################################################
-#
-# debug - prints out the XML::Parser Tree in a readable format for debugging
-#
-##############################################################################
-sub debug {
-  my $self = shift;
+$NAMESPACES{"jabber:iq:auth:0k"}->{"__netjabber__"}->{Tag} = "zerok";
 
-  print "debug Data: $self\n";
-  $self->MergeItems() if (exists($self->{ITEMS}));
-  $self->MergeAgents() if (exists($self->{AGENTS}));
-  $self->MergeReleases() if (exists($self->{RELEASES}));
-  $self->MergeRules() if (exists($self->{RULES}));
-  &Net::Jabber::printData("debug: \$self->{DATA}->",$self->{DATA});
-}
+#-----------------------------------------------------------------------------
+# jabber:iq:last
+#-----------------------------------------------------------------------------
+$NAMESPACES{"jabber:iq:last"}->{Message}->{Get}     = "message";
+$NAMESPACES{"jabber:iq:last"}->{Message}->{Set}     = ["scalar","message"];
+$NAMESPACES{"jabber:iq:last"}->{Message}->{Defined} = "message";
+$NAMESPACES{"jabber:iq:last"}->{Message}->{Hash}    = "data";
+
+$NAMESPACES{"jabber:iq:last"}->{Seconds}->{Get}     = "last";
+$NAMESPACES{"jabber:iq:last"}->{Seconds}->{Set}     = ["scalar","last"];
+$NAMESPACES{"jabber:iq:last"}->{Seconds}->{Defined} = "last";
+$NAMESPACES{"jabber:iq:last"}->{Seconds}->{Hash}    = "att";
+
+$NAMESPACES{"jabber:iq:last"}->{Last}->{Get} = "__netjabber__:master";
+$NAMESPACES{"jabber:iq:last"}->{Last}->{Set} = ["master"];
+
+$NAMESPACES{"jabber:iq:last"}->{"__netjabber__"}->{Tag} = "query";
+
+#-----------------------------------------------------------------------------
+# jabber:iq:roster
+#-----------------------------------------------------------------------------
+$NAMESPACES{"jabber:iq:roster"}->{Item}->{Get}     = "";
+$NAMESPACES{"jabber:iq:roster"}->{Item}->{Set}     = ["add","Data","__netjabber__:iq:roster:item"];
+$NAMESPACES{"jabber:iq:roster"}->{Item}->{Defined} = "__netjabber__:children:data";
+$NAMESPACES{"jabber:iq:roster"}->{Item}->{Hash}    = "child-add";
+
+$NAMESPACES{"jabber:iq:roster"}->{Item}->{Add} = ["Data","__netjabber__:iq:roster:item","Item","item"];
+
+$NAMESPACES{"jabber:iq:roster"}->{Items}->{Get} = ["__netjabber__:children:data","__netjabber__:iq:roster:item"];
+
+$NAMESPACES{"jabber:iq:roster"}->{"__netjabber__"}->{Tag} = "query";
+
+#-----------------------------------------------------------------------------
+# __netjabber__:iq:roster:item
+#-----------------------------------------------------------------------------
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Ask}->{Get}     = "ask";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Ask}->{Set}     = ["scalar","ask"];
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Ask}->{Defined} = "ask";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Ask}->{Hash}    = "att";
+
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Group}->{Get}     = "group";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Group}->{Set}     = ["array","group"];
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Group}->{Defined} = "group";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Group}->{Hash}    = "child-data";
+
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{JID}->{Get}     = "jid";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{JID}->{Set}     = ["jid","jid"];
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{JID}->{Defined} = "jid";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{JID}->{Hash}    = "att";
+
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Name}->{Get}     = "name";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Name}->{Set}     = ["scalar","name"];
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Name}->{Defined} = "name";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Name}->{Hash}    = "att";
+
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Subscription}->{Get}     = "subscription";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Subscription}->{Set}     = ["scalar","subscription"];
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Subscription}->{Defined} = "subscription";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Subscription}->{Hash}    = "att";
+
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Item}->{Get} = "__netjabber__:master";
+$NAMESPACES{"__netjabber__:iq:roster:item"}->{Item}->{Set} = ["master"];
+
+#-----------------------------------------------------------------------------
+# jabber:x:offline
+#-----------------------------------------------------------------------------
+$NAMESPACES{"jabber:x:offline"}->{Data}->{Get}     = "data";
+$NAMESPACES{"jabber:x:offline"}->{Data}->{Set}     = ["scalar","data"];
+$NAMESPACES{"jabber:x:offline"}->{Data}->{Defined} = "data";
+$NAMESPACES{"jabber:x:offline"}->{Data}->{Hash}    = "data";
+
+$NAMESPACES{"jabber:x:offline"}->{Offline}->{Get} = "__netjabber__:master";
+$NAMESPACES{"jabber:x:offline"}->{Offline}->{Set} = ["master"];
+
+$NAMESPACES{"jabber:x:offline"}->{"__netjabber__"}->{Tag} = "foo";
 
 1;

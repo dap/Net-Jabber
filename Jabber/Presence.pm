@@ -28,25 +28,29 @@ Net::Jabber::Presence - Jabber Presence Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::Presence is a companion to the Net::Jabber module.  
-  It provides the user a simple interface to set and retrieve all 
+  Net::Jabber::Presence is a companion to the Net::Jabber module.
+  It provides the user a simple interface to set and retrieve all
   parts of a Jabber Presence.
 
 =head1 DESCRIPTION
 
-  To initialize the Presence with a Jabber <presence/> you must pass it 
-  the XML::Parser Tree array.  For example:
+  To initialize the Presence with a Jabber <presence/> you must pass it
+  the XML::Stream has.  For example:
 
-    my $presence = new Net::Jabber::Presence(@tree);
+    my $presence = new Net::Jabber::Presence(%hash);
 
   There has been a change from the old way of handling the callbacks.
-  You no longer have to do the above, a Net::Jabber::Presence object is 
-  passed to the callback function for the presence:
+  You no longer have to do the above yourself, a Net::Jabber::Presence
+  object is passed to the callback function for the message.  Also,
+  the first argument to the callback functions is the session ID from
+  XML::Streams.  There are some cases where you might want this
+  information, like if you created a Client that connects to two servers
+  at once, or for writing a mini server.
 
-    use Net::Jabber;
+    use Net::Jabber qw(Client);
 
     sub presence {
-      my ($Pres) = @_;
+      my ($sid,$Pres) = @_;
       .
       .
       .
@@ -56,105 +60,62 @@ Net::Jabber::Presence - Jabber Presence Module
 
   To create a new presence to send to the server:
 
-    use Net::Jabber;
+    use Net::Jabber qw(Client);
 
     $Pres = new Net::Jabber::Presence();
 
-  Now you can call the creation functions below to populate the tag before
-  sending it.
+  Now you can call the creation functions below to populate the tag
+  before sending it.
 
-  For more information about the array format being passed to the CallBack
-  please read the Net::Jabber::Client documentation.
-
-=head2 Retrieval functions
-
-    $to         = $Pres->GetTo();
-    $toJID      = $Pres->GetTo("jid");
-    $from       = $Pres->GetFrom();
-    $fromJID    = $Pres->GetFrom("jid");
-    $type       = $Pres->GetType();
-    $status     = $Pres->GetStatus();
-    $priority   = $Pres->GetPriority();
-    $show       = $Pres->GetShow();
-    @xTags      = $Pres->GetX();
-    @xTags      = $Pres->GetX("my:namespace");
-    @xTrees     = $Pres->GetXTrees();
-    @xTrees     = $Pres->GetXTrees("my:namespace");
-
-    $str        = $Pres->GetXML();
-    @presence   = $Pres->GetTree();
-
-=head2 Creation functions
-
-    $Pres->SetPresence(TYPE=>"online",
-		       StatuS=>"Open for Business",
-		       iCoN=>"normal");
-    $Pres->SetTo("bob\@jabber.org");
-    $Pres->SetFrom("jojo\@jabber.org");
-    $Pres->SetType("unavailable");
-    $Pres->SetStatus("Taking a nap");
-    $Pres->SetPriority(10);
-    $Pres->SetShow("away");
-
-    $X = $Pres->NewX("jabber:x:delay");
-    $X = $Pres->NewX("my:namespace");
-
-    $Reply = $Pres->Reply();
-    $Reply = $Pres->Reply(type=>"subscribed");
-
-=head2 Test functions
-
-    $test = $Pres->DefinedTo();
-    $test = $Pres->DefinedFrom();
-    $test = $Pres->DefinedType();
-    $test = $Pres->DefinedStatus();
-    $test = $Pres->DefinedPriority();
-    $test = $Pres->DefinedShow();
+  For more information about the array format being passed to the
+  CallBack please read the Net::Jabber::Client documentation.
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetTo()      - returns either a string with the Jabber Identifier,
-  GetTo("jid")   or a Net::Jabber::JID object for the person who is 
-                 going to receive the <presence/>.  To get the JID
-                 object set the string to "jid", otherwise leave
-                 blank for the text string.
+  GetTo()      - returns the value in the to='' attribute for the
+  GetTo("jid")   <presence/>.  If you specify "jid" as an argument
+                 then a Net::Jabber::JID object is returned and
+                 you can easily parse the parts of the JID.
 
-  GetFrom()      -  returns either a string with the Jabber Identifier,
-  GetFrom("jid")    or a Net::Jabber::JID object for the person who
-                    sent the <presence/>.  To get the JID object set 
-                    the string to "jid", otherwise leave blank for the 
-                    text string.
+                 $to    = $Pres->GetTo();
+                 $toJID = $Pres->GetTo("jid");
 
-  GetType() - returns a string with the type <presence/> this is.
+  GetFrom()      - returns the value in the from='' attribute for the
+  GetFrom("jid")   <presence/>.  If you specify "jid" as an argument
+                   then a Net::Jabber::JID object is returned and
+                   you can easily parse the parts of the JID.
+
+                   $from    = $Pres->GetFrom();
+                   $fromJID = $Pres->GetFrom("jid");
+
+  GetType() - returns the type='' attribute of the <presence/>.  Each
+              presence is one of seven types:
+
+                available       available to receive messages; default
+                unavailable     unavailable to receive anything
+                subscribe       ask the recipient to subscribe you
+                subscribed      tell the sender they are subscribed
+                unsubscribe     ask the recipient to unsubscribe you
+                unsubscribed    tell the sender they are unsubscribed
+                probe           probe
+
+              $type = $Pres->GetType();
 
   GetStatus() - returns a string with the current status of the resource.
 
+                $status = $Pres->GetStatus();
+
   GetPriority() - returns an integer with the priority of the resource
-                  The default is 0 if there is no priority in this presence.
+                  The default is 0 if there is no priority in this
+                  presence.
+
+                  $priority = $Pres->GetPriority();
 
   GetShow() - returns a string with the state the client should show.
 
-  GetX(string) - returns an array of Net::Jabber::X objects.  The string can 
-                 either be empty or the XML Namespace you are looking for.  
-                 If empty then GetX returns every <x/> tag in the 
-                 <presence/>.  If an XML Namespace is sent then GetX 
-                 returns every <x/> tag with that Namespace.
-
-  GetXTrees(string) - returns an array of XML::Parser::Tree objects.  The 
-                      string can either be empty or the XML Namespace you 
-                      are looking for.  If empty then GetXTrees returns every 
-                      <x/> tag in the <presence/>.  If an XML Namespace is 
-                      sent then GetXTrees returns every <x/> tag with that 
-                      Namespace.
-
-  GetXML() - returns the XML string that represents the <presence/>.
-             This is used by the Send() function in Client.pm to send
-             this object as a Jabber Presence.
-
-  GetTree() - returns an array that contains the <presence/> tag
-              in XML::Parser Tree format.
+              $show = $Pres->GetShow();
 
 =head2 Creation functions
 
@@ -168,69 +129,96 @@ Net::Jabber::Presence - Jabber Presence Module
               show=>string,        tag.  For valid settings read the
               loc=>string)         specific Set functions below.
 
+                        $Pres->SetPresence(TYPE=>"away",
+					   StatuS=>"Out for lunch");
+
   SetTo(string) - sets the to attribute.  You can either pass a string
   SetTo(JID)      or a JID object.  They must be valid Jabber 
                   Identifiers or the server will return an error message.
                   (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
 
-  SetFrom(string) - sets the from attribute.  You can either pass a string
-  SetFrom(JID)      or a JID object.  They must be valid Jabber 
-                    Identifiers or the server will return an error message.
-                    (ie.  jabber:bob@jabber.org/Silent Bob, etc...)
+                  $Pres->SetTo("bob\@jabber.org");
+
+  SetFrom(string) - sets the from='' attribute.  You can either pass
+  SetFrom(JID)      a string or a JID object.  They must be valid Jabber
+                    Identifiers or the server will return an error
+                    message. (ie.  jabber:bob@jabber.org/Work)
+                    This field is not required if you are writing a
+                    Client since the server will put the JID of your
+                    connection in there to prevent spamming.
+
+                    $Pres->SetFrom("jojo\@jabber.org");
 
   SetType(string) - sets the type attribute.  Valid settings are:
 
-                    available       available to receive messages; default
-                    unavailable     unavailable to receive anything
-                    subscribe       ask the recipient to subscribe you
-                    subscribed      tell the sender they are subscribed
-                    unsubscribe     ask the recipient to unsubscribe you
-                    unsubscribed    tell the sender they are unsubscribed
-                    probe           probe
+                    available      available to receive messages; default
+                    unavailable    unavailable to receive anything
+                    subscribe      ask the recipient to subscribe you
+                    subscribed     tell the sender they are subscribed
+                    unsubscribe    ask the recipient to unsubscribe you
+                    unsubscribed   tell the sender they are unsubscribed
+                    probe          probe
+
+                    $Pres->SetType("unavailable");
 
   SetStatus(string) - sets the status tag to be whatever string the user
                       wants associated with that resource.
+
+                      $Pres->SetStatus("Taking a nap");
 
   SetPriority(integer) - sets the priority of this resource.  The highest
                          resource attached to the jabber account is the
                          one that receives the messages.
 
-  SetShow(string) - sets the name of the default symbol to display for this
-                    resource.
+                         $Pres->SetPriority(10);
 
-  NewX(string) - creates a new Net::Jabber::X object with the namespace
-                 in the string.  In order for this function to work with
-                 a custom namespace, you must define and register that  
-                 namespace with the X module.  For more information
-                 please read the documentation for Net::Jabber::X.
+  SetShow(string) - sets the name of the icon or string to display for
+                    this resource.
 
-  Reply(type=>string) - creates a new Presence object and populates
-                        the to/from fields.  The type will be set in 
-                        the <presence/>.
+                    $Pres->SetShow("away");
+
+  Reply(hash) - creates a new Presence object and populates the to/from
+                fields.  If you specify a hash the same as with SetPresence
+                then those values will override the Reply values.
+
+                $Reply = $Pres->Reply();
+                $Reply = $Pres->Reply(type=>"subscribed");
 
 =head2 Test functions
 
-  DefinedTo() - returns 1 if the to attribute is defined in the <presence/>, 
-                0 otherwise.
+  DefinedTo() - returns 1 if the to attribute is defined in the
+                <presence/>, 0 otherwise.
 
-  DefinedFrom() - returns 1 if the from attribute is defined in the 
+                $test = $Pres->DefinedTo();
+
+  DefinedFrom() - returns 1 if the from attribute is defined in the
                   <presence/>, 0 otherwise.
 
-  DefinedType() - returns 1 if the type attribute is defined in the 
+                  $test = $Pres->DefinedFrom();
+
+  DefinedType() - returns 1 if the type attribute is defined in the
                   <presence/>, 0 otherwise.
 
-  DefinedStatus() - returns 1 if <status/> is defined in the <presence/>, 
-                    0 otherwise.
+                   $test = $Pres->DefinedType();
 
-  DefinedPriority() - returns 1 if <priority/> is defined in the 
+  DefinedStatus() - returns 1 if <status/> is defined in the
+                    <presence/>, 0 otherwise.
+
+                    $test = $Pres->DefinedStatus();
+
+  DefinedPriority() - returns 1 if <priority/> is defined in the
                       <presence/>, 0 otherwise.
 
-  DefinedShow() - returns 1 if <show/> is defined in the <presence/>, 
+                      $test = $Pres->DefinedPriority();
+
+  DefinedShow() - returns 1 if <show/> is defined in the <presence/>,
                   0 otherwise.
+
+                  $test = $Pres->DefinedShow();
 
 =head1 AUTHOR
 
-By Ryan Eatmon in May of 2000 for http://jabber.org..
+By Ryan Eatmon in May of 2001 for http://jabber.org..
 
 =head1 COPYRIGHT
 
@@ -244,36 +232,32 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0021";
+$VERSION = "1.0022";
 
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
   my $self = { };
-  
+
   $self->{VERSION} = $VERSION;
 
   bless($self, $proto);
 
-  $self->{DEBUG} = new Net::Jabber::Debug(usedefault=>1,
-					  header=>"NJ::Presence");
+  $self->{DEBUGHEADER} = "Presence";
+
+  $self->{DATA} = {};
+  $self->{CHILDREN} = {};
+
+  $self->{TAG} = "presence";
 
   if ("@_" ne ("")) {
     if (ref($_[0]) eq "Net::Jabber::Presence") {
       return $_[0];
     } else {
-      my @temp = @_;
-      $self->{PRESENCE} = \@temp;
-      my $xTree;
-      foreach $xTree ($self->GetXTrees()) {
-	my $xmlns = &Net::Jabber::GetXMLData("value",$xTree,"","xmlns");
-	next if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
-	$self->AddX($xmlns,@{$xTree}) if ($xmlns ne "");
-      }
+      $self->{TREE} = shift;
+      $self->ParseTree();
+      delete($self->{TREE});
     }
-  } else {
-    $self->{PRESENCE} = [ "presence" , [{}] ];
-    $self->{XTAGS} = [];
   }
 
   return $self;
@@ -282,316 +266,64 @@ sub new {
 
 ##############################################################################
 #
-# AUTOLOAD - This function calls the delegate with the appropriate function
-#            name and argument list.
+# AUTOLOAD - This function calls the main AutoLoad function in Jabber.pm
 #
 ##############################################################################
 sub AUTOLOAD {
   my $self = shift;
-  return if ($AUTOLOAD =~ /::DESTROY$/);
-  $AUTOLOAD =~ s/^.*:://;
-  my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
-  $type = "" unless defined($type);
-  my $treeName = "PRESENCE";
-  
-  return "presence" if ($AUTOLOAD eq "GetTag");
-  return &Net::Jabber::BuildXML(@{$self->{$treeName}}) if ($AUTOLOAD eq "GetXML");
-  return @{$self->{$treeName}} if ($AUTOLOAD eq "GetTree");
-  return &Net::Jabber::Get($self,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
-  return &Net::Jabber::Set($self,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
-  return &Net::Jabber::Defined($self,$self,$value,$treeName,$FUNCTIONS{defined}->{$value},@_) if ($type eq "Defined");
-  return &Net::Jabber::debug($self,$treeName) if ($AUTOLOAD eq "debug");
-  &Net::Jabber::MissingFunction($self,$AUTOLOAD);
+  &Net::Jabber::AutoLoad($self,$AUTOLOAD,@_);
 }
 
+$FUNCTIONS{Error}->{Get}        = "error";
+$FUNCTIONS{Error}->{Set}        = ["scalar","error"];
+$FUNCTIONS{Error}->{Defined}    = "error";
+$FUNCTIONS{Error}->{Hash}       = "child-data";
 
-$FUNCTIONS{get}->{To}         = ["value","","to"];
-$FUNCTIONS{get}->{From}       = ["value","","from"];
-$FUNCTIONS{get}->{ID}         = ["value","","id"];
-$FUNCTIONS{get}->{Type}       = ["value","","type"];
-$FUNCTIONS{get}->{Status}     = ["value","status",""];
-$FUNCTIONS{get}->{Show}       = ["value","show",""];
+$FUNCTIONS{ErrorCode}->{Get}        = "errorcode";
+$FUNCTIONS{ErrorCode}->{Set}        = ["scalar","errorcode"];
+$FUNCTIONS{ErrorCode}->{Defined}    = "errorcode";
+$FUNCTIONS{ErrorCode}->{Hash}       = "att-error-code";
 
-$FUNCTIONS{set}->{ID}         = ["single","","","id","*"];
-$FUNCTIONS{set}->{Type}       = ["single","","","type","*"];
-$FUNCTIONS{set}->{Status}     = ["single","status","*","",""];
-$FUNCTIONS{set}->{Show}       = ["single","show","*","",""];
+$FUNCTIONS{From}->{Get}        = "from";
+$FUNCTIONS{From}->{Set}        = ["jid","from"];
+$FUNCTIONS{From}->{Defined}    = "from";
+$FUNCTIONS{From}->{Hash}       = "att";
 
-$FUNCTIONS{defined}->{To}         = ["existence","","to"];
-$FUNCTIONS{defined}->{From}       = ["existence","","from"];
-$FUNCTIONS{defined}->{ID}         = ["existence","","id"];
-$FUNCTIONS{defined}->{Type}       = ["existence","","type"];
-$FUNCTIONS{defined}->{Status}     = ["existence","status",""];
-$FUNCTIONS{defined}->{Priority}   = ["existence","priority",""];
-$FUNCTIONS{defined}->{Show}       = ["existence","show",""];
+$FUNCTIONS{ID}->{Get}        = "id";
+$FUNCTIONS{ID}->{Set}        = ["scalar","id"];
+$FUNCTIONS{ID}->{Defined}    = "id";
+$FUNCTIONS{ID}->{Hash}       = "att";
 
+$FUNCTIONS{Priority}->{Get}        = "priority";
+$FUNCTIONS{Priority}->{Set}        = ["scalar","priority"];
+$FUNCTIONS{Priority}->{Defined}    = "priority";
+$FUNCTIONS{Priority}->{Hash}       = "child-data";
 
-##############################################################################
-#
-# GetPriority - returns the priority of the <presence/>
-#
-##############################################################################
-sub GetPriority {
-  my $self = shift;
-  my $priority = &Net::Jabber::GetXMLData("value",$self->{PRESENCE},"priority");
-  $priority = 0 if ($priority eq "");
-  return $priority;
-}
+$FUNCTIONS{Show}->{Get}        = "show";
+$FUNCTIONS{Show}->{Set}        = ["scalar","show"];
+$FUNCTIONS{Show}->{Defined}    = "show";
+$FUNCTIONS{Show}->{Hash}       = "child-data";
 
+$FUNCTIONS{Status}->{Get}        = "status";
+$FUNCTIONS{Status}->{Set}        = ["scalar","status"];
+$FUNCTIONS{Status}->{Defined}    = "status";
+$FUNCTIONS{Status}->{Hash}       = "child-data";
 
-##############################################################################
-#
-# GetX - returns an array of Net::Jabber::X objects.  If a namespace is 
-#        requested then only objects from that name space are returned.
-#
-##############################################################################
-sub GetX {
-  my $self = shift;
-  my($xmlns) = @_;
-  my @xTags;
-  my $xTag;
-  foreach $xTag (@{$self->{XTAGS}}) {
-    push(@xTags,$xTag) if (($xmlns eq "") || ($xTag->GetXMLNS() eq $xmlns));
-  }
-  return @xTags;
-}
+$FUNCTIONS{To}->{Get}        = "to";
+$FUNCTIONS{To}->{Set}        = ["jid","to"];
+$FUNCTIONS{To}->{Defined}    = "to";
+$FUNCTIONS{To}->{Hash}       = "att";
 
+$FUNCTIONS{Type}->{Get}        = "type";
+$FUNCTIONS{Type}->{Set}        = ["scalar","type"];
+$FUNCTIONS{Type}->{Defined}    = "type";
+$FUNCTIONS{Type}->{Hash}       = "att";
 
-##############################################################################
-#
-# GetXTrees - returns an array of XML::Parser::Tree objects of the <x/> tags
-#
-##############################################################################
-sub GetXTrees {
-  my $self = shift;
-  $self->MergeX();
-  my ($xmlns) = @_;
-  my $xTree;
-  my @xTrees;
-  foreach $xTree (&Net::Jabber::GetXMLData("tree array",$self->{PRESENCE},"*","xmlns",$xmlns)) {
-    push(@xTrees,$xTree);
-  }
-  return @xTrees;
-}
+$FUNCTIONS{X}->{Get}     = "__netjabber__:children:x";
+$FUNCTIONS{X}->{Defined} = "__netjabber__:children:x";
 
-
-##############################################################################
-#
-# GetXML - returns the XML string that represents the data in the XML::Parser
-#          Tree.
-#
-##############################################################################
-sub GetXML {
-  my $self = shift;
-  $self->MergeX();
-  return &Net::Jabber::BuildXML(@{$self->{PRESENCE}});
-}
-
-
-##############################################################################
-#
-# GetTree - returns the XML::Parser Tree that is stored in the guts of
-#               the object.
-#
-##############################################################################
-sub GetTree {
-  my $self = shift;
-  $self->MergeX();
-  return @{$self->{PRESENCE}};
-}
-
-
-##############################################################################
-#
-# SetPresence - takes a hash of all of the things you can set on a <presence/>
-#               and sets each one.
-#
-##############################################################################
-sub SetPresence {
-  my $self = shift;
-  my %presence;
-  while($#_ >= 0) { $presence{ lc pop(@_) } = pop(@_); }
-
-  $self->SetID($presence{id}) if exists($presence{id});
-  $self->SetTo($presence{to}) if exists($presence{to});
-  $self->SetFrom($presence{from}) if exists($presence{from});
-  $self->SetType($presence{type}) if exists($presence{type});
-  $self->SetStatus($presence{status}) if exists($presence{status});
-  $self->SetPriority($presence{priority}) if exists($presence{priority});
-  $self->SetShow($presence{show}) if exists($presence{show});
-}
-
-
-##############################################################################
-#
-# SetTo - sets the to attribute in the <presence/>
-#
-##############################################################################
-sub SetTo {
-  my $self = shift;
-  my ($to) = @_;
-  if (ref($to) eq "Net::Jabber::JID") {
-    $to = $to->GetJID("full");
-  }
-  return unless ($to ne "");
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{to=>$to});
-}
-
-
-##############################################################################
-#
-# SetFrom - sets the from attribute in the <presence/>
-#
-##############################################################################
-sub SetFrom {
-  my $self = shift;
-  my ($from) = @_;
-  if (ref($from) eq "Net::Jabber::JID") {
-    $from = $from->GetJID("full");
-  }
-  return unless ($from ne "");
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"","",{from=>$from});
-}
-
-
-##############################################################################
-#
-# SetPriority - sets the priority of the <presence/>
-#
-##############################################################################
-sub SetPriority {
-  my $self = shift;
-  my ($priority) = @_;
-  $priority = 0 if ($priority eq "");
-  &Net::Jabber::SetXMLData("single",$self->{PRESENCE},"priority",$priority,{});
-}
-
-
-##############################################################################
-#
-# NewX - calls AddX to create a new Net::Jabber::X object, sets the xmlns and 
-#        returns a pointer to the new object.
-#
-##############################################################################
-sub NewX {
-  my $self = shift;
-  my ($xmlns) = @_;
-  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
-  my $xTag = $self->AddX($xmlns);
-  $xTag->SetXMLNS($xmlns) if $xmlns ne "";
-  return $xTag;
-}
-
-
-##############################################################################
-#
-# AddX - creates a new Net::Jabber::X object, pushes it on the list, and 
-#        returns a pointer to the new object.  This is a private helper 
-#        function. 
-#
-##############################################################################
-sub AddX {
-  my $self = shift;
-  my ($xmlns,@xTree) = @_;
-  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
-  $self->{DEBUG}->Log2("AddX: xmlns($xmlns) xTree(",\@xTree,")");
-  my $xTag;
-  eval("\$xTag = new ".$Net::Jabber::DELEGATES{x}->{$xmlns}->{parent}."(\@xTree);");
-  $self->{DEBUG}->Log2("AddX: xTag(",$xTag,")");
-  push(@{$self->{XTAGS}},$xTag);
-  return $xTag;
-}
-  
-
-##############################################################################
-#
-# RemoveX - removes all xtags that have the specified namespace.
-#
-##############################################################################
-sub RemoveX {
-  my $self = shift;
-  my ($xmlns) = @_;
-  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
-
-  foreach my $i (reverse(1..$#{$self->{PRESENCE}->[1]})) {
-    $self->{DEBUG}->Log2("RemoveX: i($i)");
-    $self->{DEBUG}->Log2("RemoveX: data(",$self->{PRESENCE}->[1]->[$i],")");
-
-    if ((ref($self->{PRESENCE}->[1]->[$i]) eq "") &&
-	($self->{PRESENCE}->[1]->[$i] eq "x") &&
-	(ref($self->{PRESENCE}->[1]->[($i+1)]) eq "ARRAY") &&
-	exists($self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns}) &&
-	$self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns} eq $xmlns) {
-      splice(@{$self->{PRESENCE}->[1]},$i,2);
-    }
-  }
-  foreach my $index (reverse(0..$#{$self->{XTAGS}})) {
-    splice(@{$self->{XTAGS}},$index,1) 
-      if ($self->{XTAGS}->[$index]->GetXMLNS() eq $xmlns);
-  }
-}
-
-
-##############################################################################
-#
-# MergeX - runs through the list of <x/> in the current presence and replaces
-#          them with the list of <x/> in the internal list.  If any old <x/>
-#          in the <presence/> are left, then they are removed.  If any new <x/>
-#          are left in the interanl list, then they are added to the end of
-#          the presence.  This is a private helper function.  It should be 
-#          used any time you need access the full <presence/> so that all of
-#          the <x/> tags are included.  (ie. GetXML, GetTree, debug, etc...)
-#
-##############################################################################
-sub MergeX {
-  my $self = shift;
-
-  $self->{DEBUG}->Log2("MergeX: start");
-
-  return if !(exists($self->{XTAGS}));
-
-  $self->{DEBUG}->Log2("MergeX: xTags(",$self->{XTAGS},")");
-
-  my $xTag;
-  my @xTags;
-  foreach $xTag (@{$self->{XTAGS}}) {
-    push(@xTags,$xTag);
-  }
-
-  $self->{DEBUG}->Log2("MergeX: xTags(",\@xTags,")");
-  $self->{DEBUG}->Log2("MergeX: Check the old tags");
-  $self->{DEBUG}->Log2("MergeX: length(",$#{$self->{PRESENCE}->[1]},")");
-
-  my $i;
-  foreach $i (1..$#{$self->{PRESENCE}->[1]}) {
-    $self->{DEBUG}->Log2("MergeX: i($i)");
-    $self->{DEBUG}->Log2("MergeX: data(",$self->{PRESENCE}->[1]->[$i],")");
-
-    if ((ref($self->{PRESENCE}->[1]->[($i+1)]) eq "ARRAY") &&
-	exists($self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns})) {
-      $self->{DEBUG}->Log2("MergeX: found a namespace xmlns(",$self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns},")");
-      next if !exists($Net::Jabber::DELEGATES{x}->{$self->{PRESENCE}->[1]->[($i+1)]->[0]->{xmlns}});
-      $self->{DEBUG}->Log2("MergeX: merge index($i)");
-      my $xTag = pop(@xTags);
-      $self->{DEBUG}->Log2("MergeX: merge xTag($xTag)");
-      my @xTree = $xTag->GetTree();
-      $self->{DEBUG}->Log2("MergeX: merge xTree(",\@xTree,")");
-      $self->{PRESENCE}->[1]->[$i] = $xTree[0];
-      $self->{PRESENCE}->[1]->[($i+1)] = $xTree[1];
-    }
-  }
-
-  $self->{DEBUG}->Log2("MergeX: Insert new tags");
-  foreach $xTag (@xTags) {
-    $self->{DEBUG}->Log2("MergeX: new tag");
-    my @xTree = $xTag->GetTree();
-    $self->{PRESENCE}->[1]->[($#{$self->{PRESENCE}->[1]}+1)] = $xTree[0];
-    $self->{PRESENCE}->[1]->[($#{$self->{PRESENCE}->[1]}+1)] = $xTree[1];
-  }
-
-  $self->{DEBUG}->Log2("MergeX: end");
-}
-
+$FUNCTIONS{Presence}->{Get} = "__netjabber__:master";
+$FUNCTIONS{Presence}->{Set} = ["master"];
 
 ##############################################################################
 #
@@ -605,13 +337,20 @@ sub Reply {
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
   my $reply = new Net::Jabber::Presence();
-  
+
   $reply->SetID($self->GetID()) if ($self->GetID() ne "");
-  $reply->SetType(exists($args{type}) ? $args{type} : "");
-  
-  $reply->SetPresence(to=>$self->GetFrom(),
-		      from=>$self->GetTo(),
+
+  $reply->SetPresence((($self->GetFrom() ne "") ?
+		       (to=>$self->GetFrom()) :
+		       ()
+		      ),
+		      (($self->GetTo() ne "") ?
+		       (from=>$self->GetTo()) :
+		       ()
+		      ),
 		     );
+
+  $reply->SetPresence(%args);
 
   return $reply;
 }
