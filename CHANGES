@@ -1,3 +1,34 @@
+1.0020
+======
+  - Added support for jabber:x:replypres.
+  - Added an update function to the SetCallBacks function list.
+  - In the SetTo and SetFrom functions, if you try to set it to
+    "" it ignores your request.
+  - Since those are gone, the Reply functions got a lot simpler,
+    so I removed the template argument on most of them.
+  - Removed all references to etherx:to, etherx:from, sto, and
+    sfrom.
+  - Removed anonymous connections from AuthSend since they were
+    taken out of Jabber.
+  - Changed AuthSend to always pick the highest level of security
+    as possible.  It now queries the server for all possibilities
+    and picks from the answer.
+  - PresenceDBParse now returns the current presence based on
+    PresenceDBQuery.
+  - Forgot to add a timeout to the Connect functions in Client.pm
+    and Component.pm.
+  - Modified the object creation functions to handle the below so
+    that old code doesn't break.
+  - Changed the way that callbacks are handled.  Instead of passing
+    in an XML::Parser::Tree array that the user had to then convert
+    into a Net::Jabber::XXXXXX object.  Now the callbacks are passed
+    in the proper Net::Jabber::XXXXXX objects directly.
+  - Modified the GetTimeStamp function in Jabber.pm to support two
+    new types: utcdelaytime and localdelaytim so that you can the
+    tiem value back out to modify before converting to a string.
+  - Added support for ZeroK Authentication.  Both in Query/Auth.pm
+    and in AuthSend in Protocol.pm.
+
 1.0019
 ======
   - Fixed Component.pm to use the new XML::Stream to argument in the

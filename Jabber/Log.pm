@@ -34,14 +34,19 @@ Net::Jabber::Log - Jabber Log Module
 
 =head1 DESCRIPTION
 
-  To initialize the Log with a Jabber <log/> you must pass it 
-  the XML::Parser Tree array from the Net::Jabber::Client module.  In the
-  callback function for the log:
+  To initialize the Log with a Jabber <log/> you must pass it the 
+  XML::Parser Tree array.  For example:
+
+    my $log = new Net::Jabber::Log(@tree);
+
+  There has been a change from the old way of handling the callbacks.
+  You no longer have to do the above, a Net::Jabber::Log object is passed
+  to the callback function for the log:
 
     use Net::Jabber;
 
     sub log {
-      my $log = new Net::Jabber::Log(@_);
+      my ($Log) = @_;
       .
       .
       .
@@ -157,7 +162,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0019";
+$VERSION = "1.0020";
 
 sub new {
   my $proto = shift;
@@ -173,8 +178,12 @@ sub new {
                                           header=>"NJ::Log");
 
   if ("@_" ne ("")) {
-    my @temp = @_;
-    $self->{LOG} = \@temp;
+    if (ref($_[0]) eq "Net::Jabber::Log") {
+      return $_[0];
+    } else {
+      my @temp = @_;
+      $self->{LOG} = \@temp;
+    }
   } else {
     $self->{LOG} = [ "log" , [{}]];
   }
@@ -273,6 +282,7 @@ sub SetFrom {
   if (ref($from) eq "Net::Jabber::JID") {
     $from = $from->GetJID("full");
   }
+  return unless ($from ne "");
   &Net::Jabber::SetXMLData("single",$self->{LOG},"","",{from=>$from});
 }
 

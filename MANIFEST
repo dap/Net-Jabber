@@ -45,5 +45,6 @@ Jabber/X/Delay.pm
 Jabber/X/GC.pm
 Jabber/X/Ident.pm
 Jabber/X/Oob.pm
+Jabber/X/ReplyPres.pm
 Jabber/X/Roster.pm
 Jabber/X/Roster/Item.pm

@@ -41,13 +41,18 @@ Net::Jabber::XDB - Jabber XDB Library
   namspaces and modules see Net::Jabber::Data.
 
   To initialize the XDB with a Jabber <xdb/> you must pass it the 
-  XML::Parser Tree array from the Net::Jabber::Client module.  In the
-  callback function for the xdb:
+  XML::Parser Tree array.  For example:
+
+    my $xdb = new Net::Jabber::XDB(@tree);
+
+  There has been a change from the old way of handling the callbacks.
+  You no longer have to do the above, a Net::Jabber::XDB object is passed
+  to the callback function for the xdb:
 
     use Net::Jabber;
 
     sub xdb {
-      my $xdb = new Net::Jabber::XDB(@_);
+      my ($XDB) = @_;
       .
       .
       .
@@ -141,14 +146,12 @@ Net::Jabber::XDB - Jabber XDB Library
 
   SetXDB(to=>string|JID,    - set multiple fields in the <xdb/> at one
          from=>string|JID,    time.  This is a cumulative and over
-         sto=>string,         writing action.  If you set the "to"
-         sfrom=>string,       attribute twice, the second setting is
-         etherxto=>string,    what is used.  If you set the status, and
-         etherxfrom=>string,  then set the priority then both will be in
-         id=>string,          the <xdb/> tag.  For valid settings read the
-         type=>string,        specific Set functions below.
-         errorcode=>string,
-         error=>string)
+         id=>string,          writing action.  If you set the "to"
+         type=>string,        attribute twice, the second setting is
+         errorcode=>string,   what is used.  If you set the status, and
+         error=>string)       then set the priority then both will be in
+                              the <xdb/> tag.  For valid settings read the
+                              specific Set functions below.
 
   SetTo(string) - sets the to attribute.  You can either pass a string
   SetTo(JID)      or a JID object.  They must be a valid Jabber 
@@ -175,19 +178,8 @@ Net::Jabber::XDB - Jabber XDB Library
                      custom XDBs at the time of this writing.  This was just
                      including in case they do at some point.
 
-  Reply(template=>string, - creates a new XDB object and populates
-        type=>string)       the to/from and etherxto/etherxfrom fields
-                            based the value of template.  The following
-                            templates are available:
-
-                            client: (default)
-                                 just sets the to/from
-
-                            transport:
-                                 the transport will send the
-                                 reply to the sender
-
-                            The type will be set in the <xdb/>.
+  Reply(type=>string) - creates a new XDB object and populates the to/from
+                        fields.  The type will be set in the <xdb/>.
 
 =head2 Test functions
 
@@ -216,7 +208,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0019";
+$VERSION = "1.0020";
 
 sub new {
   my $proto = shift;
@@ -233,12 +225,16 @@ sub new {
   $self->{DATA} = "";
 
   if ("@_" ne ("")) {
-    my @temp = @_;
-    $self->{XDB} = \@temp;
-    my $xmlns = $self->GetDataXMLNS();
-    if (exists($Net::Jabber::DELEGATES{data}->{$xmlns})) {
-      my @dataTree = $self->GetDataTree();
-      $self->SetData($xmlns,@dataTree) if ($xmlns ne "");
+    if (ref($_[0]) eq "Net::Jabber::XDB") {
+      return $_[0];
+    } else {
+      my @temp = @_;
+      $self->{XDB} = \@temp;
+      my $xmlns = $self->GetDataXMLNS();
+      if (exists($Net::Jabber::DELEGATES{data}->{$xmlns})) {
+	my @dataTree = $self->GetDataTree();
+	$self->SetData($xmlns,@dataTree) if ($xmlns ne "");
+      }
     }
   } else {
     $self->{XDB} = [ "xdb" , [{}]];
@@ -385,6 +381,7 @@ sub SetTo {
   if (ref($to) eq "Net::Jabber::JID") {
     $to = $to->GetJID("full");
   }
+  return unless ($to eq "");
   &Net::Jabber::SetXMLData("single",$self->{XDB},"","",{to=>$to});
 }
 
@@ -400,6 +397,7 @@ sub SetFrom {
   if (ref($from) eq "Net::Jabber::JID") {
     $from = $from->GetJID("full");
   }
+  return unless ($from ne "");
   &Net::Jabber::SetXMLData("single",$self->{XDB},"","",{from=>$from});
 }
 
@@ -504,21 +502,9 @@ sub Reply {
   my $selfData = $self->GetData();
   $reply->NewData($selfData->GetXMLNS());
   
-  if (exists($args{template})) {
-    if ($args{template} eq "transport") {
-      my $fromJID = $self->GetFrom("jid");
-      
-      $reply->SetXDB(to=>$self->GetFrom(),
-		     from=>$self->GetTo(),
-		    );
-    } else {
-      $reply->SetXDB(to=>$self->GetFrom(),
-		     from=>$self->GetTo());
-    }	
-  } else {
-    $reply->SetXDB(to=>$self->GetFrom(),
-		   from=>$self->GetTo());
-  }
+  $reply->SetXDB(to=>$self->GetFrom(),
+		 from=>$self->GetTo(),
+		);
 
   return $reply;
 }

@@ -73,8 +73,11 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
 
     $username = $auth->GetUsername();
     $password = $auth->GetPassword();
-    $digest   = $auth->GetDigest();
     $resource = $auth->GetResource();
+    $digest   = $auth->GetDigest();
+    $hash     = $auth->GetHash();
+    $token    = $auth->GetToken();
+    $sequence = $auth->GetSequence();
 
 =head2 Creation functions
 
@@ -85,15 +88,23 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
 
     $auth->SetUsername('bob');
     $auth->SetPassword('bobrulez');
-    $auth->SetDigest('');
     $auth->SetResource('Bob the Great');
+    $auth->SetDigest('');
+
+    $auth->SetToken('some token');
+    $auth->SetSequence(456);
+
+    $auth->SetHash('some hash');
 
 =head2 Test functions
 
     $test = $auth->DefinedUsername();
     $test = $auth->DefinedPassword();
-    $test = $auth->DefinedDigest();
     $test = $auth->DefinedResource();
+    $test = $auth->DefinedDigest();
+    $test = $auth->DefinedHash();
+    $test = $auth->DefinedToken();
+    $test = $auth->DefinedSequence();
 
 =head1 METHODS
 
@@ -103,19 +114,25 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
 
   GetPassword() - returns a string with the password in the <query/>.
 
+  GetResource() - returns a string with the resource in the <query/>.
+
   GetDigest() - returns a string with the SHA-1 digest in the <query/>.
 
-  GetResource() - returns a string with the resource in the <query/>.
+  GetHash() - returns a string with the hash in the <query/>.
+
+  GetToken() - returns a string with the token in the <query/>.
+
+  GetSequence() - returns a string with the sequence number in the <query/>.
 
 =head2 Creation functions
 
   SetAuth(username=>string, - set multiple fields in the <iq/> at one
           password=>string,   time.  This is a cumulative and over
-          digest=>string,     writing action.  If you set the "username" 
-          resource=>string)   twice, the second setting is what is
-                              used.  If you set the password, and then
-                              set the resource then both will be in the
-                              <query/> tag.  For valid settings read 
+          resource=>string,   writing action.  If you set the "username" 
+          digest=>string,     twice, the second setting is what is
+          hash=>string,       used.  If you set the password, and then
+          token=>string,      set the resource then both will be in the
+          sequence=>string)   <query/> tag.  For valid settings read 
                               the specific Set functions below.
 
   SetUsername(string) - sets the username for the account you are
@@ -126,13 +143,23 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
                         trying to connect with.  Leave blank for
                         an anonymous account.
 
+  SetResource(string) - sets the resource for the account you are
+                        trying to connect with.  Leave blank for
+                        an anonymous account.
+
   SetDigest(string) - sets the SHA-1 digest for the account you are
                       trying to connect with.  Leave blank for
                       an anonymous account.
 
-  SetResource(string) - sets the resource for the account you are
-                        trying to connect with.  Leave blank for
-                        an anonymous account.
+  SetHash(string) - sets the SHA-1 digest for the account you are
+                    trying to connect to using 0k.
+
+  SetToken(string) - sets the value for the token that is to be used
+                     for 0k connections.
+
+  SetSequence(string) - sets the sequence number the other side is
+                        supposed to use to connect with 0k.
+
 
 =head2 Test functions
 
@@ -142,10 +169,19 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
   DefinedPassword() - returns 1 if <password/> exists in the <iq/>,
                       0 otherwise.
 
+  DefinedResource() - returns 1 if <resource/> exists in the <iq/>,
+                      0 otherwise.
+
   DefinedDigest() - returns 1 if <digest/> exists in the <iq/>,
                     0 otherwise.
 
-  DefinedResource() - returns 1 if <resource/> exists in the <iq/>,
+  DefinedHash() - returns 1 if <hash/> exists in the <iq/>,
+                  0 otherwise.
+
+  DefinedToken() - returns 1 if <token/> exists in the <iq/>,
+                   0 otherwise.
+
+  DefinedSequence() - returns 1 if <sequence/> exists in the <iq/>,
                       0 otherwise.
 
 
@@ -165,7 +201,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0019";
+$VERSION = "1.0020";
 
 sub new {
   my $proto = shift;
@@ -206,16 +242,25 @@ $FUNCTIONS{get}->{Username} = ["value","username",""];
 $FUNCTIONS{get}->{Password} = ["value","password",""];
 $FUNCTIONS{get}->{Resource} = ["value","resource",""];
 $FUNCTIONS{get}->{Digest}   = ["value","digest",""];
+$FUNCTIONS{get}->{Hash}     = ["value","hash",""];
+$FUNCTIONS{get}->{Token}    = ["value","token",""];
+$FUNCTIONS{get}->{Sequence} = ["value","sequence",""];
 
 $FUNCTIONS{set}->{Username} = ["single","username","*","",""];
 $FUNCTIONS{set}->{Password} = ["single","password","*","",""];
 $FUNCTIONS{set}->{Resource} = ["single","resource","*","",""];
 $FUNCTIONS{set}->{Digest}   = ["single","digest","*","",""];
+$FUNCTIONS{set}->{Hash}     = ["single","hash","*","",""];
+$FUNCTIONS{set}->{Token}    = ["single","token","*","",""];
+$FUNCTIONS{set}->{Sequence} = ["single","sequence","*","",""];
 
 $FUNCTIONS{defined}->{Username} = ["existence","username",""];
 $FUNCTIONS{defined}->{Password} = ["existence","password",""];
 $FUNCTIONS{defined}->{Resource} = ["existence","resource",""];
 $FUNCTIONS{defined}->{Digest}   = ["existence","digest",""];
+$FUNCTIONS{defined}->{Hash}     = ["existence","hash",""];
+$FUNCTIONS{defined}->{Token}    = ["existence","token",""];
+$FUNCTIONS{defined}->{Sequence} = ["existence","sequence",""];
 
 
 ##############################################################################
@@ -233,6 +278,9 @@ sub SetAuth {
   $self->SetUsername($auth{username}) if exists($auth{username});
   $self->SetPassword($auth{password}) if exists($auth{password});
   $self->SetDigest($auth{digest}) if exists($auth{digest});
+  $self->SetHash($auth{hash}) if exists($auth{hash});
+  $self->SetToken($auth{token}) if exists($auth{token});
+  $self->SetSequence($auth{sequence}) if exists($auth{sequence});
   $self->SetResource($auth{resource}) if exists($auth{resource});
   $self->SetResource("Anonymous") if !exists($auth{resource});
 }

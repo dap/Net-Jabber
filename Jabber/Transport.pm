@@ -111,7 +111,7 @@ use XML::Stream 1.06;
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0019";
+$VERSION = "1.0020";
 
 use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&
@@ -155,14 +155,6 @@ sub new {
   $self->{VERSION} = $VERSION;
   
   $self->{LIST}->{currentID} = 0;
-
-  if (eval "require Digest::SHA1") {
-    $self->{DIGEST} = 1;
-    Digest::SHA1->import(qw(sha1 sha1_hex sha1_base64));
-  } else {
-    print "ERROR:  You cannot use Transport.pm unless you have Digest::SHA1 installed.\n";
-    exit(0);
-  }
 
   return $self;
 }
@@ -244,7 +236,7 @@ sub Connect {
 
   $self->{DEBUG}->Log1("Connect: connection made");
 
-  $self->{STREAM}->OnNode(sub{ $self->CallBack(@_) });
+  $self->{STREAM}->SetCallBacks(sub{ $self->CallBack(@_) });
   $self->{CONNECTED} = 1;
   return 1;
 }

@@ -111,7 +111,7 @@ use XML::Stream 1.06;
 use IO::Select;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0019";
+$VERSION = "1.0020";
 
 use Net::Jabber::Protocol;
 ($Net::Jabber::Protocol::VERSION < $VERSION) &&
@@ -156,14 +156,6 @@ sub new {
   
   $self->{LIST}->{currentID} = 0;
 
-  if (eval "require Digest::SHA1") {
-    $self->{DIGEST} = 1;
-    Digest::SHA1->import(qw(sha1 sha1_hex sha1_base64));
-  } else {
-    print "ERROR:  You cannot use Component.pm unless you have Digest::SHA1 installed.\n";
-    exit(0);
-  }
-
   return $self;
 }
 
@@ -207,7 +199,8 @@ sub Connect {
     $self->{SESSION} = 
       $self->{STREAM}->
 	Connect(connectiontype=>"stdinout",
-		namespace=>"jabber:component:exec"
+		namespace=>"jabber:component:exec",
+		timeout=>10,
 	       ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
 		     return);
   }
@@ -240,8 +233,16 @@ sub Connect {
 		port=>$self->{SERVER}->{port},
 		to=>$args{componentname},
 		namespace=>"jabber:component:accept",
-	       ) || (($self->SetErrorCode($self->{STREAM}->GetErrorCode())) &&
-		     return);
+		(defined($args{myhostname}) ?
+		 (myhostname=>$args{myhostname}) :
+		 ()
+		),
+		timeout=>10
+	       );
+    if ($self->{SESSION} eq "") {
+      $self->SetErrorCode($self->{STREAM}->GetErrorCode());
+      return;
+    }
     
     $self->{DEBUG}->Log1("Connect: connection made");
   }
@@ -253,7 +254,7 @@ sub Connect {
     return if (&Net::Jabber::GetXMLData("value",$handshake[0],"","") ne "");
   }
 
-  $self->{STREAM}->OnNode(sub{ $self->CallBack(@_) });
+  $self->{STREAM}->SetCallBacks(node=>sub{ $self->CallBack(@_) });
   $self->{CONNECTED} = 1;
   return 1;
 }

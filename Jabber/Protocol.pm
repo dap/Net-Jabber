@@ -134,7 +134,7 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
     $Con->PresenceDBParse(Net::Jabber::Presence);
 
-    $Con->PresenceDBDelete(Net::Jabber::"bob\@jabber.org");
+    $Con->PresenceDBDelete("bob\@jabber.org");
     $Con->PresenceDBDelete(Net::Jabber::JID);
 
     $presence  = $Con->PresenceDBQuery("bob\@jabber.org");
@@ -155,16 +155,9 @@ Net::Jabber::Protocol - Jabber Protocol Library
     @result = $Con->AuthSend();
     @result = $Con->AuthSend(username=>"bob",
 			     password=>"bobrulez",
-			     resource=>"Bob",
-			     digest=>1);
+			     resource=>"Bob");
 
-=head2 IQ::Fneg Functions
-
-    n/a
-
-=head2 IQ::Info Functions
-
-    n/a
+    @result = $Con->RestZeroK(password=>"foobar");
 
 =head2 IQ::Register Functions
 
@@ -176,10 +169,6 @@ Net::Jabber::Protocol - Jabber Protocol Library
 				 password=>"imanewbie",
                                  email=>"newguy@new.com",
                                  key=>"some key");
-
-=head2 IQ::Resource Functions
-
-    n/a
 
 =head2 IQ::Roster Functions
 
@@ -204,15 +193,23 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 IQ::Time Functions
 
-    %result = $Con->TimeQuery();
-    %result = $Con->TimeQuery(to=>"bob@jabber.org");
+    $Con->TimeQuery();
+    $Con->TimeQuery(to=>"bob@jabber.org");
+
+    %result = $Con->TimeQuery(waitforid=>1);
+    %result = $Con->TimeQuery(to=>"bob@jabber.org",
+			      waitforid=>1);
 
     $Con->TimeSend(to=>"bob@jabber.org");
 
 =head2 IQ::Version Functions
 
-    %result = $Con->VersionQuery();
-    %result = $Con->VersionQuery(to=>"bob@jabber.org");
+    $Con->VersionQuery();
+    $Con->VersionQuery(to=>"bob@jabber.org");
+
+    %result = $Con->VersionQuery(waitforid=>1);
+    %result = $Con->VersionQuery(to=>"bob@jabber.org",
+				 waitforid=>1);
 
     $Con->VersionSend(to=>"bob@jabber.org",
                       name=>"Net::Jabber",
@@ -237,8 +234,10 @@ Net::Jabber::Protocol - Jabber Protocol Library
 		 iq=>function,         available tags to look for are
                  send=>function,       <message/>, <presence/>, and
                  receive=>function)    <iq/>.  If a packet is received
-                                       with an ID then it is not sent
-                                       to these functions, instead it
+                                       with an ID which is found in the
+                                       registerd ID list (see RegisterID
+                                       below) then it is not sent to
+                                       these functions, instead it
                                        is inserted into a LIST and can
                                        be retrieved by some functions
                                        we will mention later.
@@ -353,6 +352,11 @@ Net::Jabber::Protocol - Jabber Protocol Library
                                              object to the DB so that 
                                              it can track the resources 
                                              and priorities for you.
+                                             Returns either the presence
+                                             passed in, if it not able
+                                             to parsed for the DB, or the 
+                                             current presence as found by 
+                                             the PresenceDBQuery function.
 
     PresenceDBDelete(string|Net::Jabber::JID) - delete thes JID entry
                                                 from the DB.
@@ -401,28 +405,18 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
     AuthSend(username=>string, - takes all of the information and
              password=>string,   builds a Net::Jabber::IQ::Auth packet.
-             resource=>string,   It then sends that packet to the
-             digest=>0|1)        server with an ID and waits for that
-    AuthSend()                   ID to return.  Then it looks in
-                                 resulting packet and determines if
-                                 authentication was successful for not.
-                                 If no hash is passed then it tries
-                                 to open an anonymous session.  The
-                                 array returned from AuthSend looks
+             resource=>string)   It then sends that packet to the
+                                 server with an ID and waits for that
+                                 ID to return.  Then it looks in 
+	                         resulting packet and determines if 
+	                         authentication was successful for not.
+                                 The array returned from AuthSend looks
                                  like this:
                                    [ type , message ]
                                  If type is "ok" then authentication
                                  was successful, otherwise message
                                  contains a little more detail about the
                                  error.
-
-=head2 IQ::Fneg Functions
-
-    n/a
-
-=head2 IQ::Info Functions
-
-    n/a
 
 =head2 IQ::Register Functions
 
@@ -451,10 +445,6 @@ Net::Jabber::Protocol - Jabber Protocol Library
                          If type is "ok" then registration was 
                          successful, otherwise message contains a 
                          little more detail about the error.
-
-=head2 IQ::Resource Functions
-
-    n/a
 
 =head2 IQ::Roster Functions
 
@@ -518,28 +508,31 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 IQ::Time Functions
 
-    TimeQuery(to=>string) - asks the jid specified for its local time.
-    TimeQuery()             If the to is blank, then it queries the
-                            server.  Returns a hash with the various 
-                            items set:
+    TimeQuery(to=>string,     - asks the jid specified for its local time.
+              waitforid=>0|1)   If the to is blank, then it queries the
+    TimeQuery()                 server.  Returns a hash with the various 
+                                items set if waitforid is set to 1:
 
-                              $time{utc}     - Time in UTC
-                              $time{tz}      - Timezone
-                              $time{display} - Display string
+                                  $time{utc}     - Time in UTC
+                                  $time{tz}      - Timezone
+                                  $time{display} - Display string
 
     TimeSend(to=>string) - sends the current UTC time to the specified
                            jid.
 
 =head2 IQ::Version Functions
 
-    VersionQuery(to=>string) - asks the jid specified for its client
-    VersionQuery()             version information.  If the to is blank,
-                               then it queries the server.  Returns a
-                               hash with the various items set:
+    VersionQuery(to=>string,     - asks the jid specified for its 
+                 waitforid=>0|1)   client version information.  If the 
+    VersionQuery()                 to is blank, then it queries the 
+                                   server.  Returns ahash with the 
+                                   various items set if waitforid is
+                                   set to 1:
 
-                                 $version{name} - Name
-                                 $version{ver}  - Version
-                                 $version{os}   - Operating System/Platform
+                                     $version{name} - Name
+                                     $version{ver}  - Version
+                                     $version{os}   - Operating System/
+                                                        Platform
 
     VersionSend(to=>string,   - sends the specified version information
                 name=>string,   to the jid specified in the to.
@@ -565,9 +558,10 @@ it under the same terms as Perl itself.
 =cut
 
 use strict;
+use Carp;
 use vars qw($VERSION);
 
-$VERSION = "1.0019";
+$VERSION = "1.0020";
 
 sub new {
   my $proto = shift;
@@ -638,22 +632,23 @@ sub CallBack {
   $self->{DEBUG}->Log1("CallBack: tag($tag)");
   $self->{DEBUG}->Log1("CallBack: id($id)") if ($id ne "");
 
+  my $NJObject;
+  $NJObject = new Net::Jabber::IQ(@object) 
+    if ($tag eq "iq");
+  $NJObject = new Net::Jabber::Presence(@object) 
+    if ($tag eq "presence");
+  $NJObject = new Net::Jabber::Message(@object) 
+    if ($tag eq "message");
+  
   if ($self->CheckID($tag,$id)) {
     $self->{DEBUG}->Log1("CallBack: found registry entry: tag($tag) id($id)");
     $self->DeregisterID($tag,$id);
-    my $NJObject;
-    $NJObject = new Net::Jabber::IQ(@object) 
-      if ($tag eq "iq");
-    $NJObject = new Net::Jabber::Presence(@object) 
-      if ($tag eq "presence");
-    $NJObject = new Net::Jabber::Message(@object) 
-      if ($tag eq "message");
     $self->GotID($object[1]->[0]->{id},$NJObject);
   } else {
     $self->{DEBUG}->Log1("CallBack: no registry entry");  
     if (exists($self->{CB}->{$tag})) {
       $self->{DEBUG}->Log1("CallBack: goto user function($self->{CB}->{$tag})");
-      &{$self->{CB}->{$tag}}(@object);
+      &{$self->{CB}->{$tag}}($NJObject);
     } else {
       $self->{DEBUG}->Log1("CallBack: no defined function.  Dropping packet.");
     }
@@ -677,6 +672,7 @@ sub SetCallBacks {
     my $tag = pop(@_);
     $self->{DEBUG}->Log1("SetCallBacks: tag($tag) func($func)");
     $self->{CB}{$tag} = $func;
+    $self->{STREAM}->SetCallBacks(update=>$func) if ($tag eq "update");
   }
 }
 
@@ -807,11 +803,13 @@ sub SendAndReceiveWithID {
   shift;
   my $self = shift;
   my ($object) = @_;
-
+  &{$self->{CB}->{startwait}}() if exists($self->{CB}->{startwait});
   $self->{DEBUG}->Log1("SendAndReceiveWithID: object($object)");
   my $id = $self->SendWithID($object);
   $self->{DEBUG}->Log1("SendAndReceiveWithID: sent with id($id)");
-  return $self->WaitForID($id);
+  my $packet = $self->WaitForID($id);
+  &{$self->{CB}->{endwait}}() if exists($self->{CB}->{endwait});
+  return $packet;
 }
 
 
@@ -865,7 +863,8 @@ sub WaitForID {
   $self->{DEBUG}->Log1("WaitForID: id($id)");
   while(!$self->ReceivedID($id)) {
     $self->{DEBUG}->Log1("WaitForID: haven't gotten it yet... let's wait for more packets");
-    return unless (defined($self->Process()));
+    return unless (defined($self->Process(1)));
+    &{$self->{CB}->{update}}() if exists($self->{CB}->{update});
   }
   $self->{DEBUG}->Log1("WaitForID: we got it!");
   return $self->GetID($id);
@@ -992,9 +991,9 @@ sub PresenceDBParse {
   my ($presence) = @_;
 
   my $type = $presence->GetType();
-  return unless (($type eq "") || 
-		 ($type eq "available") || 
-		 ($type eq "unavailable"));
+  return $presence unless (($type eq "") || 
+			   ($type eq "available") || 
+			   ($type eq "unavailable"));
 
   my $fromJID = $presence->GetFrom("jid");
   my $fromID = $fromJID->GetJID();
@@ -1040,6 +1039,9 @@ sub PresenceDBParse {
 
     $self->{DEBUG}->Log1("PresenceDBParse: add ",$fromJID->GetJID("full")," to the DB"); 
   }
+
+  my $currentPresence = $self->PresenceDBQuery($fromJID);
+  return (defined($currentPresence) ? $currentPresence : $presence);
 }
 
 
@@ -1237,6 +1239,60 @@ sub AuthSend {
   my %args;
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
+  carp("AuthSend requires a username arguement") 
+    unless exists($args{username});
+  carp("AuthSend requires a password arguement") 
+    unless exists($args{password});
+  carp("AuthSend requires a resource arguement") 
+    unless exists($args{resource});
+
+  my $authType = "digest";
+  my $token;
+  my $sequence;
+
+  #---------------------------------------------------------------------------
+  # First let's ask the sever what all is available in terms of auth types.
+  # If we get an error, then all we can do is digest or plain.
+  #---------------------------------------------------------------------------
+  my $iqAuthProbe = new Net::Jabber::IQ();
+  $iqAuthProbe->SetIQ(type=>"get");
+  my $iqAuthProbeQuery = $iqAuthProbe->NewQuery("jabber:iq:auth");
+  $iqAuthProbeQuery->SetUsername($args{username});
+  $iqAuthProbe = $self->SendAndReceiveWithID($iqAuthProbe);
+  
+  if ($iqAuthProbe->GetType() eq "error") {
+    $authType = "digest";
+  } else {
+    $iqAuthProbeQuery = $iqAuthProbe->GetQuery();
+    $authType = "plain" if $iqAuthProbeQuery->DefinedPassword();
+    $authType = "digest" if $iqAuthProbeQuery->DefinedDigest();
+    $authType = "zerok" if ($iqAuthProbeQuery->DefinedSequence() &&
+			    $iqAuthProbeQuery->DefinedToken());
+    $token = $iqAuthProbeQuery->GetToken() if ($authType eq "zerok");
+    $sequence = $iqAuthProbeQuery->GetSequence() if ($authType eq "zerok");
+  }
+
+  delete($args{digest});
+  delete($args{type});
+
+  #---------------------------------------------------------------------------
+  # 0k authenticaion (http://core.jabber.org/0k.html)
+  #
+  # Tell the server that we want to connect this way, the server sends back
+  # a token and a sequence number.  We take that token + the password and
+  # SHA1 it.  Then we SHA1 it sequence number more times and send that hash.
+  # The server SHA1s that hash one more time and compares it to the hash it
+  # stored last time.  IF they match, we are in and it stores the hash we sent
+  # for the next time and decreases the sequence number, else, no go.
+  #---------------------------------------------------------------------------
+  if ($authType eq "zerok") {
+    my $hashA = Digest::SHA1::sha1_hex(delete($args{password}));
+    $args{hash} = Digest::SHA1::sha1_hex($hashA.$token);
+    
+    for (1..$sequence) { $args{hash} = Digest::SHA1::sha1_hex($args{hash}); }
+  }
+  
+
   #------------------------------------------------------------------------
   # If we have access to the SHA-1 digest algorithm then let's use it.
   # Remove the password fro the hash, create the digest, and put the
@@ -1245,16 +1301,10 @@ sub AuthSend {
   # Note: Concat the Session ID and the password and then digest that
   # string to get the server to accept the digest.
   #------------------------------------------------------------------------
-  if (exists($args{digest})) {
-    my $digestUse = $args{digest};
-    delete($args{digest});
-    if (($digestUse == 1) && 
-	($self->{DIGEST} == 1) && 
-	(exists($args{password}))) {
-      my $password = delete($args{password});
-      my $digest = Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$password);
-      $args{digest} = $digest;
-    }
+  if ($authType eq "digest") {
+    my $password = delete($args{password});
+    my $digest = Digest::SHA1::sha1_hex($self->{SESSION}->{id}.$password);
+    $args{digest} = $digest;
   }
 
   #------------------------------------------------------------------------
@@ -1558,12 +1608,31 @@ sub TimeQuery {
   my %args;
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
+  $args{waitforid} = 0 unless exists($args{waitforid});
+  my $waitforid = delete($args{waitforid});
+
   my $iq = new Net::Jabber::IQ();
   $iq->SetIQ(to=>delete($args{to})) if exists($args{to});
   $iq->SetIQ(type=>'get');
   my $time = $iq->NewQuery("jabber:iq:time");
 
-  $self->Send($iq);
+  if ($waitforid == 0) {
+    $self->Send($iq);
+  } else {
+    $iq = $self->SendAndReceiveWithID($iq);
+    
+    return unless defined($iq);
+
+    my $query = $iq->GetQuery();
+
+    return unless defined($query);
+
+    my %result;
+    $result{utc} = $query->GetUTC();
+    $result{display} = $query->GetDisplay();
+    $result{tz} = $query->GetTZ();
+    return %result;
+  }
 }
 
 
@@ -1601,12 +1670,31 @@ sub VersionQuery {
   my %args;
   while($#_ >= 0) { $args{ lc pop(@_) } = pop(@_); }
 
+  $args{waitforid} = 0 unless exists($args{waitforid});
+  my $waitforid = delete($args{waitforid});
+
   my $iq = new Net::Jabber::IQ();
   $iq->SetIQ(to=>delete($args{to})) if exists($args{to});
   $iq->SetIQ(type=>'get');
   my $version = $iq->NewQuery("jabber:iq:version");
 
-  $self->Send($iq);
+  if ($waitforid == 0) {
+    $self->Send($iq);
+  } else {
+    $iq = $self->SendAndReceiveWithID($iq);
+    
+    return unless defined($iq);
+
+    my $query = $iq->GetQuery();
+
+    return unless defined($query);
+
+    my %result;
+    $result{name} = $query->GetName();
+    $result{ver} = $query->GeVer();
+    $result{os} = $query->GetOS();
+    return %result;
+  }
 }
 
 

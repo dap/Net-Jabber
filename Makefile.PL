@@ -44,12 +44,13 @@ WriteMakefile(
 			      'Jabber/X/GC.pm' => '$(INST_LIBDIR)/Jabber/X/GC.pm',
 			      'Jabber/X/Ident.pm' => '$(INST_LIBDIR)/Jabber/X/Ident.pm',
 			      'Jabber/X/Oob.pm' => '$(INST_LIBDIR)/Jabber/X/Oob.pm',
+			      'Jabber/X/ReplyPres.pm' => '$(INST_LIBDIR)/Jabber/X/ReplyPres.pm',
 			      'Jabber/X/Roster.pm' => '$(INST_LIBDIR)/Jabber/X/Roster.pm',
 			      'Jabber/X/Roster/Item.pm' => '$(INST_LIBDIR)/Jabber/X/Roster/Item.pm',
 			     },
 	      'PREREQ_PM' => {
-			      'XML::Stream' => 1.09
+			      'XML::Stream' => 1.10
 			     },
-	      'VERSION' => '1.0019',
+	      'VERSION' => '1.0020',
 	      'dist' => { 'COMPRESS' => 'gzip --best' }
 	     );

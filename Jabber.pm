@@ -160,6 +160,7 @@ require 5.005;
 use strict;
 use Time::Local;
 use Carp;
+use Digest::SHA1;
 use vars qw($VERSION %DELEGATES $UNICODE);
 
 if ($] >= 5.006) {
@@ -170,7 +171,7 @@ if ($] >= 5.006) {
 }
 
 
-$VERSION = "1.0019";
+$VERSION = "1.0020";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -230,46 +231,48 @@ use Net::Jabber::Component;
 # NameSpace delegates
 #
 ##############################################################################
-$DELEGATES{query}->{'jabber:iq:agent'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:agent'}->{delegate} = "Net::Jabber::Query::Agent";
-$DELEGATES{query}->{'jabber:iq:agents'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:agents'}->{delegate} = "Net::Jabber::Query::Agents";
-$DELEGATES{query}->{'jabber:iq:auth'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:auth'}->{delegate} = "Net::Jabber::Query::Auth";
-$DELEGATES{query}->{'jabber:iq:autoupdate'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:agent'}->{parent}        = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:agent'}->{delegate}      = "Net::Jabber::Query::Agent";
+$DELEGATES{query}->{'jabber:iq:agents'}->{parent}       = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:agents'}->{delegate}     = "Net::Jabber::Query::Agents";
+$DELEGATES{query}->{'jabber:iq:auth'}->{parent}         = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:auth'}->{delegate}       = "Net::Jabber::Query::Auth";
+$DELEGATES{query}->{'jabber:iq:autoupdate'}->{parent}   = "Net::Jabber::Query";
 $DELEGATES{query}->{'jabber:iq:autoupdate'}->{delegate} = "Net::Jabber::Query::AutoUpdate";
-$DELEGATES{query}->{'jabber:iq:filter'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:filter'}->{delegate} = "Net::Jabber::Query::Filter";
-$DELEGATES{query}->{'jabber:iq:fneg'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:fneg'}->{delegate} = "Net::Jabber::Query::Fneg";
-$DELEGATES{query}->{'jabber:iq:oob'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:oob'}->{delegate} = "Net::Jabber::Query::Oob";
-$DELEGATES{query}->{'jabber:iq:register'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:register'}->{delegate} = "Net::Jabber::Query::Register";
-$DELEGATES{query}->{'jabber:iq:roster'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:roster'}->{delegate} = "Net::Jabber::Query::Roster";
-$DELEGATES{query}->{'jabber:iq:search'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:search'}->{delegate} = "Net::Jabber::Query::Search";
-$DELEGATES{query}->{'jabber:iq:time'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:time'}->{delegate} = "Net::Jabber::Query::Time";
-$DELEGATES{query}->{'jabber:iq:version'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{query}->{'jabber:iq:version'}->{delegate} = "Net::Jabber::Query::Version";
+$DELEGATES{query}->{'jabber:iq:filter'}->{parent}       = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:filter'}->{delegate}     = "Net::Jabber::Query::Filter";
+$DELEGATES{query}->{'jabber:iq:fneg'}->{parent}         = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:fneg'}->{delegate}       = "Net::Jabber::Query::Fneg";
+$DELEGATES{query}->{'jabber:iq:oob'}->{parent}          = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:oob'}->{delegate}        = "Net::Jabber::Query::Oob";
+$DELEGATES{query}->{'jabber:iq:register'}->{parent}     = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:register'}->{delegate}   = "Net::Jabber::Query::Register";
+$DELEGATES{query}->{'jabber:iq:roster'}->{parent}       = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:roster'}->{delegate}     = "Net::Jabber::Query::Roster";
+$DELEGATES{query}->{'jabber:iq:search'}->{parent}       = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:search'}->{delegate}     = "Net::Jabber::Query::Search";
+$DELEGATES{query}->{'jabber:iq:time'}->{parent}         = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:time'}->{delegate}       = "Net::Jabber::Query::Time";
+$DELEGATES{query}->{'jabber:iq:version'}->{parent}      = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:version'}->{delegate}    = "Net::Jabber::Query::Version";
 
-$DELEGATES{x}->{'jabber:x:autoupdate'}->{parent} = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:autoupdate'}->{parent}   = "Net::Jabber::X";
 $DELEGATES{x}->{'jabber:x:autoupdate'}->{delegate} = "Net::Jabber::X::AutoUpdate";
-$DELEGATES{x}->{'jabber:x:delay'}->{parent} = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:delay'}->{delegate} = "Net::Jabber::X::Delay";
-$DELEGATES{x}->{'jabber:x:gc'}->{parent} = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:gc'}->{delegate} = "Net::Jabber::X::GC";
-#$DELEGATES{x}->{'jabber:x:ident'}->{parent} = "Net::Jabber::X";
-#$DELEGATES{x}->{'jabber:x:ident'}->{delegate} = "Net::Jabber::X::Ident";
-$DELEGATES{x}->{'jabber:x:oob'}->{parent}   = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:oob'}->{delegate}   = "Net::Jabber::X::Oob";
-$DELEGATES{x}->{'jabber:x:roster'}->{parent}   = "Net::Jabber::X";
-$DELEGATES{x}->{'jabber:x:roster'}->{delegate}  = "Net::Jabber::X::Roster";
+$DELEGATES{x}->{'jabber:x:delay'}->{parent}        = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:delay'}->{delegate}      = "Net::Jabber::X::Delay";
+$DELEGATES{x}->{'jabber:x:gc'}->{parent}           = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:gc'}->{delegate}         = "Net::Jabber::X::GC";
+#$DELEGATES{x}->{'jabber:x:ident'}->{parent}       = "Net::Jabber::X";
+#$DELEGATES{x}->{'jabber:x:ident'}->{delegate}     = "Net::Jabber::X::Ident";
+$DELEGATES{x}->{'jabber:x:oob'}->{parent}          = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:oob'}->{delegate}        = "Net::Jabber::X::Oob";
+$DELEGATES{x}->{'jabber:x:replypres'}->{parent}    = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:replypres'}->{delegate}  = "Net::Jabber::X::ReplyPres";
+$DELEGATES{x}->{'jabber:x:roster'}->{parent}       = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:roster'}->{delegate}     = "Net::Jabber::X::Roster";
 
-$DELEGATES{xdb}->{'jabber:iq:auth'}->{parent} = "Net::Jabber::Data";
-$DELEGATES{xdb}->{'jabber:iq:auth'}->{delegate} = "Net::Jabber::Data::Auth";
+$DELEGATES{xdb}->{'jabber:iq:auth'}->{parent}      = "Net::Jabber::Data";
+$DELEGATES{xdb}->{'jabber:iq:auth'}->{delegate}    = "Net::Jabber::Data::Auth";
 
 
 
@@ -727,23 +730,28 @@ sub printData {
 	&printData($preString."{'".$key."'}->",$$data{$key});
       }
     }
-  }
-  if (ref($data) eq "ARRAY") {
-    my $index;
-    foreach $index (0..$#{$data}) {
-      if (ref($$data[$index]) eq "") {
-	print $preString,"[",$index,"] = \"",$$data[$index],"\"\n";
+  } else {
+    if (ref($data) eq "ARRAY") {
+      my $index;
+      foreach $index (0..$#{$data}) {
+	if (ref($$data[$index]) eq "") {
+	  print $preString,"[",$index,"] = \"",$$data[$index],"\"\n";
+	} else {
+	  print $preString,"[",$index,"]\n";
+	  &printData($preString."[".$index."]->",$$data[$index]);
+	}
+      }
+    } else {
+      if (ref($data) eq "REF") {
+	&printData($preString."->",$$data);
       } else {
-	print $preString,"[",$index,"]\n";
-	&printData($preString."[".$index."]->",$$data[$index]);
+	if (ref($data) eq "") {
+	  print $preString," = \"",$data,"\"\n";
+	} else {
+ 	  print $preString," = ",ref($data),"\n";
+	}
       }
     }
-  }
-  if (ref($data) eq "REF") {
-    &printData($preString."->",$$data);
-  }
-  if (ref($data) eq "") {
-    print $preString," = \"",$data,"\"\n";
   }
 }
 
@@ -756,7 +764,7 @@ sub printData {
 sub GetTimeStamp {
   my($type,$time,$length) = @_;
 
-  return "" if (($type ne "local") && ($type ne "utc") && !($type =~ /^(local|utc)delay(local|utc)$/));
+  return "" if (($type ne "local") && ($type ne "utc") && !($type =~ /^(local|utc)delay(local|utc|time)$/));
 
   $length = "long" unless defined($length);
 
@@ -774,6 +782,7 @@ sub GetTimeStamp {
     $time = timelocal($sec,$min,$hour,$mday,$mon,$year);
   }
 
+  return $time if ($type eq "time");
   ($sec,$min,$hour,$mday,$mon,$year,$wday) = localtime(((defined($time) && ($time ne "")) ? $time : time)) if ($type eq "local");
   ($sec,$min,$hour,$mday,$mon,$year,$wday) = gmtime(((defined($time) && ($time ne "")) ? $time : time)) if ($type eq "utc");
   $wday = ('Sun','Mon','Tue','Wed','Thu','Fri','Sat')[$wday];

@@ -41,13 +41,18 @@ Net::Jabber::IQ - Jabber Info/Query Library
   namspaces and modules see Net::Jabber::Query.
 
   To initialize the IQ with a Jabber <iq/> you must pass it the 
-  XML::Parser Tree array from the Net::Jabber::Client module.  In the
-  callback function for the iq:
+  XML::Parser Tree array.  For example:
+
+    my $iq = new Net::Jabber::IQ(@tree);
+
+  There has been a change from the old way of handling the callbacks.
+  You no longer have to do the above, a Net::Jabber::IQ object is passed
+  to the callback function for the iq:
 
     use Net::Jabber;
 
     sub iq {
-      my $iq = new Net::Jabber::IQ(@_);
+      my ($IQ) = @_;
       .
       .
       .
@@ -76,12 +81,6 @@ Net::Jabber::IQ - Jabber Info/Query Library
     $toJID      = $IQ->GetTo("jid");
     $from       = $IQ->GetFrom();
     $fromJID    = $IQ->GetFrom("jid");
-    $sto        = $IQ->GetSTo();
-    $stoJID     = $IQ->GetSTo("jid");
-    $sfrom      = $IQ->GetSFrom();
-    $sfromJID   = $IQ->GetSFrom("jid");
-    $etherxTo   = $IQ->GetEtherxTo();
-    $etherxFrom = $IQ->GetEtherxFrom();
     $id         = $IQ->GetID();
     $type       = $IQ->GetType();
     $error      = $IQ->GetError();
@@ -101,10 +100,6 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
     $IQ->SetTo("bob@jabber.org");
     $IQ->SetFrom("me\@jabber.org");
-    $IQ->SetSTo("jabber.org");
-    $IQ->SetSFrom("jabber.org");
-    $IQ->SetEtherxTo("jabber.org");
-    $IQ->SetEtherxFrom("transport.jabber.org");
     $IQ->SetType("set");
 
     $IQ->SetIQ(to=>"bob\@jabber.org",
@@ -124,10 +119,6 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
     $test = $IQ->DefinedTo();
     $test = $IQ->DefinedFrom();
-    $test = $IQ->DefinedSTo();
-    $test = $IQ->DefinedSFrom();
-    $test = $IQ->DefinedEtherxTo();
-    $test = $IQ->DefinedEtherxFrom();
     $test = $IQ->DefinedID();
     $test = $IQ->DefinedType();
     $test = $IQ->DefinedError();
@@ -148,26 +139,6 @@ Net::Jabber::IQ - Jabber Info/Query Library
                     sent the <iq/>.  To get the JID object set 
                     the string to "jid", otherwise leave blank for the 
                     text string.
-
-  GetSTo()      - returns either a string with the Jabber Identifier,
-  GetSTo("jid")   or a Net::Jabber::JID object for the <host/> of the
-                  conponent who is going to receive the <iq/>.  To 
-                  get the JID object set the string to "jid", 
-                  otherwise leave blank for the text string.
-
-  GetSFrom()      -  returns either a string with the Jabber Identifier,
-  GetSFrom("jid")    or a Net::Jabber::JID object for the <host/>
-                     component who sent the <iq/>.  To get the JID 
-                     object set the string to "jid", otherwise leave 
-                     blank for the text string.
-
-  GetEtherxTo(string) - returns the etherx:to attribute.  This is for
-                        Transport writers who need to communicate with
-                        Etherx.
-
-  GetEtherxFrom(string) -  returns the etherx:from attribute.  This is for
-                           Transport writers who need to communicate with
-                           Etherx.
 
   GetType() - returns a string with the type <iq/> this is.
 
@@ -194,14 +165,12 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
   SetIQ(to=>string|JID,    - set multiple fields in the <iq/> at one
         from=>string|JID,    time.  This is a cumulative and over
-        sto=>string,         writing action.  If you set the "to"
-        sfrom=>string,       attribute twice, the second setting is
-        etherxto=>string,    what is used.  If you set the status, and
-        etherxfrom=>string,  then set the priority then both will be in
-        id=>string,          the <iq/> tag.  For valid settings read the
-        type=>string,        specific Set functions below.
-        errorcode=>string,
-        error=>string)
+        id=>string,          writing action.  If you set the "to"
+        type=>string,        attribute twice, the second setting is
+        errorcode=>string,   what is used.  If you set the status, and
+        error=>string)       then set the priority then both will be in
+                             the <iq/> tag.  For valid settings read the
+                             specific Set functions below.
 
   SetTo(string) - sets the to attribute.  You can either pass a string
   SetTo(JID)      or a JID object.  They must be a valid Jabber 
@@ -212,24 +181,6 @@ Net::Jabber::IQ - Jabber Info/Query Library
   SetFrom(JID)      or a JID object.  They must be a valid Jabber 
                     Identifiers or the server will return an error message.
                     (ie.  jabber:bob@jabber.org, etc...)
-
-  SetSTo(string) - sets the sto attribute.  You can either pass a string
-  SetSTo(JID)      or a JID object.  They must be a valid Jabber 
-                   Identifiers or the server will return an error message.
-                   (ie.  jabber:bob@jabber.org, etc...)
-
-  SetSFrom(string) - sets the sfrom attribute.  You can either pass a string
-  SetSFrom(JID)      or a JID object.  They must be a valid Jabber 
-                     Identifiers or the server will return an error message.
-                     (ie.  jabber:bob@jabber.org, etc...)
-
-  SetEtherxTo(string) - sets the etherx:to attribute.  This is for
-                        Transport writers who need to communicate with
-                        Etherx.
-
-  SetEtherxFrom(string) -  sets the etherx:from attribute.  This is for
-                           Transport writers who need to communicate with
-                           Etherx.
 
   SetType(string) - sets the type attribute.  Valid settings are:
 
@@ -250,19 +201,8 @@ Net::Jabber::IQ - Jabber Info/Query Library
                      custom IQs at the time of this writing.  This was just
                      including in case they do at some point.
 
-  Reply(template=>string, - creates a new IQ object and populates
-        type=>string)       the to/from and etherxto/etherxfrom fields
-                            based the value of template.  The following
-                            templates are available:
-
-                            client: (default)
-                                 just sets the to/from
-
-                            transport:
-                                 the transport will send the
-                                 reply to the sender
-
-                            The type will be set in the <iq/>.
+  Reply(type=>string) - creates a new IQ object and populates the to/from
+                        fields.  The type will be set in the <iq/>.
 
 =head2 Test functions
 
@@ -271,18 +211,6 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
   DefinedFrom() - returns 1 if the from attribute is defined in the <iq/>, 
                   0 otherwise.
-
-  DefinedSTo() - returns 1 if the sto attribute is defined in the <iq/>, 
-                 0 otherwise.
-
-  DefinedSFrom() - returns 1 if the sfrom attribute is defined in the <iq/>, 
-                   0 otherwise.
-
-  DefinedEtherxTo() - returns 1 if the etherx:to attribute is defined in 
-                      the <iq/>, 0 otherwise.
-
-  DefinedEtherxFrom() - returns 1 if the etherx:from attribute is defined 
-                        in the <iq/>, 0 otherwise.
 
   DefinedID() - returns 1 if the id attribute is defined in the <iq/>, 
                 0 otherwise.
@@ -312,7 +240,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0019";
+$VERSION = "1.0020";
 
 sub new {
   my $proto = shift;
@@ -329,12 +257,16 @@ sub new {
   $self->{QUERY} = "";
 
   if ("@_" ne ("")) {
-    my @temp = @_;
-    $self->{IQ} = \@temp;
-    my $xmlns = $self->GetQueryXMLNS();
-    if (exists($Net::Jabber::DELEGATES{query}->{$xmlns})) {
-      my @queryTree = $self->GetQueryTree();
-      $self->SetQuery($xmlns,@queryTree) if ($xmlns ne "");
+    if (ref($_[0]) eq "Net::Jabber::IQ") {
+      return $_[0];
+    } else {
+      my @temp = @_;
+      $self->{IQ} = \@temp;
+      my $xmlns = $self->GetQueryXMLNS();
+      if (exists($Net::Jabber::DELEGATES{query}->{$xmlns})) {
+	my @queryTree = $self->GetQueryTree();
+	$self->SetQuery($xmlns,@queryTree) if ($xmlns ne "");
+      }
     }
   } else {
     $self->{IQ} = [ "iq" , [{}]];
@@ -369,17 +301,11 @@ sub AUTOLOAD {
 
 $FUNCTIONS{get}->{To}         = ["value","","to"];
 $FUNCTIONS{get}->{From}       = ["value","","from"];
-$FUNCTIONS{get}->{STo}        = ["value","","sto"];
-$FUNCTIONS{get}->{SFrom}      = ["value","","sfrom"];
-$FUNCTIONS{get}->{EtherxTo}   = ["value","","etherx:to"];
-$FUNCTIONS{get}->{EtherxFrom} = ["value","","etherx:from"];
 $FUNCTIONS{get}->{ID}         = ["value","","id"];
 $FUNCTIONS{get}->{Type}       = ["value","","type"];
 $FUNCTIONS{get}->{Error}      = ["value","error",""];
 $FUNCTIONS{get}->{ErrorCode}  = ["value","error","code"];
 
-$FUNCTIONS{set}->{EtherxTo}   = ["single","","","etherx:to","*"];
-$FUNCTIONS{set}->{EtherxFrom} = ["single","","","etherx:from","*"];
 $FUNCTIONS{set}->{ID}         = ["single","","","id","*"];
 $FUNCTIONS{set}->{Type}       = ["single","","","type","*"];
 $FUNCTIONS{set}->{Error}      = ["single","error","*","",""];
@@ -387,10 +313,6 @@ $FUNCTIONS{set}->{ErrorCode}  = ["single","error","","code","*"];
 
 $FUNCTIONS{defined}->{To}         = ["existence","","to"];
 $FUNCTIONS{defined}->{From}       = ["existence","","from"];
-$FUNCTIONS{defined}->{STo}        = ["existence","","sto"];
-$FUNCTIONS{defined}->{SFrom}      = ["existence","","sfrom"];
-$FUNCTIONS{defined}->{EtherxTo}   = ["existence","","etherx:to"];
-$FUNCTIONS{defined}->{EtherxFrom} = ["existence","","etherx:from"];
 $FUNCTIONS{defined}->{ID}         = ["existence","","id"];
 $FUNCTIONS{defined}->{Type}       = ["existence","","type"];
 $FUNCTIONS{defined}->{Error}      = ["existence","error",""];
@@ -474,10 +396,6 @@ sub SetIQ {
   $self->SetID($iq{id}) if exists($iq{id});
   $self->SetTo($iq{to}) if exists($iq{to});
   $self->SetFrom($iq{from}) if exists($iq{from});
-  $self->SetSTo($iq{sto}) if exists($iq{sto});
-  $self->SetSFrom($iq{sfrom}) if exists($iq{sfrom});
-  $self->SetEtherxTo($iq{etherxto}) if exists($iq{etherxto});
-  $self->SetEtherxFrom($iq{etherxfrom}) if exists($iq{etherxfrom});
   $self->SetType($iq{type}) if exists($iq{type});
   $self->SetErrorCode($iq{errorcode}) if exists($iq{errorcode});
   $self->SetError($iq{error}) if exists($iq{error});
@@ -495,6 +413,7 @@ sub SetTo {
   if (ref($to) eq "Net::Jabber::JID") {
     $to = $to->GetJID("full");
   }
+  return unless ($to ne "");
   &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{to=>$to});
 }
 
@@ -510,6 +429,7 @@ sub SetFrom {
   if (ref($from) eq "Net::Jabber::JID") {
     $from = $from->GetJID("full");
   }
+  return unless ($from ne "");
   &Net::Jabber::SetXMLData("single",$self->{IQ},"","",{from=>$from});
 }
 
@@ -644,23 +564,9 @@ sub Reply {
   my $selfQuery = $self->GetQuery();
   $reply->NewQuery($selfQuery->GetXMLNS());
 
-  if (exists($args{template})) {
-    if ($args{template} eq "transport") {
-      my $fromJID = $self->GetFrom("jid");
-      
-      $reply->SetIQ(to=>$self->GetFrom(),
-		    from=>$self->GetTo(),
-		    etherxto=>$fromJID->GetServer(),
-		    etherxfrom=>$self->GetEtherxTo(),
-		   );
-    } else {
-      $reply->SetIQ(to=>$self->GetFrom(),
-		    from=>$self->GetTo());
-    }	
-  } else {
-    $reply->SetIQ(to=>$self->GetFrom(),
-		  from=>$self->GetTo());
-  }
+  $reply->SetIQ(to=>$self->GetFrom(),
+		from=>$self->GetTo()
+	       );
 
   return $reply;
 }
