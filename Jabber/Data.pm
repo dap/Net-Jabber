@@ -20,125 +20,127 @@
 #
 ##############################################################################
 
-package Net::Jabber::X;
+package Net::Jabber::Data;
 
 =head1 NAME
 
-Net::Jabber::X - Jabber X Module
+Net::Jabber::Data - Jabber Data Library
 
 =head1 SYNOPSIS
 
-  Net::Jabber::X is a companion to the Net::Jabber module. It
+  Net::Jabber::Data is a companion to the Net::Jabber::XDB module. It
   provides the user a simple interface to set and retrieve all 
-  parts of a Jabber X.
+  parts of a Jabber XDB Data.
 
 =head1 DESCRIPTION
 
-  Net::Jabber::X differs from the other Net::Jabber::* modules in that
-  the XMLNS of the query is split out into more submodules under
-  X.  For specifics on each module please view the documentation
-  for each Net::Jabber::X::* module.  The available modules are:
+  Net::Jabber::Data differs from the other Net::Jabber::* modules in that
+  the XMLNS of the data is split out into more submodules under
+  Data.  For specifics on each module please view the documentation
+  for each Net::Jabber::Data::* module.  The available modules are:
 
-    Net::Jabber::X::AutoUpdate - Auto Update information
-    Net::Jabber::X::Delay      - Message Routing and Delay Information
-    Net::Jabber::X::GC         - GroupChat
-    Net::Jabber::X::Ident      - Rich Identification
-    Net::Jabber::X::Oob        - Out Of Band File Transfers
-    Net::Jabber::X::Roster     - Roster Items for embedding in messages
+    Net::Jabber::Data::Agent      - Agent Namespace
+    Net::Jabber::Data::Agents     - Supported Agents list from server
+    Net::Jabber::Data::Auth       - Simple Client Authentication
+    Net::Jabber::Data::AutoUpdate - Auto-Update for clients
+    Net::Jabber::Data::Filter     - Messaging Filter
+    Net::Jabber::Data::Fneg       - Feature Negotiation
+    Net::Jabber::Data::Oob        - Out of Bandwidth File Transfers
+    Net::Jabber::Data::Register   - Registration requests
+    Net::Jabber::Data::Roster     - Buddy List management
+    Net::Jabber::Data::Search     - Searching User Directories
+    Net::Jabber::Data::Time       - Client Time
+    Net::Jabber::Data::Version    - Client Version
 
-  Each of these modules provide Net::Jabber::X with the functions
+  Each of these modules provide Net::Jabber::Data with the functions
   to access the data.  By using delegates and the AUTOLOAD function
   the functions for each namespace is used when that namespace is
   active.
 
-  To access an X object you must create a Message object and use the
-  access functions there to get to the X.  To initialize the Message with 
-  a Jabber <message/> you must pass it the XML::Parser Tree array from the 
-  Net::Jabber::Client module.  In the callback function for the message
-  you can access the x tags for the namespace "my:namespace" by doing
-  the following:
+  To access a Data object you must create an XDB object and use the
+  access functions there to get to the Data.  To initialize the XDB with 
+  a Jabber <xdb/> you must pass it the XML::Parser Tree array from the 
+  Net::Jabber::Client module.  In the callback function for the xdb
+  you can access the data tag by doing the following:
 
     use Net::Jabber;
 
-    sub messageCB {
-      my $message = new Net::Jabber::Message(@_);
-      my @xTags = $mesage->GetX("my:namespace");
-      my $xTag;
-      foreach $xTag (@xTags) {
-        .
-        .
-        .
-      }
+    sub xdbCB {
+      my $xdb = new Net::Jabber::XDB(@_);
+      my $data = $mesage->GetData();
+      .
+      .
+      .
     }
 
   You now have access to all of the retrieval functions available.
 
-  To create a new x to send to the server:
+  To create a new xdb to send to the server:
 
     use Net::Jabber;
 
-    my $message = new Net::Jabber::Message();
-    my $x = $message->NewX("jabber:x:ident");
+    my $xdb = new Net::Jabber::XDB();
+    $data = $xdb->NewData("jabber:xdb:register");
 
-  Now you can call the creation functions for the X as defined in the
-  proper namespace.  See below for the general <x/> functions, and in 
-  each query module for those functions.
+  Now you can call the creation functions for the Data as defined in the
+  proper namespaces.  See below for the general <data/> functions, and
+  in each data module for those functions.
 
   For more information about the array format being passed to the CallBack
   please read the Net::Jabber::Client documentation.
 
 =head2 Retrieval functions
 
-    $xmlns     = $X->GetXMLNS();
+    $xmlns     = $XDB->GetXMLNS();
 
-    $str       = $X->GetXML();
-    @x         = $X->GetTree();
+    $str       = $XDB->GetXML();
+    @xdb        = $XDB->GetTree();
 
 =head2 Creation functions
 
-    $X->SetXMLNS("jabber:x:delay");
+    $Data->SetXMLNS("jabber:xdb:roster");
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetXMLNS() - returns a string with the namespace of the query that
-               the <x/> contains.
+  GetXMLNS() - returns a string with the namespace of the data that
+               the <xdb/> contains.
 
-  GetXML() - returns the XML string that represents the <x/>. This 
+  GetXML() - returns the XML string that represents the <xdb/>. This 
              is used by the Send() function in Client.pm to send
-             this object as a Jabber X.
+             this object as a Jabber XDB.
 
-  GetTree() - returns an array that contains the <x/> tag in XML::Parser 
+  GetTree() - returns an array that contains the <xdb/> tag in XML::Parser 
               Tree format.
 
 =head2 Creation functions
 
-  SetXMLNS(string) - sets the xmlns of the <x/> to the string.
+  SetXMLNS(string) - sets the xmlns of the <data/> to the string.
 
-=head1 CUSTOM X MODULES
+=head1 CUSTOM Data MODULES
 
   Part of the flexability of this module is that you can write your own
   module to handle a new namespace if you so choose.  The SetDelegates
   function is your way to register the xmlns and which module will
   provide the missing access functions.
 
-  To register your namespace and module, you can either create an X
+  To register your namespace and module, you can either create an XDB
   object and register it once, or you can use the SetDelegates
   function in Client.pm to do it for you:
 
     my $Client = new Net::Jabber::Client();
     $Client->AddDelegate(namespace=>"blah:blah",
-			 parent=>"Net::Jabber::X",
+			 parent=>"Net::Jabber::Data",
 			 delegate=>"Blah::Blah");
     
   or
 
     my $Transport = new Net::Jabber::Transport();
     $Transport->AddDelegate(namespace=>"blah:blah",
-			    parent=>"Net::Jabber::X",
+			    parent=>"Net::Jabber::Data",
 			    delegate=>"Blah::Blah");
-    
+
   Once you have the delegate registered you need to define the access
   functions.  Here is a an example module:
 
@@ -157,18 +159,18 @@ Net::Jabber::X - Jabber X Module
       shift;
       my $self = shift;
       my ($blah) = @_;
-      return &Net::Jabber::SetXMLData("single",$self->{X},"blah","$blah",{});
+      return &Net::Jabber::SetXMLData("single",$self->{DATA},"blah","$blah",{});
     }
 
     sub GetBlah {
       shift;
       my $self = shift;
-      return &Net::Jabber::GetXMLData("value",$self->{X},"blah","");
+      return &Net::Jabber::GetXMLData("value",$self->{DATA},"blah","");
     }
 
     1;
 
-  Now when you create a new X object and call GetBlah on that object
+  Now when you create a new Data object and call GetBlah on that object
   it will AUTOLOAD the above function and handle the request.
 
 =head1 AUTHOR
@@ -189,29 +191,9 @@ use vars qw($VERSION $AUTOLOAD);
 
 $VERSION = "1.0018";
 
-use Net::Jabber::X::AutoUpdate;
-($Net::Jabber::X::AutoUpdate::VERSION < $VERSION) &&
-  die("Net::Jabber::X::AutoUpdate $VERSION required--this is only version $Net::Jabber::X::AutoUpdate::VERSION");
-
-use Net::Jabber::X::Delay;
-($Net::Jabber::X::Delay::VERSION < $VERSION) &&
-  die("Net::Jabber::X::Delay $VERSION required--this is only version $Net::Jabber::X::Delay::VERSION");
-
-use Net::Jabber::X::GC;
-($Net::Jabber::X::GC::VERSION < $VERSION) &&
-  die("Net::Jabber::X::GC $VERSION required--this is only version $Net::Jabber::X::GC::VERSION");
-
-#use Net::Jabber::X::Ident;
-#($Net::Jabber::X::Ident::VERSION < $VERSION) &&
-#  die("Net::Jabber::X::Ident $VERSION required--this is only version $Net::Jabber::X::Ident::VERSION");
-
-use Net::Jabber::X::Oob;
-($Net::Jabber::X::Oob::VERSION < $VERSION) &&
-  die("Net::Jabber::X::Oob $VERSION required--this is only version $Net::Jabber::X::Oob::VERSION");
-
-use Net::Jabber::X::Roster;
-($Net::Jabber::X::Roster::VERSION < $VERSION) &&
-  die("Net::Jabber::X::Roster $VERSION required--this is only version $Net::Jabber::X::Roster::VERSION");
+use Net::Jabber::Data::Auth;
+($Net::Jabber::Data::Auth::VERSION < $VERSION) &&
+  die("Net::Jabber::Data::Auth $VERSION required--this is only version $Net::Jabber::Data::Auth::VERSION");
 
 sub new {
   my $proto = shift;
@@ -224,10 +206,10 @@ sub new {
 
   if ("@_" ne ("")) {
     my @temp = @_;
-    $self->{X} = \@temp;
+    $self->{DATA} = \@temp;
     $self->GetDelegate();
   } else {
-    $self->{X} = [ "x" , [{}]];
+    $self->{DATA} = [ "data" , [{}]];
   }
 
   return $self;
@@ -258,20 +240,20 @@ sub GetDelegate {
   my $self = shift;
   my $xmlns = $self->GetXMLNS();
   return if $xmlns eq "";
-  if (exists($Net::Jabber::DELEGATES{x}->{$xmlns})) {
-    eval("\$self->{DELEGATE} = new ".$Net::Jabber::DELEGATES{x}->{$xmlns}->{delegate}."()");
+  if (exists($Net::Jabber::DELEGATES{data}->{$xmlns})) {
+    eval("\$self->{DELEGATE} = new ".$Net::Jabber::DELEGATES{data}->{$xmlns}->{delegate}."()");
   }
 }
 
 
 ##############################################################################
 #
-# GetXMLS - returns the namespace of the <x/>
+# GetXMLS - returns the namespace of the data in the <xdb/>
 #
 ##############################################################################
 sub GetXMLNS {
   my $self = shift;
-  return &Net::Jabber::GetXMLData("value",$self->{X},"","xmlns");  
+  return &Net::Jabber::GetXMLData("value",$self->{DATA},"","xmlns");
 }
 
 
@@ -284,8 +266,10 @@ sub GetXMLNS {
 sub GetXML {
   my $self = shift;
   $self->MergeItems() if (exists($self->{ITEMS}));
-  $self->MergeGraphics() if (exists($self->{WHITEBOARD}));
-  return &Net::Jabber::BuildXML(@{$self->{X}});
+  $self->MergeAgents() if (exists($self->{AGENTS}));
+  $self->MergeReleases() if (exists($self->{RELEASES}));
+  $self->MergeRules() if (exists($self->{RULES}));
+  return &Net::Jabber::BuildXML(@{$self->{DATA}});
 }
 
 
@@ -298,21 +282,22 @@ sub GetXML {
 sub GetTree {
   my $self = shift;
   $self->MergeItems() if (exists($self->{ITEMS}));
-  $self->MergeGraphics() if (exists($self->{WHITEBOARD}));
-  return @{$self->{X}};
+  $self->MergeAgents() if (exists($self->{AGENTS}));
+  $self->MergeReleases() if (exists($self->{RELEASES}));
+  $self->MergeRules() if (exists($self->{RULES}));
+  return @{$self->{DATA}};
 }
 
 
 ##############################################################################
 #
-# SetXMLS - sets the namespace of the <x/>
+# SetXMLS - sets the namespace of the <data/>
 #
 ##############################################################################
 sub SetXMLNS {
   my $self = shift;
   my ($xmlns) = @_;
-  
-  &Net::Jabber::SetXMLData("single",$self->{X},"","",{"xmlns"=>$xmlns});
+  &Net::Jabber::SetXMLData("single",$self->{DATA},"","",{"xmlns"=>$xmlns});
   $self->GetDelegate();
 }
 
@@ -324,11 +309,13 @@ sub SetXMLNS {
 ##############################################################################
 sub debug {
   my $self = shift;
-  $self->MergeItems() if (exists($self->{ITEMS}));
-  $self->MergeGraphics() if (exists($self->{WHITEBOARD}));
 
-  print "debug X: $self\n";
-  &Net::Jabber::printData("debug: \$self->{X}->",$self->{X});
+  print "debug Data: $self\n";
+  $self->MergeItems() if (exists($self->{ITEMS}));
+  $self->MergeAgents() if (exists($self->{AGENTS}));
+  $self->MergeReleases() if (exists($self->{RELEASES}));
+  $self->MergeRules() if (exists($self->{RULES}));
+  &Net::Jabber::printData("debug: \$self->{DATA}->",$self->{DATA});
 }
 
 1;

@@ -20,29 +20,29 @@
 #
 ##############################################################################
 
-package Net::Jabber::Query::Auth;
+package Net::Jabber::Data::Auth;
 
 =head1 NAME
 
-Net::Jabber::Query::Auth - Jabber IQ Authentication Module
+Net::Jabber::Data::Auth - Jabber XDB Authentication Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::Query::Auth is a companion to the Net::Jabber::Query module.
+  Net::Jabber::Data::Auth is a companion to the Net::Jabber::Data module.
   It provides the user a simple interface to set and retrieve all parts
-  of a Jabber Authentication query.
+  of a Jabber Authentication data.
 
 =head1 DESCRIPTION
 
-  To initialize the Query with a Jabber <iq/> and then access the auth
-  query you must pass it the XML::Parser Tree array from the 
-  Net::Jabber::Client module.  In the callback function for the iq:
+  To initialize the Data with a Jabber <xdb/> and then access the auth
+  data you must pass it the XML::Parser Tree array from the 
+  Net::Jabber::Client module.  In the callback function for the xdb:
 
     use Net::Jabber;
 
-    sub iqCB {
-      my $iq = new Net::Jabber::IQ(@_);
-      my $auth = $iq->GetQuery();
+    sub xdbCB {
+      my $xdb = new Net::Jabber::XDB(@_);
+      my $auth = $xdb->GetData();
       .
       .
       .
@@ -50,18 +50,18 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
 
   You now have access to all of the retrieval functions available.
 
-  To create a new Query auth to send to the server:
+  To create a new Data auth to send to the server:
 
     use Net::Jabber;
 
     $client = new Net::Jabber::Client();
     ...
 
-    $iq = new Net::Jabber::IQ();
-    $auth = $iq->NewQuery("jabber:iq:auth");
+    $xdb = new Net::Jabber::XDB();
+    $auth = $xdb->NewData("jabber:xdb:auth");
     ...
 
-    $client->Send($iq);
+    $client->Send($xdb);
 
   Using $auth you can call the creation functions below to populate the 
   tag before sending it.
@@ -99,23 +99,23 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
 
 =head2 Retrieval functions
 
-  GetUsername() - returns a string with the username in the <query/>.
+  GetUsername() - returns a string with the username in the <data/>.
 
-  GetPassword() - returns a string with the password in the <query/>.
+  GetPassword() - returns a string with the password in the <data/>.
 
-  GetDigest() - returns a string with the SHA-1 digest in the <query/>.
+  GetDigest() - returns a string with the SHA-1 digest in the <data/>.
 
-  GetResource() - returns a string with the resource in the <query/>.
+  GetResource() - returns a string with the resource in the <data/>.
 
 =head2 Creation functions
 
-  SetAuth(username=>string, - set multiple fields in the <iq/> at one
+  SetAuth(username=>string, - set multiple fields in the <xdb/> at one
           password=>string,   time.  This is a cumulative and over
           digest=>string,     writing action.  If you set the "username" 
           resource=>string)   twice, the second setting is what is
                               used.  If you set the password, and then
                               set the resource then both will be in the
-                              <query/> tag.  For valid settings read 
+                              <data/> tag.  For valid settings read 
                               the specific Set functions below.
 
   SetUsername(string) - sets the username for the account you are
@@ -136,16 +136,16 @@ Net::Jabber::Query::Auth - Jabber IQ Authentication Module
 
 =head2 Test functions
 
-  DefinedUsername() - returns 1 if <username/> exists in the <iq/>,
+  DefinedUsername() - returns 1 if <username/> exists in the <xdb/>,
                       0 otherwise.
 
-  DefinedPassword() - returns 1 if <password/> exists in the <iq/>,
+  DefinedPassword() - returns 1 if <password/> exists in the <xdb/>,
                       0 otherwise.
 
-  DefinedDigest() - returns 1 if <digest/> exists in the <iq/>,
+  DefinedDigest() - returns 1 if <digest/> exists in the <xdb/>,
                     0 otherwise.
 
-  DefinedResource() - returns 1 if <resource/> exists in the <iq/>,
+  DefinedResource() - returns 1 if <resource/> exists in the <xdb/>,
                       0 otherwise.
 
 
@@ -193,7 +193,7 @@ sub AUTOLOAD {
   $AUTOLOAD =~ s/^.*:://;
   my ($type,$value) = ($AUTOLOAD =~ /^(Get|Set|Defined)(.*)$/);
   $type = "" unless defined($type);
-  my $treeName = "QUERY";
+  my $treeName = "DATA";
 
   return &Net::Jabber::Get($parent,$self,$value,$treeName,$FUNCTIONS{get}->{$value},@_) if ($type eq "Get");
   return &Net::Jabber::Set($parent,$self,$value,$treeName,$FUNCTIONS{set}->{$value},@_) if ($type eq "Set");
@@ -220,7 +220,7 @@ $FUNCTIONS{defined}->{Digest}   = ["existence","digest",""];
 
 ##############################################################################
 #
-# SetAuth - takes a hash of all of the things you can set on an auth <query/>
+# SetAuth - takes a hash of all of the things you can set on an auth <data/>
 #           and sets each one.
 #
 ##############################################################################

@@ -1,5 +1,6 @@
 CHANGES
 README
+LICENSE.LGPL
 MANIFEST
 MANIFEST.SKIP
 Makefile.PL
@@ -10,12 +11,17 @@ Jabber.pm
 Jabber/Debug.pm
 Jabber/Client.pm
 Jabber/Transport.pm
+Jabber/Component.pm
 Jabber/Protocol.pm
 Jabber/Key.pm
 Jabber/JID.pm
 Jabber/Message.pm
 Jabber/Presence.pm
 Jabber/IQ.pm
+Jabber/XDB.pm
+Jabber/Log.pm
+Jabber/Data.pm
+Jabber/Data/Auth.pm
 Jabber/Query.pm
 Jabber/Query/Agent.pm
 Jabber/Query/Agents.pm

@@ -17,6 +17,10 @@ WriteMakefile(
 			      'Jabber/Message.pm' => '$(INST_LIBDIR)/Jabber/Message.pm',
 			      'Jabber/Presence.pm' => '$(INST_LIBDIR)/Jabber/Presence.pm',
 			      'Jabber/IQ.pm' => '$(INST_LIBDIR)/Jabber/IQ.pm',
+			      'Jabber/XDB.pm' => '$(INST_LIBDIR)/Jabber/XDB.pm',
+			      'Jabber/Log.pm' => '$(INST_LIBDIR)/Jabber/Log.pm',
+			      'Jabber/Data.pm' => '$(INST_LIBDIR)/Jabber/Data.pm',
+			      'Jabber/Data/Auth.pm' => '$(INST_LIBDIR)/Jabber/Data/Auth.pm',
 			      'Jabber/Query.pm' => '$(INST_LIBDIR)/Jabber/Query.pm',
 			      'Jabber/Query/Agent.pm' => '$(INST_LIBDIR)/Jabber/Query/Agent.pm',
 			      'Jabber/Query/Agents.pm' => '$(INST_LIBDIR)/Jabber/Query/Agents.pm',
@@ -44,8 +48,8 @@ WriteMakefile(
 			      'Jabber/X/Roster/Item.pm' => '$(INST_LIBDIR)/Jabber/X/Roster/Item.pm',
 			     },
 	      'PREREQ_PM' => {
-			      'XML::Stream' => 1.05
+			      'XML::Stream' => 1.08
 			     },
-	      'VERSION' => '1.0017',
+	      'VERSION' => '1.0018',
 	      'dist' => { 'COMPRESS' => 'gzip --best' }
 	     );

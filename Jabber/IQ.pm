@@ -1,3 +1,25 @@
+##############################################################################
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Library General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Library General Public License for more details.
+#
+#  You should have received a copy of the GNU Library General Public
+#  License along with this library; if not, write to the
+#  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+#  Boston, MA  02111-1307, USA.
+#
+#  Jabber
+#  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
+#
+##############################################################################
+
 package Net::Jabber::IQ;
 
 =head1 NAME
@@ -7,7 +29,7 @@ Net::Jabber::IQ - Jabber Info/Query Library
 =head1 SYNOPSIS
 
   Net::Jabber::IQ is a companion to the Net::Jabber module. It
-  provides the user a simple interface to set and retrieve all 
+  provides the user a simple interface to set and retrieve all {iq}->
   parts of a Jabber IQ.
 
 =head1 DESCRIPTION
@@ -66,10 +88,10 @@ Net::Jabber::IQ - Jabber Info/Query Library
     $errorCode  = $IQ->GetErrorCode();
 
     $queryTag   = $IQ->GetQuery();
-    $qureyTree  = $IQ->GetQueryTree();
+    $queryTree  = $IQ->GetQueryTree();
 
-    $str       = $IQ->GetXML();
-    @iq        = $IQ->GetTree();
+    $str        = $IQ->GetXML();
+    @iq         = $IQ->GetTree();
 
 =head2 Creation functions
 
@@ -211,8 +233,9 @@ Net::Jabber::IQ - Jabber Info/Query Library
 
   SetType(string) - sets the type attribute.  Valid settings are:
 
-                    get     request information
-                    set     set information
+                    get      request information
+                    set      set information
+                    result   results of a get
 
   SetErrorCode(string) - sets the error code of the <iq/>.
  
@@ -289,7 +312,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0017";
+$VERSION = "1.0018";
 
 sub new {
   my $proto = shift;
@@ -309,7 +332,7 @@ sub new {
     my @temp = @_;
     $self->{IQ} = \@temp;
     my $xmlns = $self->GetQueryXMLNS();
-    if (exists($Net::Jabber::DELEGATES{$xmlns})) {
+    if (exists($Net::Jabber::DELEGATES{query}->{$xmlns})) {
       my @queryTree = $self->GetQueryTree();
       $self->SetQuery($xmlns,@queryTree) if ($xmlns ne "");
     }
@@ -530,7 +553,7 @@ sub SetSFrom {
 sub NewQuery {
   my $self = shift;
   my ($xmlns) = @_;
-  return if !exists($Net::Jabber::DELEGATES{$xmlns});
+  return if !exists($Net::Jabber::DELEGATES{query}->{$xmlns});
   my $query = $self->SetQuery($xmlns);
   $query->SetXMLNS($xmlns) if $xmlns ne "";
   return $query;
@@ -547,9 +570,9 @@ sub NewQuery {
 sub SetQuery {
   my $self = shift;
   my ($xmlns,@queryTree) = @_;
-  return if !exists($Net::Jabber::DELEGATES{$xmlns});
+  return if !exists($Net::Jabber::DELEGATES{query}->{$xmlns});
   $self->{DEBUG}->Log2("SetQuery: xmlns($xmlns) tree(",\@queryTree,")");
-  eval("\$self->{QUERY} = new ".$Net::Jabber::DELEGATES{$xmlns}->{parent}."(\@queryTree);");
+  eval("\$self->{QUERY} = new ".$Net::Jabber::DELEGATES{query}->{$xmlns}->{parent}."(\@queryTree);");
   $self->{DEBUG}->Log2("SetQuery: return($self->{QUERY})");
   return $self->{QUERY};
 }

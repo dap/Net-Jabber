@@ -1,3 +1,13 @@
+1.0018
+======
+  - Changed the WaitForID function to be Process() instead of
+    Process(0).
+  - Fixed bug in RosterGet where I might get an undefined value and
+    I wasn't checking for it.
+  - Fixed bug in PresenceDBQuery in Protocol.pm.  A hash value was
+    being accessed and causing the Presence DB to become tainted.
+  - Added boiler plate comments for the LGPL.
+
 1.0017
 ======
   - Deprecating Transport.pm.  It will cease to exist in the near

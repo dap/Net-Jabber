@@ -1,3 +1,25 @@
+##############################################################################
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Library General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Library General Public License for more details.
+#
+#  You should have received a copy of the GNU Library General Public
+#  License along with this library; if not, write to the
+#  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+#  Boston, MA  02111-1307, USA.
+#
+#  Jabber
+#  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
+#
+##############################################################################
+
 package Net::Jabber;
 
 =head1 NAME
@@ -148,7 +170,7 @@ if ($] >= 5.006) {
 }
 
 
-$VERSION = "1.0017";
+$VERSION = "1.0018";
 
 use Net::Jabber::Debug;
 ($Net::Jabber::JID::VERSION < $VERSION) &&
@@ -166,6 +188,10 @@ use Net::Jabber::Query;
 ($Net::Jabber::Query::VERSION < $VERSION) &&
   die("Net::Jabber::Query $VERSION required--this is only version $Net::Jabber::Query::VERSION");
 
+use Net::Jabber::Data;
+($Net::Jabber::Data::VERSION < $VERSION) &&
+  die("Net::Jabber::Data $VERSION required--this is only version $Net::Jabber::Data::VERSION");
+
 use Net::Jabber::Message;
 ($Net::Jabber::Message::VERSION < $VERSION) &&
   die("Net::Jabber::Message $VERSION required--this is only version $Net::Jabber::Message::VERSION");
@@ -173,6 +199,14 @@ use Net::Jabber::Message;
 use Net::Jabber::IQ;
 ($Net::Jabber::IQ::VERSION < $VERSION) &&
   die("Net::Jabber::IQ $VERSION required--this is only version $Net::Jabber::IQ::VERSION");
+
+use Net::Jabber::XDB;
+($Net::Jabber::XDB::VERSION < $VERSION) &&
+  die("Net::Jabber::XDB $VERSION required--this is only version $Net::Jabber::XDB::VERSION");
+
+#use Net::Jabber::Log;
+#($Net::Jabber::Log::VERSION < $VERSION) &&
+#  die("Net::Jabber::Log $VERSION required--this is only version $Net::Jabber::Log::VERSION");
 
 use Net::Jabber::Presence;
 ($Net::Jabber::Presence::VERSION < $VERSION) &&
@@ -196,45 +230,46 @@ use Net::Jabber::Component;
 # NameSpace delegates
 #
 ##############################################################################
-$DELEGATES{'jabber:iq:agent'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:agent'}->{delegate} = "Net::Jabber::Query::Agent";
-$DELEGATES{'jabber:iq:agents'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:agents'}->{delegate} = "Net::Jabber::Query::Agents";
-$DELEGATES{'jabber:iq:auth'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:auth'}->{delegate} = "Net::Jabber::Query::Auth";
-$DELEGATES{'jabber:iq:autoupdate'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:autoupdate'}->{delegate} = "Net::Jabber::Query::AutoUpdate";
-$DELEGATES{'jabber:iq:filter'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:filter'}->{delegate} = "Net::Jabber::Query::Filter";
-$DELEGATES{'jabber:iq:fneg'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:fneg'}->{delegate} = "Net::Jabber::Query::Fneg";
-$DELEGATES{'jabber:iq:oob'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:oob'}->{delegate} = "Net::Jabber::Query::Oob";
-$DELEGATES{'jabber:iq:register'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:register'}->{delegate} = "Net::Jabber::Query::Register";
-$DELEGATES{'jabber:iq:roster'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:roster'}->{delegate} = "Net::Jabber::Query::Roster";
-$DELEGATES{'jabber:iq:search'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:search'}->{delegate} = "Net::Jabber::Query::Search";
-$DELEGATES{'jabber:iq:time'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:time'}->{delegate} = "Net::Jabber::Query::Time";
-$DELEGATES{'jabber:iq:version'}->{parent} = "Net::Jabber::Query";
-$DELEGATES{'jabber:iq:version'}->{delegate} = "Net::Jabber::Query::Version";
+$DELEGATES{query}->{'jabber:iq:agent'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:agent'}->{delegate} = "Net::Jabber::Query::Agent";
+$DELEGATES{query}->{'jabber:iq:agents'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:agents'}->{delegate} = "Net::Jabber::Query::Agents";
+$DELEGATES{query}->{'jabber:iq:auth'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:auth'}->{delegate} = "Net::Jabber::Query::Auth";
+$DELEGATES{query}->{'jabber:iq:autoupdate'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:autoupdate'}->{delegate} = "Net::Jabber::Query::AutoUpdate";
+$DELEGATES{query}->{'jabber:iq:filter'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:filter'}->{delegate} = "Net::Jabber::Query::Filter";
+$DELEGATES{query}->{'jabber:iq:fneg'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:fneg'}->{delegate} = "Net::Jabber::Query::Fneg";
+$DELEGATES{query}->{'jabber:iq:oob'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:oob'}->{delegate} = "Net::Jabber::Query::Oob";
+$DELEGATES{query}->{'jabber:iq:register'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:register'}->{delegate} = "Net::Jabber::Query::Register";
+$DELEGATES{query}->{'jabber:iq:roster'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:roster'}->{delegate} = "Net::Jabber::Query::Roster";
+$DELEGATES{query}->{'jabber:iq:search'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:search'}->{delegate} = "Net::Jabber::Query::Search";
+$DELEGATES{query}->{'jabber:iq:time'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:time'}->{delegate} = "Net::Jabber::Query::Time";
+$DELEGATES{query}->{'jabber:iq:version'}->{parent} = "Net::Jabber::Query";
+$DELEGATES{query}->{'jabber:iq:version'}->{delegate} = "Net::Jabber::Query::Version";
 
-$DELEGATES{'jabber:x:autoupdate'}->{parent} = "Net::Jabber::X";
-$DELEGATES{'jabber:x:autoupdate'}->{delegate} = "Net::Jabber::X::AutoUpdate";
-$DELEGATES{'jabber:x:delay'}->{parent} = "Net::Jabber::X";
-$DELEGATES{'jabber:x:delay'}->{delegate} = "Net::Jabber::X::Delay";
-$DELEGATES{'jabber:x:gc'}->{parent} = "Net::Jabber::X";
-$DELEGATES{'jabber:x:gc'}->{delegate} = "Net::Jabber::X::GC";
-#$DELEGATES{'jabber:x:ident'}->{parent} = "Net::Jabber::X";
-#$DELEGATES{'jabber:x:ident'}->{delegate} = "Net::Jabber::X::Ident";
-$DELEGATES{'jabber:x:oob'}->{parent}   = "Net::Jabber::X";
-$DELEGATES{'jabber:x:oob'}->{delegate}   = "Net::Jabber::X::Oob";
-$DELEGATES{'jabber:x:roster'}->{parent}   = "Net::Jabber::X";
-$DELEGATES{'jabber:x:roster'}->{delegate}  = "Net::Jabber::X::Roster";
-$DELEGATES{'jabber:x:whiteboard'}->{parent}   = "Net::Jabber::X";
-$DELEGATES{'jabber:x:whiteboard'}->{delegate}  = "Net::Jabber::X::WhiteBoard";
+$DELEGATES{x}->{'jabber:x:autoupdate'}->{parent} = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:autoupdate'}->{delegate} = "Net::Jabber::X::AutoUpdate";
+$DELEGATES{x}->{'jabber:x:delay'}->{parent} = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:delay'}->{delegate} = "Net::Jabber::X::Delay";
+$DELEGATES{x}->{'jabber:x:gc'}->{parent} = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:gc'}->{delegate} = "Net::Jabber::X::GC";
+#$DELEGATES{x}->{'jabber:x:ident'}->{parent} = "Net::Jabber::X";
+#$DELEGATES{x}->{'jabber:x:ident'}->{delegate} = "Net::Jabber::X::Ident";
+$DELEGATES{x}->{'jabber:x:oob'}->{parent}   = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:oob'}->{delegate}   = "Net::Jabber::X::Oob";
+$DELEGATES{x}->{'jabber:x:roster'}->{parent}   = "Net::Jabber::X";
+$DELEGATES{x}->{'jabber:x:roster'}->{delegate}  = "Net::Jabber::X::Roster";
+
+$DELEGATES{xdb}->{'jabber:iq:auth'}->{parent} = "Net::Jabber::Data";
+$DELEGATES{xdb}->{'jabber:iq:auth'}->{delegate} = "Net::Jabber::Data::Auth";
 
 
 

@@ -1,3 +1,25 @@
+##############################################################################
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Library General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Library General Public License for more details.
+#
+#  You should have received a copy of the GNU Library General Public
+#  License along with this library; if not, write to the
+#  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+#  Boston, MA  02111-1307, USA.
+#
+#  Jabber
+#  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
+#
+##############################################################################
+
 package Net::Jabber::Message;
 
 =head1 NAME
@@ -364,7 +386,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.0017";
+$VERSION = "1.0018";
 
 sub new {
   my $proto = shift;
@@ -385,7 +407,7 @@ sub new {
     my $xTree;
     foreach $xTree ($self->GetXTrees()) {
       my $xmlns = &Net::Jabber::GetXMLData("value",$xTree,"","xmlns");
-      next if !exists($Net::Jabber::DELEGATES{$xmlns});
+      next if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
       $self->AddX($xmlns,@{$xTree});
     }
   } else {
@@ -712,7 +734,7 @@ sub AddTree {
 sub NewX {
   my $self = shift;
   my ($xmlns) = @_;
-  return if !exists($Net::Jabber::DELEGATES{$xmlns});
+  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
   my $xTag = $self->AddX($xmlns);
   $xTag->SetXMLNS($xmlns) if $xmlns ne "";
   return $xTag;
@@ -729,10 +751,10 @@ sub NewX {
 sub AddX {
   my $self = shift;
   my ($xmlns,@xTree) = @_;
-  return if !exists($Net::Jabber::DELEGATES{$xmlns});
+  return if !exists($Net::Jabber::DELEGATES{x}->{$xmlns});
   $self->{DEBUG}->Log2("AddX: xmlns($xmlns) xTree(",\@xTree,")");
   my $xTag;
-  eval("\$xTag = new ".$Net::Jabber::DELEGATES{$xmlns}->{parent}."(\@xTree);");
+  eval("\$xTag = new ".$Net::Jabber::DELEGATES{x}->{$xmlns}->{parent}."(\@xTree);");
   $self->{DEBUG}->Log2("AddX: xTag(",$xTag,")");
   push(@{$self->{XTAGS}},$xTag);
   return $xTag;
@@ -778,7 +800,7 @@ sub MergeX {
     if ((ref($self->{MESSAGE}->[1]->[($i+1)]) eq "ARRAY") &&
 	exists($self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns})) {
       $self->{DEBUG}->Log2("MergeX: found a namespace xmlns(",$self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns},")");
-      next if !exists($Net::Jabber::DELEGATES{$self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns}});
+      next if !exists($Net::Jabber::DELEGATES{x}->{$self->{MESSAGE}->[1]->[($i+1)]->[0]->{xmlns}});
       $self->{DEBUG}->Log2("MergeX: merge index($i)");
       my $xTag = pop(@xTags);
       $self->{DEBUG}->Log2("MergeX: merge xTag($xTag)");

@@ -1,3 +1,25 @@
+##############################################################################
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Library General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Library General Public License for more details.
+#
+#  You should have received a copy of the GNU Library General Public
+#  License along with this library; if not, write to the
+#  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+#  Boston, MA  02111-1307, USA.
+#
+#  Jabber
+#  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
+#
+##############################################################################
+
 package Net::Jabber::Protocol;
 
 =head1 NAME
@@ -73,12 +95,14 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 Namespace Functions
 
-    $Con->AddDelegate(namespace=>"foo::bar",
+    $Con->AddDelegate(parentttype=>"query",
+                      namespace=>"foo::bar",
                       parent=>"Foo::Bar");
 
-    $Con->AddDelegate(namespace=>"foo::bar::bob",
-                      parent=>"Foo::Bar",
-                      delegate=>"Foo::Bar::Bob");
+    $Con->AddDelegate(parenttype=>"x",
+		      namespace=>"foo::bar::bob",
+		      parent=>"Foo::Bar",
+		      delegate=>"Foo::Bar::Bob");
 
 =head2 Message Functions
 
@@ -269,10 +293,10 @@ Net::Jabber::Protocol - Jabber Protocol Library
 
 =head2 Namespace Functions
 
-    AddNamespace(namespace=>string, - this tells the Net::Jabber modules
-                 parent=>string,      about the new namespace.  The
-                 delegate=>string)    namespaces determines how the xmlns
-                                      looks in the tag.  The parent is
+    AddDelegate(parenttype=>string, - this tells the Net::Jabber modules
+                namespace=>string,    about the new namespace.  The
+                parent=>string,       namespaces determines how the xmlns
+                delegate=>string)     looks in the tag.  The parent is
                                       the name of the module to create
                                       when you use this namespace.  The
                                       delegate is only needed if the
@@ -281,7 +305,20 @@ Net::Jabber::Protocol - Jabber Protocol Library
                                       (like the Net::Jabber::IQ and
                                       Net::Jabber::X modules do).  The
                                       delegate must be a valid Perl
-                                      Module.
+                                      Module.  The parenttype specifies
+                                      the type of namespace this is in 
+                                      the Jabber world.  (Added to allow
+                                      namespaces to be reused between
+                                      Query, X, and Data.)  The current
+                                      valid settings for parenttype are:
+                                        query     for <iq/> queries
+                                        x         for <x/> packets
+                                        data      for <xdb/> data
+                                      The way to determine which one
+                                      to use is figure out which one
+                                      of the above best fits the mode
+                                      that you are using this namespace
+                                      in.
 
 =head2 Message Functions
 
@@ -530,7 +567,7 @@ it under the same terms as Perl itself.
 use strict;
 use vars qw($VERSION);
 
-$VERSION = "1.0017";
+$VERSION = "1.0018";
 
 sub new {
   my $proto = shift;
@@ -814,7 +851,7 @@ sub WaitForID {
   my ($id) = @_;
   
   while(!$self->ReceivedID($id)) {
-    return undef unless (defined($self->Process(0)));
+    return undef unless (defined($self->Process()));
   }
   return $self->GetID($id);
 }
@@ -892,8 +929,15 @@ sub AddDelegate {
   my %delegates;
   while($#_ >= 0) { $delegates{ lc pop(@_) } = pop(@_); }
 
-  $Net::Jabber::DELEGATES{$delegates{namespace}}->{parent} = $delegates{parent};
-  $Net::Jabber::DELEGATES{$delegates{namespace}}->{delegate} = $delegates{delegate};
+  croak("You must specify parenttype=>'' for the function call to AddDelegate")
+    if !exists($delegates{parenttype});
+  croak("You must specify namespace=>'' for the function call to AddDelegate")
+    if !exists($delegates{namespace});
+  croak("You must specify parent=>'' for the function call to AddDelegate")
+    if !exists($delegates{parent});
+
+  $Net::Jabber::DELEGATES{$delegates{parenttype}}->{$delegates{namespace}}->{parent} = $delegates{parent};
+  $Net::Jabber::DELEGATES{$delegates{parenttype}}->{$delegates{namespace}}->{delegate} = $delegates{delegate};
 }
 
 
@@ -944,10 +988,8 @@ sub PresenceDBParse {
 
     my $oldPriority = $self->{PRESENCEDB}->{$fromID}->{resources}->{$resource};
 
-
     my $loc;
-    my $index;
-    foreach $index (0..$#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}}) {
+    foreach my $index (0..$#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}}) {
       $loc = $index
 	if ($self->{PRESENCEDB}->{$fromID}->{priorities}->{$oldPriority}->[$index]->{resource} eq $resource);
     }
@@ -961,11 +1003,9 @@ sub PresenceDBParse {
     $self->{DEBUG}->Log1("PresenceDBParse: remove ",$fromJID->GetJID("full")," from the DB"); 
   }
 
-
   if (($type eq "") || ($type eq "available")) {
     my $loc = -1;
-    my $index;
-    foreach $index (0..$#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$priority}}) {
+    foreach my $index (0..$#{$self->{PRESENCEDB}->{$fromID}->{priorities}->{$priority}}) {
       $loc = $index
 	if ($self->{PRESENCEDB}->{$fromID}->{priorities}->{$priority}->[$index]->{resource} eq $resource);
     }
@@ -1017,6 +1057,7 @@ sub PresenceDBQuery {
 
   if (ref($jid) eq "Net::Jabber::JID") {
     return if !exists($self->{PRESENCEDB}->{$jid->GetJID()});
+    return if (scalar(keys(%{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}})) == 0);
 
     my $highPriority = 
       (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}}))[0];
@@ -1024,6 +1065,7 @@ sub PresenceDBQuery {
     return $self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$highPriority}->[0]->{presence};
   } else {
     return if !exists($self->{PRESENCEDB}->{$jid});
+    return if (scalar(keys(%{$self->{PRESENCEDB}->{$jid}->{priorities}})) == 0);
 
     my $highPriority = 
       (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid}->{priorities}}))[0];
@@ -1049,10 +1091,8 @@ sub PresenceDBResources {
   if (ref($jid) eq "Net::Jabber::JID") {
     return if !exists($self->{PRESENCEDB}->{$jid->GetJID()});
 
-    my $priority;
-    foreach $priority (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}})) {
-      my $index;
-      foreach $index (0..$#{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}}) {
+    foreach my $priority (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}})) {
+      foreach my $index (0..$#{$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}}) {
 	next if ($self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}->[$index]->{resource} eq " ");
 	push(@resources,$self->{PRESENCEDB}->{$jid->GetJID()}->{priorities}->{$priority}->[$index]->{resource});
       }	
@@ -1060,10 +1100,8 @@ sub PresenceDBResources {
   } else {
     return if !exists($self->{PRESENCEDB}->{$jid});
 
-    my $priority;
-    foreach $priority (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid}->{priorities}})) {
-      my $index;
-      foreach $index (0..$#{$self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}}) {
+    foreach my $priority (sort {$b cmp $a} keys(%{$self->{PRESENCEDB}->{$jid}->{priorities}})) {
+      foreach my $index (0..$#{$self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}}) {
 	next if ($self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}->[$index]->{resource} eq " ");
 	push(@resources,$self->{PRESENCEDB}->{$jid}->{priorities}->{$priority}->[$index]->{resource});
       }	
@@ -1145,9 +1183,8 @@ sub AgentsGet {
   my @agents = $query->GetAgents();
 
   my %agents;
-  my $agent;
   my $count = 0;
-  foreach $agent (@agents) {
+  foreach my $agent (@agents) {
     my $jid = $agent->GetJID();
     $agents{$jid}->{name} = $agent->GetName();
     $agents{$jid}->{description} = $agent->GetDescription();
@@ -1365,8 +1402,7 @@ sub RosterParse {
   my @items = $query->GetItems();
 
   my %roster;
-  my $item;
-  foreach $item (@items) {
+  foreach my $item (@items) {
     my $jid = $item->GetJID();
     $roster{$jid}->{name} = $item->GetName();
     $roster{$jid}->{subscription} = $item->GetSubscription();
@@ -1393,6 +1429,8 @@ sub RosterGet {
   my $query = $iq->NewQuery("jabber:iq:roster");
 
   $iq = $self->SendAndReceiveWithID($iq);
+
+  return unless defined($iq);
 
   return $self->RosterParse($iq);
 }

@@ -1,3 +1,25 @@
+##############################################################################
+#
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Library General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  Library General Public License for more details.
+#
+#  You should have received a copy of the GNU Library General Public
+#  License along with this library; if not, write to the
+#  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+#  Boston, MA  02111-1307, USA.
+#
+#  Jabber
+#  Copyright (C) 1998-1999 The Jabber Team http://jabber.org/
+#
+##############################################################################
+
 package Net::Jabber::Query;
 
 =head1 NAME
@@ -167,7 +189,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD);
 
-$VERSION = "1.0017";
+$VERSION = "1.0018";
 
 use Net::Jabber::Query::Agent;
 ($Net::Jabber::Query::Agent::VERSION < $VERSION) &&
@@ -262,8 +284,8 @@ sub GetDelegate {
   my $self = shift;
   my $xmlns = $self->GetXMLNS();
   return if $xmlns eq "";
-  if (exists($Net::Jabber::DELEGATES{$xmlns})) {
-    eval("\$self->{DELEGATE} = new ".$Net::Jabber::DELEGATES{$xmlns}->{delegate}."()");
+  if (exists($Net::Jabber::DELEGATES{query}->{$xmlns})) {
+    eval("\$self->{DELEGATE} = new ".$Net::Jabber::DELEGATES{query}->{$xmlns}->{delegate}."()");
   }
 }
 
