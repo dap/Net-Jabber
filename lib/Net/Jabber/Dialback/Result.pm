@@ -20,27 +20,27 @@
 #
 ##############################################################################
 
-package Net::Jabber::Dialback::Verify;
+package Net::Jabber::Dialback::Result;
 
 =head1 NAME
 
-Net::Jabber::Dialback::Verify - Jabber Dialback Verify Module
+Net::Jabber::Dialback::Result - Jabber Dialback Result Module
 
 =head1 SYNOPSIS
 
-  Net::Jabber::Dialback::Verify is a companion to the Net::Jabber::Dialback
+  Net::Jabber::Dialback::Result is a companion to the Net::Jabber::Dialback
   module.  It provides the user a simple interface to set and retrieve all
-  parts of a Jabber Dialback Verify.
+  parts of a Jabber Dialback Result.
 
 =head1 DESCRIPTION
 
-  To initialize the Verify with a Jabber <db:*/> you must pass it
+  To initialize the Result with a Jabber <db:*/> you must pass it
   the XML::Stream hash.  For example:
 
-    my $dialback = new Net::Jabber::Dialback::Verify(%hash);
+    my $dialback = new Net::Jabber::Dialback::Result(%hash);
 
   There has been a change from the old way of handling the callbacks.
-  You no longer have to do the above yourself, a NJ::Dialback::Verify
+  You no longer have to do the above yourself, a NJ::Dialback::Result
   object is passed to the callback function for the message.  Also,
   the first argument to the callback functions is the session ID from
   XML::Streams.  There are some cases where you might want this
@@ -49,8 +49,8 @@ Net::Jabber::Dialback::Verify - Jabber Dialback Verify Module
 
     use Net::Jabber qw(Server);
 
-    sub dialbackVerify {
-      my ($sid,$Verify) = @_;
+    sub dialbackResult {
+      my ($sid,$Result) = @_;
       .
       .
       .
@@ -62,7 +62,7 @@ Net::Jabber::Dialback::Verify - Jabber Dialback Verify Module
 
     use Net::Jabber qw(Server);
 
-    $Verify = new Net::Jabber::Dialback::Verify();
+    $Result = new Net::Jabber::Dialback::Result();
 
   Now you can call the creation functions below to populate the tag before
   sending it.
@@ -72,66 +72,61 @@ Net::Jabber::Dialback::Verify - Jabber Dialback Verify Module
 
 =head2 Retrieval functions
 
-    $to         = $Verify->GetTo();
-    $from       = $Verify->GetFrom();
-    $type       = $Verify->GetType();
-    $id         = $Verify->GetID();
-    $data       = $Verify->GetData();
+    $to         = $Result->GetTo();
+    $from       = $Result->GetFrom();
+    $type       = $Result->GetType();
 
-    $str        = $Verify->GetXML();
-    @dialback   = $Verify->GetTree();
+    $data       = $Result->GetData();
+
+    $str        = $Result->GetXML();
+    @dialback   = $Result->GetTree();
 
 =head2 Creation functions
 
-    $Verify->SetVerify(from=>"jabber.org",
+    $Result->SetResult(from=>"jabber.org",
 		       to=>"jabber.com",
-		       id=>id,
 		       data=>key);
-    $Verify->SetTo("jabber.org");
-    $Verify->SetFrom("jabber.com");
-    $Verify->SetType("valid");
-    $Verify->SetID(id);
-    $Verify->SetData(key);
+    $Result->SetTo("jabber.org");
+    $Result->SetFrom("jabber.com");
+    $Result->SetType("valid");
+    $Result->SetData(key);
 
 =head2 Test functions
 
-    $test = $Verify->DefinedTo();
-    $test = $Verify->DefinedFrom();
-    $test = $Verify->DefinedType();
-    $test = $Verify->DefinedID();
+    $test = $Result->DefinedTo();
+    $test = $Result->DefinedFrom();
+    $test = $Result->DefinedType();
 
 =head1 METHODS
 
 =head2 Retrieval functions
 
-  GetTo() -  returns a string with server that the <db:verify/> is being
+  GetTo() -  returns a string with server that the <db:result/> is being
              sent to.
 
-  GetFrom() -  returns a string with server that the <db:verify/> is being
+  GetFrom() -  returns a string with server that the <db:result/> is being
                sent from.
 
-  GetType() - returns a string with the type <db:verify/> this is.
+  GetType() - returns a string with the type <db:result/> this is.
 
-  GetID() - returns a string with the id <db:verify/> this is.
+  GetData() - returns a string with the cdata of the <db:result/>.
 
-  GetData() - returns a string with the cdata of the <db:verify/>.
-
-  GetXML() - returns the XML string that represents the <db:verify/>.
+  GetXML() - returns the XML string that represents the <db:result/>.
              This is used by the Send() function in Server.pm to send
-             this object as a Jabber Dialback Verify.
+             this object as a Jabber Dialback Result.
 
-  GetTree() - returns an array that contains the <db:verify/> tag
+  GetTree() - returns an array that contains the <db:result/> tag
               in XML::Parser::Tree format.
 
 =head2 Creation functions
 
-  SetVerify(to=>string,   - set multiple fields in the <db:verify/>
+  SetResult(to=>string,   - set multiple fields in the <db:result/>
             from=>string,   at one time.  This is a cumulative
             type=>string,   and over writing action.  If you set
-            id=>string,     the "from" attribute twice, the second
-            data=>string)   setting is what is used.  If you set
+            data=>string)   the "from" attribute twice, the second
+                            setting is what is used.  If you set
                             the type, and then set the data
-                            then both will be in the <db:verify/>
+                            then both will be in the <db:result/>
                             tag.  For valid settings read the
                             specific Set functions below.
 
@@ -144,23 +139,18 @@ Net::Jabber::Dialback::Verify - Jabber Dialback Verify Module
                     valid
                     invalid
 
-  SetID(string) - sets the id attribute.
-
-  SetData(string) - sets the cdata of the <db:verify/>.
+  SetData(string) - sets the cdata of the <db:result/>.
 
 =head2 Test functions
 
   DefinedTo() - returns 1 if the to attribute is defined in the 
-                <db:verify/>, 0 otherwise.
+                <db:result/>, 0 otherwise.
 
   DefinedFrom() - returns 1 if the from attribute is defined in the 
-                  <db:verify/>, 0 otherwise.
+                  <db:result/>, 0 otherwise.
 
   DefinedType() - returns 1 if the type attribute is defined in the 
-                  <db:verify/>, 0 otherwise.
-
-  DefinedID() - returns 1 if the id attribute is defined in the 
-                  <db:verify/>, 0 otherwise.
+                  <db:result/>, 0 otherwise.
 
 =head1 AUTHOR
 
@@ -178,7 +168,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS);
 
-$VERSION = "1.30";
+$VERSION = "2.0";
 
 sub new
 {
@@ -190,16 +180,16 @@ sub new
 
     bless($self, $proto);
 
-    $self->{DEBUGHEADER} = "DB:Verify";
+    $self->{DEBUGHEADER} = "DB:Result";
 
     $self->{DATA} = {};
     $self->{CHILDREN} = {};
 
-    $self->{TAG} = "db:verify";
+    $self->{TAG} = "db:result";
 
     if ("@_" ne (""))
     {
-        if (ref($_[0]) eq "Net::Jabber::Dialback::Verify")
+        if (ref($_[0]) eq "Net::Jabber::Dialback::Result")
         {
             return $_[0];
         }
@@ -235,11 +225,6 @@ $FUNCTIONS{Data}->{Set}        = ["scalar","data"];
 $FUNCTIONS{Data}->{Defined}    = "data";
 $FUNCTIONS{Data}->{Hash}       = "data";
 
-$FUNCTIONS{ID}->{Get}        = "id";
-$FUNCTIONS{ID}->{Set}        = ["scalar","id"];
-$FUNCTIONS{ID}->{Defined}    = "id";
-$FUNCTIONS{ID}->{Hash}       = "child-data";
-
 $FUNCTIONS{To}->{Get}        = "to";
 $FUNCTIONS{To}->{Set}        = ["jid","to"];
 $FUNCTIONS{To}->{Defined}    = "to";
@@ -250,7 +235,8 @@ $FUNCTIONS{Type}->{Set}        = ["scalar","type"];
 $FUNCTIONS{Type}->{Defined}    = "type";
 $FUNCTIONS{Type}->{Hash}       = "att";
 
-$FUNCTIONS{Verify}->{Get} = "__netjabber__:master";
-$FUNCTIONS{Verify}->{Set} = ["master"];
+$FUNCTIONS{Result}->{Get} = "__netjabber__:master";
+$FUNCTIONS{Result}->{Set} = ["master"];
 
 1;
+

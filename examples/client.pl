@@ -1,5 +1,5 @@
 
-use Net::Jabber qw(Client);
+use Net::Jabber;
 use strict;
 
 if ($#ARGV < 4)
@@ -27,7 +27,8 @@ $Connection->SetCallBacks(message=>\&InMessage,
                           iq=>\&InIQ);
 
 my $status = $Connection->Connect(hostname=>$server,
-                                  port=>$port);
+                                  port=>$port,
+                                 );
 
 if (!(defined($status)))
 {

@@ -1,13 +1,14 @@
 use lib "t/lib";
-use Test::More tests=>17;
+use Test::More tests=>19;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $x = new Net::Jabber::X();
+my $x = new Net::Jabber::Stanza("x");
 ok( defined($x), "new()" );
-isa_ok( $x, "Net::Jabber::X" );
+isa_ok( $x, "Net::Jabber::Stanza" );
+isa_ok( $x, "Net::XMPP::Stanza" );
 
 testScalar($x,"XMLNS","jabber:x:signed");
 
@@ -16,9 +17,10 @@ testSetScalar($x,"Signature","signature");
 is( $x->GetXML(), "<x xmlns='jabber:x:signed'>signature</x>", "GetXML()" );
 
 
-my $x2 = new Net::Jabber::X();
+my $x2 = new Net::Jabber::Stanza("x");
 ok( defined($x2), "new()" );
-isa_ok( $x2, "Net::Jabber::X" );
+isa_ok( $x2, "Net::Jabber::Stanza" );
+isa_ok( $x2, "Net::XMPP::Stanza" );
 
 testScalar($x2,"XMLNS","jabber:x:signed");
 

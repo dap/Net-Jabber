@@ -1,12 +1,4 @@
-*****************************************************
-
-  THIS RELEASE MAY NOT BE 100% STABLE.  I AM MAKING
-  IT SO THAT OTHERS CAN TEST.  IF THERE IS NO NEED
-  FOR YOU TO UPGRADE, THEN I SUGGEST YOU DO NOT.
-
-*****************************************************
-
-Net::Jabber v1.30
+Net::Jabber v2.0
 
 The Jabber Instant Messaging project is an Open Source project seeking
 to provide a complete cross protocol messaging solution.  The problem
@@ -29,12 +21,7 @@ reatmon@jabber.org
 
 
 REQUIREMENTS
-  - XML::Stream     - Handles the connection between the Client and the Server.
-  - Digest::SHA1    - Encrypted authorization so that your password is not sent
-                      over unsecure XML.
-
-SUGGESTIONS
-  - Time::Timezone  - Automatic TimeZone calculation for the iq:time namespace.
+  - Net::XMPP   - Provides all of the core logic.
 
 INSTALLATION
 
@@ -44,9 +31,10 @@ INSTALLATION
 
 STATUS
 
-    Initial support for XMPP 1.0 (SASL, TLS, etc...).  This is mostly unstable
-  and should not be used except for testing.
+    Initial support for XMPP 1.0 (SASL, TLS, etc...).  This release may not be
+stable.  If you run into problems, downgrade to 1.29.
+
     
 Please send any bug reports to reatmon@jabber.org.
-2004/04/01
+2004/08/22
 

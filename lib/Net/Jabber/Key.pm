@@ -87,7 +87,7 @@ use strict;
 use FileHandle;
 use vars qw($VERSION);
 
-$VERSION = "1.30";
+$VERSION = "2.0";
 
 sub new
 {

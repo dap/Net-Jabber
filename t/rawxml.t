@@ -1,7 +1,7 @@
 use lib "t/lib";
-use Test::More tests=>54;
+use Test::More tests=>59;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
@@ -35,9 +35,10 @@ isa_ok( $iq, "Net::Jabber::IQ");
 testJID($iq, "From", "user1", "server1", "resource1");
 testJID($iq, "To", "user2", "server2", "resource2");
 
-my $query = $iq->NewQuery("jabber:iq:auth");
+my $query = $iq->NewChild("jabber:iq:auth");
 ok( defined($query), "AddQuery()");
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testPostScalar( $query, "XMLNS", "jabber:iq:auth");
 

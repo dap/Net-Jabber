@@ -1,19 +1,21 @@
 use lib "t/lib";
-use Test::More tests=>198;
+use Test::More tests=>217;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query();
+my $query = new Net::Jabber::Stanza("query");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS","jabber:iq:rpc");
 
 my $methodCall = $query->AddMethodCall();
 ok( defined($methodCall), "new()" );
-isa_ok( $methodCall, "Net::Jabber::Query" );
+isa_ok( $methodCall, "Net::Jabber::Stanza" );
+isa_ok( $methodCall, "Net::XMPP::Stanza" );
 
 ok( $query->DefinedMethodCall(), "DefinedMethodCall()" );
 
@@ -21,16 +23,19 @@ testScalar($methodCall, "MethodName", "method_name");
 
 my $params = $methodCall->AddParams();
 ok( defined($params), "new()" );
-isa_ok( $params, "Net::Jabber::Query" );
+isa_ok( $params, "Net::Jabber::Stanza" );
+isa_ok( $params, "Net::XMPP::Stanza" );
 
 
 my $param1 = $params->AddParam();
 ok( defined($param1), "new()" );
-isa_ok( $param1, "Net::Jabber::Query" );
+isa_ok( $param1, "Net::Jabber::Stanza" );
+isa_ok( $param1, "Net::XMPP::Stanza" );
 
 my $value1_1 = $param1->AddValue();
 ok( defined($value1_1), "new()" );
-isa_ok( $value1_1, "Net::Jabber::Query" );
+isa_ok( $value1_1, "Net::Jabber::Stanza" );
+isa_ok( $value1_1, "Net::XMPP::Stanza" );
 
 testScalar($value1_1, "Base64", "value");
 testScalar($value1_1, "Boolean", "value");
@@ -45,13 +50,15 @@ my $struct1 = $value1_1->AddStruct();
 
 my $member1 = $struct1->AddMember();
 ok( defined($member1), "new()" );
-isa_ok( $member1, "Net::Jabber::Query" );
+isa_ok( $member1, "Net::Jabber::Stanza" );
+isa_ok( $member1, "Net::XMPP::Stanza" );
 
 testScalar($member1, "Name", "name");
 
 my $member1_value1 = $member1->AddValue();
 ok( defined($member1_value1), "new()" );
-isa_ok( $member1_value1, "Net::Jabber::Query" );
+isa_ok( $member1_value1, "Net::Jabber::Stanza" );
+isa_ok( $member1_value1, "Net::XMPP::Stanza" );
 
 testScalar($member1_value1, "Base64", "base64");
 testScalar($member1_value1, "Boolean", "boolean");
@@ -66,11 +73,13 @@ my $array1 = $value1_1->AddArray();
 
 my $data1 = $array1->AddData();
 ok( defined($data1), "new()" );
-isa_ok( $data1, "Net::Jabber::Query" );
+isa_ok( $data1, "Net::Jabber::Stanza" );
+isa_ok( $data1, "Net::XMPP::Stanza" );
 
 my $data1_value1 = $data1->AddValue();
 ok( defined($data1_value1), "new()" );
-isa_ok( $data1_value1, "Net::Jabber::Query" );
+isa_ok( $data1_value1, "Net::Jabber::Stanza" );
+isa_ok( $data1_value1, "Net::XMPP::Stanza" );
 
 testScalar($data1_value1, "Base64", "base64");
 testScalar($data1_value1, "Boolean", "boolean");
@@ -86,19 +95,23 @@ is( $query->GetXML(), "<query xmlns='jabber:iq:rpc'><methodCall><methodName>meth
 
 my $methodResponse = $query->AddMethodResponse();
 ok( defined($methodResponse), "new()" );
-isa_ok( $methodResponse, "Net::Jabber::Query" );
+isa_ok( $methodResponse, "Net::Jabber::Stanza" );
+isa_ok( $methodResponse, "Net::XMPP::Stanza" );
 
 my $params2 = $methodResponse->AddParams();
 ok( defined($params2), "new()" );
-isa_ok( $params2, "Net::Jabber::Query" );
+isa_ok( $params2, "Net::Jabber::Stanza" );
+isa_ok( $params2, "Net::XMPP::Stanza" );
 
 my $param2 = $params2->AddParam();
 ok( defined($param2), "new()" );
-isa_ok( $param2, "Net::Jabber::Query" );
+isa_ok( $param2, "Net::Jabber::Stanza" );
+isa_ok( $param2, "Net::XMPP::Stanza" );
 
 my $value2_1 = $param2->AddValue();
 ok( defined($value2_1), "new()" );
-isa_ok( $value2_1, "Net::Jabber::Query" );
+isa_ok( $value2_1, "Net::Jabber::Stanza" );
+isa_ok( $value2_1, "Net::XMPP::Stanza" );
 
 testScalar($value2_1, "Base64", "value");
 testScalar($value2_1, "Boolean", "value");
@@ -113,13 +126,15 @@ my $struct2 = $value2_1->AddStruct();
 
 my $member2 = $struct2->AddMember();
 ok( defined($member2), "new()" );
-isa_ok( $member2, "Net::Jabber::Query" );
+isa_ok( $member2, "Net::Jabber::Stanza" );
+isa_ok( $member2, "Net::XMPP::Stanza" );
 
 testScalar($member2, "Name", "name");
 
 my $member2_value1 = $member2->AddValue();
 ok( defined($member2_value1), "new()" );
-isa_ok( $member2_value1, "Net::Jabber::Query" );
+isa_ok( $member2_value1, "Net::Jabber::Stanza" );
+isa_ok( $member2_value1, "Net::XMPP::Stanza" );
 
 testScalar($member2_value1, "Base64", "base64");
 testScalar($member2_value1, "Boolean", "boolean");
@@ -134,11 +149,13 @@ my $array2 = $value2_1->AddArray();
 
 my $data2 = $array2->AddData();
 ok( defined($data2), "new()" );
-isa_ok( $data2, "Net::Jabber::Query" );
+isa_ok( $data2, "Net::Jabber::Stanza" );
+isa_ok( $data2, "Net::XMPP::Stanza" );
 
 my $data2_value1 = $data2->AddValue();
 ok( defined($data2_value1), "new()" );
-isa_ok( $data2_value1, "Net::Jabber::Query" );
+isa_ok( $data2_value1, "Net::Jabber::Stanza" );
+isa_ok( $data2_value1, "Net::XMPP::Stanza" );
 
 testScalar($data2_value1, "Base64", "base64");
 testScalar($data2_value1, "Boolean", "boolean");
@@ -151,11 +168,13 @@ testScalar($data2_value1, "Value", "value");
 
 my $fault1 = $methodResponse->AddFault();
 ok( defined($fault1), "new()" );
-isa_ok( $fault1, "Net::Jabber::Query" );
+isa_ok( $fault1, "Net::Jabber::Stanza" );
+isa_ok( $fault1, "Net::XMPP::Stanza" );
 
 my $faultStruct = $fault1->AddValue()->AddStruct();
 ok( defined($faultStruct), "new()" );
-isa_ok( $faultStruct, "Net::Jabber::Query" );
+isa_ok( $faultStruct, "Net::Jabber::Stanza" );
+isa_ok( $faultStruct, "Net::XMPP::Stanza" );
 
 $faultStruct->AddMember(name=>"faultCode")->AddValue(i4=>404);
 $faultStruct->AddMember(name=>"faultString")->AddValue(string=>"not found");

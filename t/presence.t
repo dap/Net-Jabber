@@ -1,9 +1,15 @@
 use lib "t/lib";
-use Test::More tests=>90;
+use Test::More tests=>117;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
+
+my $debug = new Net::XMPP::Debug(setdefault=>1,
+                                 level=>-1,
+                                 file=>"stdout",
+                                 header=>"test",
+                                );
 
 #------------------------------------------------------------------------------
 # presence
@@ -11,6 +17,7 @@ require "t/mytestlib.pl";
 my $presence = new Net::Jabber::Presence();
 ok( defined($presence), "new()");
 isa_ok( $presence, "Net::Jabber::Presence");
+isa_ok( $presence, "Net::XMPP::Presence");
 
 testScalar($presence, "Error", "error");
 testScalar($presence, "ErrorCode", "401");
@@ -25,41 +32,41 @@ testScalar($presence, "Type", "Type");
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
-my $xoob = $presence->NewX("jabber:x:oob");
-ok( defined( $xoob ), "NewX - jabber:x:oob" );
-isa_ok( $xoob, "Net::Jabber::X" );
+my $xoob = $presence->NewChild("jabber:x:oob");
+ok( defined( $xoob ), "NewChild - jabber:x:oob" );
+isa_ok( $xoob, "Net::XMPP::Stanza" );
 
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
-my @x = $presence->GetX();
+my @x = $presence->GetChild();
 is( $x[0], $xoob, "Is the first x the oob?");
 
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
-my $xroster = $presence->NewX("jabber:x:roster");
-ok( defined( $xoob ), "NewX - jabber:x:roster" );
-isa_ok( $xoob, "Net::Jabber::X" );
+my $xroster = $presence->NewChild("jabber:x:roster");
+ok( defined( $xoob ), "NewChild - jabber:x:roster" );
+isa_ok( $xoob, "Net::XMPP::Stanza" );
 
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
-my @x2 = $presence->GetX();
+my @x2 = $presence->GetChild();
 is( $x2[0], $xoob, "Is the first x the oob?");
 is( $x2[1], $xroster, "Is the second x the roster?");
 
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
-my @x3 = $presence->GetX("jabber:x:oob");
+my @x3 = $presence->GetChild("jabber:x:oob");
 is( $#x3, 0, "filter on xmlns - only one x... right?");
 is( $x3[0], $xoob, "Is the first x the oob?");
 
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
-my @x4 = $presence->GetX("jabber:x:roster");
+my @x4 = $presence->GetChild("jabber:x:roster");
 is( $#x4, 0, "filter on xmlns - only one x... right?");
 is( $x4[0], $xroster, "Is the first x the roster?");
 
@@ -105,4 +112,19 @@ testPostScalar($presence2, "Show", "show");
 testPostScalar($presence2, "Status", "status");
 testPostJID($presence2, "To", "user2", "server2", "resource2");
 testPostScalar($presence2, "Type", "type");
+
+
+#------------------------------------------------------------------------------
+# Reply
+#------------------------------------------------------------------------------
+my $reply2 = $presence2->Reply();
+ok( defined($reply2), "new()");
+isa_ok( $reply2, "Net::Jabber::Presence");
+isa_ok( $reply2, "Net::XMPP::Presence");
+
+testPostJID($reply2, "From", "user2", "server2", "resource2");
+testPostScalar($reply2, "ID", "id");
+testPostJID($reply2, "To", "user1", "server1", "resource1");
+
+is( $reply2->GetXML(), "<presence from='user2\@server2/resource2' id='id' to='user1\@server1/resource1'/>", "GetXML()");
 

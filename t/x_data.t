@@ -1,13 +1,14 @@
 use lib "t/lib";
-use Test::More tests=>139;
+use Test::More tests=>155;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $x = new Net::Jabber::X();
+my $x = new Net::Jabber::Stanza("x");
 ok( defined($x), "new()" );
-isa_ok( $x, "Net::Jabber::X" );
+isa_ok( $x, "Net::Jabber::Stanza" );
+isa_ok( $x, "Net::XMPP::Stanza" );
 
 testScalar($x, "XMLNS", "jabber:x:data");
 
@@ -17,7 +18,8 @@ testScalar($x, "Type", "type");
 
 my $field = $x->AddField();
 ok( defined($field), "AddField()" );
-isa_ok( $field, "Net::Jabber::X" );
+isa_ok( $field, "Net::Jabber::Stanza" );
+isa_ok( $field, "Net::XMPP::Stanza" );
 
 testScalar($field, "Desc", "desc");
 testScalar($field, "Label", "label");
@@ -35,18 +37,21 @@ is( $values[1], "value2", "check value 2" );
 
 my $option = $field->AddOption();
 ok( defined($option), "AddOption()" );
-isa_ok( $option, "Net::Jabber::X" );
+isa_ok( $option, "Net::Jabber::Stanza" );
+isa_ok( $option, "Net::XMPP::Stanza" );
 
 testScalar($option, "Label", "label");
 testScalar($option, "Value", "value");
 
 my $field2 = $x->AddField();
 ok( defined($field2), "AddField()" );
-isa_ok( $field2, "Net::Jabber::X" );
+isa_ok( $field2, "Net::Jabber::Stanza" );
+isa_ok( $field2, "Net::XMPP::Stanza" );
 
 my $option2 = $field2->AddOption();
 ok( defined($option2), "AddOption()" );
-isa_ok( $option2, "Net::Jabber::X" );
+isa_ok( $option2, "Net::Jabber::Stanza" );
+isa_ok( $option2, "Net::XMPP::Stanza" );
 
 my @testFields = $x->GetFields();
 is( $#testFields, 1, "Only two fields...");
@@ -74,9 +79,10 @@ is( $x->GetXML(), "<x type='type' xmlns='jabber:x:data'><instructions>do this</i
 
 
 
-my $x2 = new Net::Jabber::X();
+my $x2 = new Net::Jabber::Stanza("x");
 ok( defined($x2), "new()" );
-isa_ok( $x2, "Net::Jabber::X" );
+isa_ok( $x2, "Net::Jabber::Stanza" );
+isa_ok( $x2, "Net::XMPP::Stanza" );
 
 testScalar($x2, "XMLNS", "jabber:x:data");
 
@@ -90,7 +96,8 @@ testPostScalar($x2, "Type", "type");
 
 my $field3 = $x2->AddField();
 ok( defined($field3), "AddField()" );
-isa_ok( $field3, "Net::Jabber::X" );
+isa_ok( $field3, "Net::Jabber::Stanza" );
+isa_ok( $field3, "Net::XMPP::Stanza" );
 
 testNotDefined($field3, "Desc");
 testNotDefined($field3, "Label");
@@ -116,7 +123,8 @@ testPostScalar($field3, "Var", "var");
 
 my $option3 = $field3->AddOption();
 ok( defined($option3), "AddOption()" );
-isa_ok( $option3, "Net::Jabber::X" );
+isa_ok( $option3, "Net::Jabber::Stanza" );
+isa_ok( $option3, "Net::XMPP::Stanza" );
 
 testNotDefined($option3, "Label");
 testNotDefined($option3, "Value");
@@ -130,18 +138,21 @@ testPostScalar($option3, "Value", "value");
 is( $x2->GetXML(), "<x type='type' xmlns='jabber:x:data'><instructions>do this</instructions><title>title</title><field label='label' type='type' var='var'><desc>desc</desc><required/><value>value</value><option label='label'><value>value</value></option></field></x>", "GetXML()" );
 
 
-my $x3 = new Net::Jabber::X();
+my $x3 = new Net::Jabber::Stanza("x");
 ok( defined($x3), "new()" );
-isa_ok( $x3, "Net::Jabber::X" );
+isa_ok( $x3, "Net::Jabber::Stanza" );
+isa_ok( $x3, "Net::XMPP::Stanza" );
 
 testScalar($x3, "XMLNS", "jabber:x:data");
 
 my $reported = $x3->AddReported();
 ok( defined($reported), "new()" );
-isa_ok( $reported, "Net::Jabber::X" );
+isa_ok( $reported, "Net::Jabber::Stanza" );
+isa_ok( $reported, "Net::XMPP::Stanza" );
 
 ok( defined($x3), "new()" );
-isa_ok( $x3, "Net::Jabber::X" );
+isa_ok( $x3, "Net::Jabber::Stanza" );
+isa_ok( $x3, "Net::XMPP::Stanza" );
 
 $reported->AddField(var=>"var1",
                     label=>"Var1");
@@ -151,18 +162,21 @@ $reported->AddField(var=>"var2",
 is( $x3->GetXML(), "<x xmlns='jabber:x:data'><reported><field label='Var1' var='var1'/><field label='Var2' var='var2'/></reported></x>", "GetXML()");
 
 
-my $x4 = new Net::Jabber::X();
+my $x4 = new Net::Jabber::Stanza("x");
 ok( defined($x4), "new()" );
-isa_ok( $x4, "Net::Jabber::X" );
+isa_ok( $x4, "Net::Jabber::Stanza" );
+isa_ok( $x4, "Net::XMPP::Stanza" );
 
 testScalar($x4, "XMLNS", "jabber:x:data");
 
 my $item = $x4->AddItem();
 ok( defined($item), "new()" );
-isa_ok( $item, "Net::Jabber::X" );
+isa_ok( $item, "Net::Jabber::Stanza" );
+isa_ok( $item, "Net::XMPP::Stanza" );
 
 ok( defined($x4), "new()" );
-isa_ok( $x4, "Net::Jabber::X" );
+isa_ok( $x4, "Net::Jabber::Stanza" );
+isa_ok( $x4, "Net::XMPP::Stanza" );
 
 $item->AddField(var=>"var1",
                 label=>"Var1");
@@ -173,10 +187,12 @@ is( $x4->GetXML(), "<x xmlns='jabber:x:data'><item><field label='Var1' var='var1
 
 my $item2 = $x4->AddItem();
 ok( defined($item2), "new()" );
-isa_ok( $item2, "Net::Jabber::X" );
+isa_ok( $item2, "Net::Jabber::Stanza" );
+isa_ok( $item2, "Net::XMPP::Stanza" );
 
 ok( defined($x4), "new()" );
-isa_ok( $x4, "Net::Jabber::X" );
+isa_ok( $x4, "Net::Jabber::Stanza" );
+isa_ok( $x4, "Net::XMPP::Stanza" );
 
 $item2->AddField(var=>"var3",
                  label=>"Var3",

@@ -195,7 +195,7 @@ use strict;
 use Carp;
 use vars qw($VERSION $AUTOLOAD %FUNCTIONS %NAMESPACES);
 
-$VERSION = "1.30";
+$VERSION = "2.0";
 
 sub new
 {

@@ -1,19 +1,21 @@
 use lib "t/lib";
-use Test::More tests=>17;
+use Test::More tests=>20;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query();
+my $query = new Net::Jabber::Stanza("query");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS","jabber:iq:agents");
 
 my $agent = $query->AddAgent();
 ok( defined($agent), "AddAgent()");
-isa_ok($agent, "Net::Jabber::Query");
+isa_ok($agent, "Net::Jabber::Stanza");
+isa_ok($agent, "Net::XMPP::Stanza");
 
 is( $agent->GetXMLNS(), "jabber:iq:agent", "xmlns = 'jabber:iq:agent'");
 
@@ -24,7 +26,8 @@ is( $query->GetXML(), "<query xmlns='jabber:iq:agents'><agent jid='user1\@server
 my $agent2 = $query->AddAgent(jid=>"user2\@server2/resource2",
                               name=>"name2");
 ok( defined($agent2), "AddAgent()");
-isa_ok($agent2, "Net::Jabber::Query");
+isa_ok($agent2, "Net::Jabber::Stanza");
+isa_ok($agent2, "Net::XMPP::Stanza");
 
 is( $agent2->GetXMLNS(), "jabber:iq:agent", "xmlns = 'jabber:iq:agent'");
 

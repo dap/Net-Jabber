@@ -1,16 +1,13 @@
-BEGIN {print "1..25\n";}
-END {print "not ok 1\n" unless $loaded;}
-use Net::Jabber qw(Client);
-$loaded = 1;
-print "ok 1\n";
+use lib "t/lib";
+use Test::More tests=>28;
 
-#my $debug = new Net::Jabber::Debug(level=>99,setdefault=>1);
+BEGIN{ use_ok( "Net::Jabber" ); }
+
+require "t/mytestlib.pl";
 
 my $message_node = new XML::Stream::Node("message");
-print "not " unless defined($message_node);
-print "ok 2\n";
-print "not " unless (ref($message_node) eq "XML::Stream::Node");
-print "ok 3\n";
+ok( defined($message_node), "new()" );
+isa_ok( $message_node, "XML::Stream::Node" );
 
 $message_node->put_attrib(to=>"jer\@jabber.org",
                           from=>"reatmon\@jabber.org");
@@ -40,73 +37,50 @@ my $option2 = $field2->add_child("option");
 $option2->put_attrib(label=>"Female");
 $option2->add_child("value","female");
 
-print "not " unless ($message_node->GetXML() eq "<message from='reatmon\@jabber.org' to='jer\@jabber.org'><body>body</body><subject>subject</subject><x xmlns='jabber:x:data'><instructions>fill this out</instructions><field type='hidden' var='formnum'><value>value1</value></field><field type='list-single' var='mylist'><value>male</value><value>test</value><required/><option label='Male'><value>male</value></option><option label='Female'><value>female</value></option></field></x></message>");
-print "ok 4\n";
+is( $message_node->GetXML(), "<message from='reatmon\@jabber.org' to='jer\@jabber.org'><body>body</body><subject>subject</subject><x xmlns='jabber:x:data'><instructions>fill this out</instructions><field type='hidden' var='formnum'><value>value1</value></field><field type='list-single' var='mylist'><value>male</value><value>test</value><required/><option label='Male'><value>male</value></option><option label='Female'><value>female</value></option></field></x></message>", "GetXML()" );
 
 my $message = new Net::Jabber::Message($message_node);
-print "not " unless defined($message);
-print "ok 5\n";
-print "not " unless (ref($message) eq "Net::Jabber::Message");
-print "ok 6\n";
+ok( defined($message), "new()" );
+isa_ok( $message, "Net::Jabber::Message" );
+isa_ok( $message, "Net::XMPP::Message" );
 
-print "not " unless ($message->GetTo() eq "jer\@jabber.org");
-print "ok 7\n";
+is( $message->GetTo(), "jer\@jabber.org", "GetTo");
+is( $message->GetFrom(), "reatmon\@jabber.org", "GetFrom");
+is( $message->GetSubject(), "subject", "GetSubject");
+is( $message->GetBody(), "body", "GetBody");
 
-print "not " unless ($message->GetFrom() eq "reatmon\@jabber.org");
-print "ok 8\n";
-
-print "not " unless ($message->GetSubject() eq "subject");
-print "ok 9\n";
-
-print "not " unless ($message->GetBody() eq "body");
-print "ok 10\n";
-
-my @xdatas = $message->GetX("jabber:x:data");
-print "not " unless ($#xdatas == 0);
-print "ok 11\n";
+my @xdatas = $message->GetChild("jabber:x:data");
+is( $#xdatas, 0, "one data packet" );
 
 my $xdata1 = $xdatas[0];
-print "not " unless defined($xdata1);
-print "ok 12\n";
-print "not " unless (ref($xdata1) eq "Net::Jabber::X");
-print "ok 13\n";
+ok( defined($xdata1), "defined data" );
+isa_ok( $xdata1, "Net::Jabber::Stanza" );
+isa_ok( $xdata1, "Net::XMPP::Stanza" );
 
-print "not " unless ($xdata1->GetInstructions() eq "fill this out");
-print "ok 14\n";
+is( $xdata1->GetInstructions(), "fill this out", "GetInsructions" );
 
 my @fields = $xdata1->GetFields();
-print "not " unless ($#fields == 1);
-print "ok 15\n";
+is( $#fields, 1, "two fields");
 
 my $listField = $fields[1];
-print "not " unless ($listField->GetVar() eq "mylist");
-print "ok 16\n";
-
-print "not " unless ($listField->GetType() eq "list-single");
-print "ok 17\n";
+is( $listField->GetVar(), "mylist", "GetVar");
+is( $listField->GetType(), "list-single", "GetType");
 
 my @values = $listField->GetValue();
-print "not " unless ($values[0] eq "male");
-print "ok 18\n";
-print "not " unless ($values[1] eq "test");
-print "ok 19\n";
+is( $#values, 1, "two values");
+is( $values[0], "male", "value == male");
+is( $values[1], "test", "value == test");
 
-print "not " unless $listField->GetRequired();
-print "ok 20\n";
+ok( $listField->GetRequired(), "GetRequired");
 
 my @options = $listField->GetOptions();
-print "not " unless ($#options == 1);
-print "ok 21\n";
+is( $#options, 1, "two options");
 
 my $listOption1 = $options[0];
 my $listOption2 = $options[1];
 
-print "not " unless ($listOption1->GetLabel() eq "Male");
-print "ok 22\n";
-print "not " unless ($listOption1->GetValue() eq "male");
-print "ok 23\n";
-print "not " unless ($listOption2->GetLabel() eq "Female");
-print "ok 24\n";
-print "not " unless ($listOption2->GetValue() eq "female");
-print "ok 25\n";
+is( $listOption1->GetLabel(), "Male", "GetLabel");
+is( $listOption1->GetValue(), "male", "Getvalue");
+is( $listOption2->GetLabel(), "Female", "GetLabel");
+is( $listOption2->GetValue(), "female", "GetValue");
 

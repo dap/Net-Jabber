@@ -1,13 +1,14 @@
 use lib "t/lib";
-use Test::More tests=>36;
+use Test::More tests=>39;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query();
+my $query = new Net::Jabber::Stanza("query");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS","jabber:iq:time");
 
@@ -18,9 +19,10 @@ testScalar($query,"UTC","utc");
 is( $query->GetXML(), "<query xmlns='jabber:iq:time'><display>display</display><tz>tz</tz><utc>utc</utc></query>", "GetXML()" );
 
 
-my $query2 = new Net::Jabber::Query();
+my $query2 = new Net::Jabber::Stanza("query");
 ok( defined($query2), "new()" );
-isa_ok( $query2, "Net::Jabber::Query" );
+isa_ok( $query2, "Net::Jabber::Stanza" );
+isa_ok( $query2, "Net::XMPP::Stanza" );
 
 testScalar($query2,"XMLNS","jabber:iq:time");
 
@@ -36,9 +38,10 @@ testPostScalar($query2,"UTC","utc");
 is( $query2->GetXML(), "<query xmlns='jabber:iq:time'><display>display</display><tz>tz</tz><utc>utc</utc></query>", "GetXML()" );
 
 
-my $query3 = new Net::Jabber::Query();
+my $query3 = new Net::Jabber::Stanza("query");
 ok( defined($query3), "new()" );
-isa_ok( $query3, "Net::Jabber::Query" );
+isa_ok( $query3, "Net::Jabber::Stanza" );
+isa_ok( $query3, "Net::XMPP::Stanza" );
 
 testScalar($query3,"XMLNS","jabber:iq:time");
 

@@ -1,19 +1,21 @@
 use lib "t/lib";
-use Test::More tests=>65;
+use Test::More tests=>72;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query();
+my $query = new Net::Jabber::Stanza("query");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS",'http://jabber.org/protocol/muc#admin');
 
 my $item1 = $query->AddItem();
 ok( defined($item1), "new()" );
-isa_ok( $item1, "Net::Jabber::Query" );
+isa_ok( $item1, "Net::Jabber::Stanza" );
+isa_ok( $item1, "Net::XMPP::Stanza" );
 
 testJID($item1,"ActorJID","user1", "server1", "resource1");
 testScalar($item1,"Affiliation","affiliation");
@@ -31,7 +33,8 @@ my $item2 = $query->AddItem(actorjid=>'user3@server3/resource3',
                             reason=>"reason",
                             role=>"role");
 ok( defined($item2), "new()" );
-isa_ok( $item2, "Net::Jabber::Query" );
+isa_ok( $item2, "Net::Jabber::Stanza" );
+isa_ok( $item2, "Net::XMPP::Stanza" );
 
 testPostJID($item2,"ActorJID","user3", "server3", "resource3");
 testPostScalar($item2,"Affiliation","affiliation");

@@ -1,13 +1,14 @@
 use lib "t/lib";
-use Test::More tests=>60;
+use Test::More tests=>62;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query();
+my $query = new Net::Jabber::Stanza("query");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS","jabber:iq:pass");
 
@@ -24,9 +25,10 @@ testScalar($query,"ServerPort",3456);
 is( $query->GetXML(), "<query xmlns='jabber:iq:pass'><client port='1234'>client</client><close/><expire>10</expire><oneshot/><proxy port='2345'>proxy</proxy><server port='3456'>server</server></query>", "GetXML()" );
 
 
-my $query2 = new Net::Jabber::Query();
+my $query2 = new Net::Jabber::Stanza("query");
 ok( defined($query2), "new()" );
-isa_ok( $query2, "Net::Jabber::Query" );
+isa_ok( $query2, "Net::Jabber::Stanza" );
+isa_ok( $query2, "Net::XMPP::Stanza" );
 
 testScalar($query2,"XMLNS","jabber:iq:pass");
 

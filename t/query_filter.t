@@ -1,19 +1,21 @@
 use lib "t/lib";
-use Test::More tests=>90;
+use Test::More tests=>93;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query();
+my $query = new Net::Jabber::Stanza("query");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS","jabber:iq:filter");
 
 my $rule1 = $query->AddRule();
 ok( defined($rule1), "new()" );
-isa_ok( $rule1, "Net::Jabber::Query" );
+isa_ok( $rule1, "Net::Jabber::Stanza" );
+isa_ok( $rule1, "Net::XMPP::Stanza" );
 
 testScalar($rule1,"Body","body1");
 testScalar($rule1,"Continued","continued1");
@@ -51,7 +53,8 @@ my $rule2 = $query->AddRule(body=>"body2",
                             unavailable=>"unavailable2",
                            );
 ok( defined($rule2), "new()" );
-isa_ok( $rule2, "Net::Jabber::Query" );
+isa_ok( $rule2, "Net::Jabber::Stanza" );
+isa_ok( $rule2, "Net::XMPP::Stanza" );
 
 testPostScalar($rule2,"Body","body2");
 testPostScalar($rule2,"Continued","continued2");

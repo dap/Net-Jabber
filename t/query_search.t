@@ -1,13 +1,14 @@
 use lib "t/lib";
-use Test::More tests=>133;
+use Test::More tests=>140;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query();
+my $query = new Net::Jabber::Stanza("query");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS","jabber:iq:search");
 
@@ -25,9 +26,10 @@ testFlag($query,"Truncated");
 is( $query->GetXML(), "<query xmlns='jabber:iq:search'><email>email</email><family>family</family><first>first</first><given>given</given><instructions>instructions</instructions><key>key</key><last>last</last><name>name</name><nick>nick</nick><truncated/></query>", "GetXML()" );
 
 
-my $query2 = new Net::Jabber::Query();
+my $query2 = new Net::Jabber::Stanza("query");
 ok( defined($query2), "new()" );
-isa_ok( $query2, "Net::Jabber::Query" );
+isa_ok( $query2, "Net::Jabber::Stanza" );
+isa_ok( $query2, "Net::XMPP::Stanza" );
 
 testScalar($query2,"XMLNS","jabber:iq:search");
 
@@ -57,15 +59,17 @@ testPostFlag($query2,"Truncated");
 is( $query2->GetXML(), "<query xmlns='jabber:iq:search'><email>email</email><family>family</family><first>first</first><given>given</given><instructions>instructions</instructions><key>key</key><last>last</last><name>name</name><nick>nick</nick><truncated/></query>", "GetXML()" );
 
 
-my $query3 = new Net::Jabber::Query();
+my $query3 = new Net::Jabber::Stanza("query");
 ok( defined($query3), "new()" );
-isa_ok( $query3, "Net::Jabber::Query" );
+isa_ok( $query3, "Net::Jabber::Stanza" );
+isa_ok( $query3, "Net::XMPP::Stanza" );
 
 testScalar($query3,"XMLNS","jabber:iq:search");
 
 my $item1 = $query3->AddItem();
 ok( defined($item1), "new()" );
-isa_ok( $item1, "Net::Jabber::Query" );
+isa_ok( $item1, "Net::Jabber::Stanza" );
+isa_ok( $item1, "Net::XMPP::Stanza" );
 
 testScalar($item1,"Email","email");
 testScalar($item1,"Family","family");
@@ -90,7 +94,8 @@ my $item2 = $query3->AddItem(email=>"email",
                              nick=>"nick",
                             );
 ok( defined($item2), "new()" );
-isa_ok( $item2, "Net::Jabber::Query" );
+isa_ok( $item2, "Net::Jabber::Stanza" );
+isa_ok( $item2, "Net::XMPP::Stanza" );
 
 testPostScalar($item2,"Email","email");
 testPostScalar($item2,"Family","family");

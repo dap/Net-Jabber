@@ -1,7 +1,7 @@
 use lib "t/lib";
-use Test::More tests=>67;
+use Test::More tests=>70;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
@@ -53,9 +53,10 @@ my $message = new Net::Jabber::Message();
 ok( defined($message), "new()");
 isa_ok( $message, "Net::Jabber::Message" );
 
-my $x = $message->NewX("foo:bar:1");
-ok( defined($x), "NewX()");
-isa_ok( $x, "Net::Jabber::X" );
+my $x = $message->NewChild("foo:bar:1");
+ok( defined($x), "NewChild()");
+isa_ok( $x, "Net::Jabber::Stanza" );
+isa_ok( $x, "Net::XMPP::Stanza" );
 
 testSetScalar($x,"Data","data");
 testScalar($x,"Attrib","attrib");
@@ -151,9 +152,10 @@ my $message2 = new Net::Jabber::Message();
 ok( defined($message2), "new()");
 isa_ok( $message2, "Net::Jabber::Message" );
 
-my $x2 = $message2->NewX("foo:bar:3");
-ok( defined($x2), "NewX()");
-isa_ok( $x2, "Net::Jabber::X" );
+my $x2 = $message2->NewChild("foo:bar:3");
+ok( defined($x2), "NewChild()");
+isa_ok( $x2, "Net::Jabber::Stanza" );
+isa_ok( $x2, "Net::XMPP::Stanza" );
 
 testSetScalar($x2,"Data","data");
 testScalar($x2,"Attrib","attrib");
@@ -216,9 +218,10 @@ my $message3 = new Net::Jabber::Message();
 ok( defined($message3), "new()");
 isa_ok( $message3, "Net::Jabber::Message" );
 
-my $x3 = $message3->NewX("foo:bar:4");
-ok( defined($x3), "NewX()");
-isa_ok( $x3, "Net::Jabber::X" );
+my $x3 = $message3->NewChild("foo:bar:4");
+ok( defined($x3), "NewChild()");
+isa_ok( $x3, "Net::Jabber::Stanza" );
+isa_ok( $x3, "Net::XMPP::Stanza" );
 
 testSetScalar($x3,"Data","data");
 testScalar($x3,"Attrib","attrib");

@@ -1,13 +1,14 @@
 use lib "t/lib";
-use Test::More tests=>87;
+use Test::More tests=>91;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query();
+my $query = new Net::Jabber::Stanza("query");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS","jabber:iq:agent");
 
@@ -25,9 +26,10 @@ testScalar($query,"URL","url");
 is( $query->GetXML(), "<query jid='user\@server/resource' xmlns='jabber:iq:agent'><agents/><description>this is something</description><groupchat/><name>name</name><register/><search/><service>service</service><transport>transport</transport><url>url</url></query>", "GetXML()");
 
 
-my $query2 = new Net::Jabber::Query();
+my $query2 = new Net::Jabber::Stanza("query");
 ok( defined($query2), "new()" );
-isa_ok( $query2, "Net::Jabber::Query" );
+isa_ok( $query2, "Net::Jabber::Stanza" );
+isa_ok( $query2, "Net::XMPP::Stanza" );
 
 testScalar($query2,"XMLNS","jabber:iq:agent");
 

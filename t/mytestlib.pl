@@ -148,6 +148,7 @@ sub testPostJID
     eval "\$jid = \$obj->Get$tag(\"jid\");";
     ok( defined($jid), "jid object defined");
     isa_ok( $jid, 'Net::Jabber::JID');
+    isa_ok( $jid, 'Net::XMPP::JID');
     is( $jid->GetUserID(), $user , "user eq '$user'");
     is( $jid->GetServer(), $server , "server eq '$server'");
     is( $jid->GetResource(), $resource , "resource eq '$resource'");
@@ -162,6 +163,7 @@ sub testFieldJID
     
     my $jid = $hash->{$ltag};
     isa_ok( $jid, 'Net::Jabber::JID');
+    isa_ok( $jid, 'Net::XMPP::JID');
     is( $jid->GetUserID(), $user , "user eq '$user'");
     is( $jid->GetServer(), $server , "server eq '$server'");
     is( $jid->GetResource(), $resource , "resource eq '$resource'");

@@ -1,13 +1,14 @@
 use lib "t/lib";
-use Test::More tests=>54;
+use Test::More tests=>59;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query("command");
+my $query = new Net::Jabber::Stanza("command");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS","http://jabber.org/protocol/commands");
 
@@ -18,9 +19,10 @@ testScalar($query,"Status","status");
 
 is( $query->GetXML(), "<command action='action' node='node' sessionid='sessionid' status='status' xmlns='http://jabber.org/protocol/commands'/>", "GetXML()" );
 
-my $query2 = new Net::Jabber::Query("command");
+my $query2 = new Net::Jabber::Stanza("command");
 ok( defined($query2), "new()" );
-isa_ok( $query2, "Net::Jabber::Query" );
+isa_ok( $query2, "Net::Jabber::Stanza" );
+isa_ok( $query2, "Net::XMPP::Stanza" );
 
 testScalar($query2,"XMLNS","http://jabber.org/protocol/commands");
 
@@ -38,14 +40,16 @@ testPostScalar($query2,"Status","status");
 is( $query2->GetXML(), "<command action='action' node='node' sessionid='sessionid' status='status' xmlns='http://jabber.org/protocol/commands'/>", "GetXML()" );
 
 
-my $query3 = new Net::Jabber::Query("command");
+my $query3 = new Net::Jabber::Stanza("command");
 ok( defined($query3), "new()" );
-isa_ok( $query3, "Net::Jabber::Query" );
+isa_ok( $query3, "Net::Jabber::Stanza" );
+isa_ok( $query3, "Net::XMPP::Stanza" );
 
 testScalar($query3,"XMLNS","http://jabber.org/protocol/commands");
 
 my $note = $query3->AddNote();
-isa_ok( $note, "Net::Jabber::Query" );
+isa_ok( $note, "Net::Jabber::Stanza" );
+isa_ok( $note, "Net::XMPP::Stanza" );
 
 testScalar($note,"Type","type1");
 testSetScalar($note,"Message","message1");
@@ -56,7 +60,8 @@ is( $query3->GetXML(), "<command xmlns='http://jabber.org/protocol/commands'><no
 my $note2 = $query3->AddNote(type=>"type2",
                              message=>"message2"
                             );
-isa_ok( $note2, "Net::Jabber::Query" );
+isa_ok( $note2, "Net::Jabber::Stanza" );
+isa_ok( $note2, "Net::XMPP::Stanza" );
 
 testPostScalar($note2,"Type","type2");
 testPostScalar($note2,"Message","message2");

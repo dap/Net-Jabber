@@ -19,35 +19,30 @@ $SIG{INT} = \&Stop;
 
 my $Component = new Net::Jabber::Component();
 
-$Component->SetCallBacks(message=>\&messageCB);
+$Component->SetCallBacks(onauth=>\&onAuth,
+                         message=>\&messageCB);
 
-my $status = $Component->Connect(hostname=>$server,
-                                 port=>$port,
-                                 componentname=>$name,
-                                 secret=>$secret);
+$Component->Execute(hostname=>$server,
+                    port=>$port,
+                    componentname=>$name,
+                    secret=>$secret
+                   );
 
-if (!(defined($status))) {
-  print "ERROR:  Jabber server is not answering.\n";
-  print "        ($!) - (",$Component->GetErrorCode(),")\n";
-  exit(0);
+sub onAuth
+{
+    print "Connected...\n";
 }
 
-print "Connected...\n";
-
-while(defined($Component->Process())) { }
-
-print "The component has died a miserable death...\n";
-
-exit(0);
-
-sub Stop {
+sub Stop
+{
   $Component->Disconnect();
   print "Exit gracefully...\n";
   exit(0);
 }
 
 
-sub messageCB {
+sub messageCB
+{
   my $sid = shift;
   my $message = shift;
 

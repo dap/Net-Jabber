@@ -1,7 +1,7 @@
 use lib "t/lib";
 use Test::More tests=>5;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 my $Client;
 my $connected = 0;

@@ -1,5 +1,5 @@
 use lib "t/lib";
-use Test::More tests=>114;
+use Test::More tests=>88;
 
 BEGIN{ use_ok( "Net::Jabber" ); }
 
@@ -26,56 +26,52 @@ testScalar($iq, "ID", "id");
 testJID($iq, "To", "user2", "server2", "resource2");
 testScalar($iq, "Type", "Type");
 
-is( $iq->DefinedChild("jabber:x:oob"), "", "not DefinedChild - jabber:x:oob" );
-is( $iq->DefinedChild("jabber:x:roster"), "", "not DefinedChild - jabber:x:roster" );
+is( $iq->DefinedQuery("jabber:x:oob"), "", "not DefinedChild - jabber:x:oob" );
+is( $iq->DefinedQuery("jabber:iq:roster"), "", "not DefinedChild - jabber:iq:roster" );
 
 #------------------------------------------------------------------------------
-# X
+# query - roster
 #------------------------------------------------------------------------------
-my $xoob = $iq->NewChild("jabber:x:oob");
+my $xroster = $iq->NewQuery("jabber:iq:roster");
+ok( defined( $xroster ), "NewChild - jabber:iq:roster" );
+isa_ok( $xroster, "Net::XMPP::Stanza" );
+
+#------------------------------------------------------------------------------
+# x - oob
+#------------------------------------------------------------------------------
+my $xoob = $iq->NewX("jabber:x:oob");
 ok( defined( $xoob ), "NewChild - jabber:x:oob" );
 isa_ok( $xoob, "Net::XMPP::Stanza" );
-is( $iq->DefinedChild(), 1, "DefinedChild" );
-is( $iq->DefinedChild("jabber:x:oob"), 1, "DefinedChild - jabber:x:oob" );
+
+#------------------------------------------------------------------------------
+# DefinedChild...
+#------------------------------------------------------------------------------
+is( $iq->DefinedQuery(), 1, "DefinedChild" );
+is( $iq->DefinedQuery("jabber:iq:roster"), 1, "DefinedChild - jabber:iq:roster" );
+is( $iq->DefinedX("jabber:x:oob"), 1, "DefinedChild - jabber:x:oob" );
 
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
-my @x = $iq->GetChild();
-is( $x[0], $xoob, "Is the first x the oob?");
+my @x2 = $iq->GetQuery();
+is( $x2[0], $xroster, "Is the first the roster?");
+is( $x2[1], $xoob, "Is the second the oob?");
 
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
-my $xroster = $iq->NewChild("jabber:x:roster");
-ok( defined( $xoob ), "NewChild - jabber:x:roster" );
-isa_ok( $xoob, "Net::XMPP::Stanza" );
-is( $iq->DefinedChild(), 1, "DefinedChild" );
-is( $iq->DefinedChild("jabber:x:oob"), 1, "DefinedChild - jabber:x:oob" );
-is( $iq->DefinedChild("jabber:x:roster"), 1, "DefinedChild - jabber:x:roster" );
-
-#------------------------------------------------------------------------------
-# X
-#------------------------------------------------------------------------------
-my @x2 = $iq->GetChild();
-is( $x2[0], $xoob, "Is the first x the oob?");
-is( $x2[1], $xroster, "Is the second x the roster?");
-
-#------------------------------------------------------------------------------
-# X
-#------------------------------------------------------------------------------
-my @x3 = $iq->GetChild("jabber:x:oob");
+my @x3 = $iq->GetX("jabber:x:oob");
 is( $#x3, 0, "filter on xmlns - only one x... right?");
 is( $x3[0], $xoob, "Is the first x the oob?");
 
 #------------------------------------------------------------------------------
 # X
 #------------------------------------------------------------------------------
-my @x4 = $iq->GetChild("jabber:x:roster");
+my @x4 = $iq->GetQuery("jabber:iq:roster");
 is( $#x4, 0, "filter on xmlns - only one x... right?");
 is( $x4[0], $xroster, "Is the first x the roster?");
 
-is( $iq->DefinedChild("jabber:x:testns"), "", "not DefinedChild - jabber:x:testns" );
+is( $iq->DefinedX("jabber:x:testns"), "", "not DefinedX - jabber:x:testns" );
 
 #------------------------------------------------------------------------------
 # iq
@@ -123,7 +119,7 @@ $iq3->SetIQ(error=>"error",
             to=>"user2\@server2/resource2",
             type=>"type");
 
-my $query = $iq3->NewChild("jabber:iq:auth");
+my $query = $iq3->NewQuery("jabber:iq:auth");
 ok( defined($query), "new()");
 isa_ok( $query, "Net::XMPP::Stanza");
 
@@ -132,28 +128,8 @@ $query->SetAuth(username=>"user",
 
 is( $iq3->GetXML(), "<iq from='user1\@server1/resource1' id='id' to='user2\@server2/resource2' type='type'><error code='401'>error</error><query xmlns='jabber:iq:auth'><password>pass</password><username>user</username></query></iq>", "GetXML()");
 
+my $reply = $iq3->Reply();
 
-#------------------------------------------------------------------------------
-# Reply
-#------------------------------------------------------------------------------
-my $reply3 = $iq3->Reply();
-ok( defined($reply3), "new()");
-isa_ok( $reply3, "Net::Jabber::IQ");
-isa_ok( $reply3, "Net::XMPP::IQ");
+is( $reply->GetXML(), "<iq from='user2\@server2/resource2' id='id' to='user1\@server1/resource1' type='result'><query xmlns='jabber:iq:auth'/></iq>", "GetXML()");
 
-testPostJID($reply3, "From", "user2", "server2", "resource2");
-testPostScalar($reply3, "ID", "id");
-testPostJID($reply3, "To", "user1", "server1", "resource1");
-
-is( $reply3->GetXML(), "<iq from='user2\@server2/resource2' id='id' to='user1\@server1/resource1' type='result'><query xmlns='jabber:iq:auth'/></iq>", "GetXML()");
-
-my $delay = $reply3->NewChild("jabber:x:delay");
-$delay->SetDelay(stamp=>"stamp",
-                 message=>"test");
-
-is( $reply3->GetXML(), "<iq from='user2\@server2/resource2' id='id' to='user1\@server1/resource1' type='result'><query xmlns='jabber:iq:auth'/><x stamp='stamp' xmlns='jabber:x:delay'>test</x></iq>", "GetXML()");
-
-$reply3->NewQuery("jabber:iq:roster");
-
-is( $reply3->GetXML(), "<iq from='user2\@server2/resource2' id='id' to='user1\@server1/resource1' type='result'><query xmlns='jabber:iq:roster'/><x stamp='stamp' xmlns='jabber:x:delay'>test</x></iq>", "GetXML()");
 

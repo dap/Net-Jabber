@@ -1,13 +1,14 @@
 use lib "t/lib";
-use Test::More tests=>80;
+use Test::More tests=>89;
 
-BEGIN{ use_ok( "Net::Jabber","Client" ); }
+BEGIN{ use_ok( "Net::Jabber" ); }
 
 require "t/mytestlib.pl";
 
-my $query = new Net::Jabber::Query();
+my $query = new Net::Jabber::Stanza("query");
 ok( defined($query), "new()" );
-isa_ok( $query, "Net::Jabber::Query" );
+isa_ok( $query, "Net::Jabber::Stanza" );
+isa_ok( $query, "Net::XMPP::Stanza" );
 
 testScalar($query,"XMLNS","http://jabber.org/protocol/bytestreams");
 
@@ -17,9 +18,10 @@ testJID($query,"StreamHostUsedJID","user1","server1","resource1");
 
 is( $query->GetXML(), "<query sid='sid' xmlns='http://jabber.org/protocol/bytestreams'><activate>activate</activate><streamhost-used jid='user1\@server1/resource1'/></query>", "GetXML()" );
 
-my $query2 = new Net::Jabber::Query();
+my $query2 = new Net::Jabber::Stanza("query");
 ok( defined($query2), "new()" );
-isa_ok( $query2, "Net::Jabber::Query" );
+isa_ok( $query2, "Net::Jabber::Stanza" );
+isa_ok( $query2, "Net::XMPP::Stanza" );
 
 testScalar($query2,"XMLNS","http://jabber.org/protocol/bytestreams");
 
@@ -35,14 +37,16 @@ testPostJID($query2,"StreamHostUsedJID","user2","server2","resource2");
 is( $query2->GetXML(), "<query sid='sid' xmlns='http://jabber.org/protocol/bytestreams'><activate>activate</activate><streamhost-used jid='user2\@server2/resource2'/></query>", "GetXML()" );
 
 
-my $query3 = new Net::Jabber::Query();
+my $query3 = new Net::Jabber::Stanza("query");
 ok( defined($query3), "new()" );
-isa_ok( $query3, "Net::Jabber::Query" );
+isa_ok( $query3, "Net::Jabber::Stanza" );
+isa_ok( $query3, "Net::XMPP::Stanza" );
 
 testScalar($query3,"XMLNS","http://jabber.org/protocol/bytestreams");
 
 my $host = $query3->AddStreamHost();
-isa_ok( $host, "Net::Jabber::Query" );
+isa_ok( $host, "Net::Jabber::Stanza" );
+isa_ok( $host, "Net::XMPP::Stanza" );
 
 testScalar($host,"Host","host1");
 testJID($host,"JID","user3","server3","resource3");
@@ -57,7 +61,8 @@ my $host2 = $query3->AddStreamHost(host=>"host2",
                                    port=>"port2",
                                    zeroconf=>"zeroconf2"
                                   );
-isa_ok( $host2, "Net::Jabber::Query" );
+isa_ok( $host2, "Net::Jabber::Stanza" );
+isa_ok( $host2, "Net::XMPP::Stanza" );
 
 testPostScalar($host2,"Host","host2");
 testPostJID($host2,"JID","user4","server4","resource4");

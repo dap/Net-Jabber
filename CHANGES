@@ -1,3 +1,9 @@
+2.0
+===
+  - All of the core functionality has moved into Net::XMPP.
+    It provides the connection, messages, iq, and presence.
+    Net::Jabber now just provides the extensions that the
+    JEPs define and that are truly Jabber and not XMPP.
 
 1.30
 ====
